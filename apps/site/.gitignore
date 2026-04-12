@@ -11,3 +11,7 @@ count.txt
 .output
 .vinxi
 todos.json
+db.sqlite
+*.sqlite
+*.sqlite3
+*.db
