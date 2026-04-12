@@ -66,7 +66,6 @@ function buildHeaderChildren(ctx: SpecCtx, doc: ResumeDocumentV1, centered: bool
 function buildSummaryChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   const c: string[] = [];
   if (!doc.summary.enabled) return c;
-  pushHeading(ctx, c, "Summary", "h2");
   pushText(ctx, c, doc.summary.text);
   return c;
 }
@@ -74,7 +73,6 @@ function buildSummaryChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
 function buildExperienceChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   const c: string[] = [];
   if (!doc.experience.enabled) return c;
-  pushHeading(ctx, c, "Experience", "h2");
   for (const ex of doc.experience.items) {
     pushHeading(ctx, c, `${ex.role} · ${ex.company}`, "h3");
     pushText(ctx, c, `${ex.start} – ${ex.end}`);
@@ -88,7 +86,6 @@ function buildExperienceChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] 
 function buildEducationChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   const c: string[] = [];
   if (!doc.education.enabled) return c;
-  pushHeading(ctx, c, "Education", "h2");
   for (const ed of doc.education.items) {
     pushText(ctx, c, `${ed.degree} — ${ed.school} (${ed.year})`);
   }
@@ -98,7 +95,6 @@ function buildEducationChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
 function buildProjectsChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   const c: string[] = [];
   if (!doc.projects.enabled) return c;
-  pushHeading(ctx, c, "Projects", "h2");
   for (const p of doc.projects.items) {
     const pid = nid(ctx);
     ctx.elements[pid] = el(pid, "Link", { href: p.url, label: p.name });
@@ -114,7 +110,6 @@ function buildProjectsChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
 function buildSkillsFlat(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   const c: string[] = [];
   if (!doc.skills.enabled) return c;
-  pushHeading(ctx, c, "Skills", "h2");
   const all = doc.skills.groups.flatMap((g) => g.items);
   if (all.length > 0) {
     pushText(ctx, c, all.join(" · "));
@@ -125,7 +120,6 @@ function buildSkillsFlat(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
 function buildSkillsGrouped(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   const c: string[] = [];
   if (!doc.skills.enabled) return c;
-  pushHeading(ctx, c, "Skills", "h2");
   for (const g of doc.skills.groups) {
     pushHeading(ctx, c, g.name, "h3");
     if (g.items.length > 0) {
@@ -138,7 +132,6 @@ function buildSkillsGrouped(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
 function buildSkillsBadges(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   const c: string[] = [];
   if (!doc.skills.enabled) return c;
-  pushHeading(ctx, c, "Skills", "h2");
   const badges: string[] = [];
   for (const g of doc.skills.groups) {
     for (const s of g.items) {
