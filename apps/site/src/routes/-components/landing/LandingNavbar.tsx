@@ -9,8 +9,8 @@ import { lazy, Suspense, useState } from "react";
 const DashboardLink = lazy(() => import("./LandingDashboardLink"));
 
 const NAV_LINKS = [
-  { label: "Structure", href: "#features" },
-  { label: "Overview", href: "#showcase" },
+  { label: "Workflow", href: "#features" },
+  { label: "Why JSON", href: "#showcase" },
 ] as const;
 
 export function LandingNavbar() {
@@ -38,7 +38,7 @@ export function LandingNavbar() {
           to="/"
           className="font-serif text-2xl tracking-tight text-base-100 dark:text-base-content"
         >
-          {AppConfig.name.toLowerCase()}
+          {AppConfig.wordmark}
           <span className="text-primary">.</span>
         </Link>
 

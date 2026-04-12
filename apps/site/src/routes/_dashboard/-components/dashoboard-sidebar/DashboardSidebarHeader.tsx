@@ -1,4 +1,3 @@
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -7,15 +6,9 @@ import {
 } from "@/components/ui/sidebar";
 import { AppConfig } from "@/utils/system";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 
 export function DashboardSidebarHeader() {
   const { state, setOpenMobile, isMobile } = useSidebar();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return (
     <div className="flex flex-col gap-3">
@@ -29,7 +22,7 @@ export function DashboardSidebarHeader() {
               })()}
               {state === "expanded" || isMobile ? (
                 <span className="font-serif text-xl tracking-tight">
-                  {AppConfig.name.toLowerCase()}
+                  {AppConfig.wordmark}
                   <span className="text-primary">.</span>
                 </span>
               ) : null}

@@ -11,7 +11,7 @@ export function LandingFooter() {
       <div className="container">
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           <Link to="/" className="font-serif text-2xl tracking-tight text-base-content">
-            {AppConfig.name.toLowerCase()}
+            {AppConfig.wordmark}
             <span className="text-primary">.</span>
           </Link>
 

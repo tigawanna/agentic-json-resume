@@ -29,7 +29,7 @@ const isBrowser = typeof window !== "undefined";
 export function ThemeProvider({
   children,
   defaultTheme = "system",
-  storageKey = "starter.theme",
+  storageKey = "agentic-json-resume.theme",
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
     () => (isBrowser ? (localStorage.getItem(storageKey) as Theme) : defaultTheme) || defaultTheme,

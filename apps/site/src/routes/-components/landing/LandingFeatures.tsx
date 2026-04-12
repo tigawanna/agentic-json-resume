@@ -1,4 +1,4 @@
-import { Compass, MapPin, Star } from "lucide-react";
+import { Copy, FileDown, FileJson } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AppConfig } from "@/utils/system";
 
@@ -12,23 +12,26 @@ interface FeatureItem {
 
 const FEATURES: FeatureItem[] = [
   {
-    icon: MapPin,
-    title: "File-based routes",
-    description: "TanStack Router generates a type-safe route tree from your file structure.",
+    icon: FileJson,
+    title: "One JSON schema",
+    description:
+      "Your résumé lives as structured data. The UI and PDF are views on that data—so edits stay consistent.",
     iconColor: "text-primary",
     iconBg: "bg-primary/10",
   },
   {
-    icon: Compass,
-    title: "End-to-end types",
-    description: "Share contracts between client and API with a single monorepo workflow.",
+    icon: Copy,
+    title: "Use any LLM",
+    description:
+      "Copy your JSON, add the job description in ChatGPT or another assistant, and paste the updated JSON back. No lock-in to one provider.",
     iconColor: "text-earth-green-400",
     iconBg: "bg-earth-green-400/10",
   },
   {
-    icon: Star,
-    title: "DX-first tooling",
-    description: "Vite+ wraps lint, format, and tests so quality checks stay consistent.",
+    icon: FileDown,
+    title: "PDF from components",
+    description:
+      "React turns the same JSON into on-screen layout and a print-ready PDF—less manual reformatting than fixing a doc.",
     iconColor: "text-terracotta",
     iconBg: "bg-terracotta/10",
   },
@@ -59,10 +62,10 @@ export function LandingFeatures() {
       <div className="container">
         <div className="mb-16 text-center">
           <h2 className="mb-4 font-serif text-4xl text-base-content md:text-5xl">
-            How <span className="italic text-primary">{AppConfig.name}</span> is structured
+            How <span className="italic text-primary">{AppConfig.name}</span> works
           </h2>
-          <p className="mx-auto max-w-md text-lg text-base-content/60">
-            Three pillars you can extend without rewriting the foundation
+          <p className="mx-auto max-w-lg text-lg text-base-content/60">
+            Three steps: store JSON, tailor it with an assistant, export PDF from the same source
           </p>
         </div>
 

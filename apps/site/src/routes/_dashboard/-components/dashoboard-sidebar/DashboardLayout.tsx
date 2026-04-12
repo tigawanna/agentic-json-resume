@@ -27,7 +27,6 @@ interface DashboardLayoutProps {
   accountLabel: string;
   adminRoutes: SidebarItem[];
   adminLabel: string;
-  showOrgSwitcher?: boolean;
   sidebar_props?: React.ComponentProps<typeof Sidebar>;
 }
 
@@ -38,14 +37,13 @@ export function DashboardLayout({
   accountLabel,
   adminRoutes,
   adminLabel,
-  showOrgSwitcher = true,
   sidebar_props,
 }: DashboardLayoutProps) {
   return (
     <SidebarProvider defaultOpen={false}>
       <Helmet
         title={`${AppConfig.name} | Dashboard`}
-        description="Manage your account and workspace."
+        description="Edit your JSON résumé, preview layout, and export PDF."
       />
       <Sidebar collapsible="icon" {...sidebar_props}>
         <SidebarHeader>

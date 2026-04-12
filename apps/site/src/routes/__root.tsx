@@ -35,7 +35,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       {
         title: AppConfig.name,
         description: AppConfig.description,
-        keywords: "react, tanstack start, tanstack router, vite, typescript, monorepo, vite+",
+        keywords:
+          "resume, JSON resume, PDF, job application, LLM, tailored resume, TanStack Start, React",
         og: {
           title: AppConfig.name,
           description: AppConfig.description,

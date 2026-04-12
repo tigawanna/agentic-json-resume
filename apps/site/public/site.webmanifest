@@ -1,7 +1,7 @@
 {
-  "name": "Starter",
-  "short_name": "Starter",
-  "description": "Vite+ monorepo with TanStack Start",
+  "name": "Agentic JSON Resume",
+  "short_name": "Agentic",
+  "description": "JSON résumé to PDF, tailored with any LLM",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

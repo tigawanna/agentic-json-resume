@@ -1,19 +1,21 @@
-import { Box } from "lucide-react";
+import { FileJson } from "lucide-react";
 
 export const AppConfig = {
-  name: "Starter",
-  brief: "Vite+ monorepo with TanStack Start — full-stack React with SSR and typed routes.",
+  name: "Agentic JSON Resume",
+  wordmark: "agentic",
+  brief:
+    "Turn your résumé into JSON, tailor it with any LLM using a job description, and export a clean PDF—without pasting prose back into a doc.",
   description:
-    "A starter template: pnpm workspaces, Turbo, Vite+, TanStack Router, and TanStack Query.",
+    "A structured JSON résumé you can copy into ChatGPT or any assistant with a job posting, paste the improved JSON back, and download a PDF. Built with React, TanStack Start, and Vite+.",
   logo: {
     src: "/logo.png",
-    alt: "Application logo",
+    alt: "Agentic JSON Resume",
     href: "/",
   },
-  icon: Box,
-  themeStorageKey: "starter.theme",
+  icon: FileJson,
+  themeStorageKey: "agentic-json-resume.theme",
   links: {
-    github: "https://github.com/your-org/your-repo",
+    github: "https://github.com/your-org/agentic-json-resume",
     mail: "mailto:hello@example.com",
   },
 };

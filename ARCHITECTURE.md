@@ -1,10 +1,12 @@
-# Technical architecture (template)
+# Technical architecture — Agentic JSON Resume
 
-## Overview
+## Product (what this repo is for)
 
-This monorepo is a **Vite+**-centric template: **pnpm** workspaces, **Turbo** for task orchestration, and **`apps/site`** as a **TanStack Start** application (file-based **TanStack Router**, SSR-capable React, **TanStack Query**).
+**Agentic JSON Resume** is a web app for maintaining a **structured JSON résumé**, using **any LLM** to tailor that JSON to a job description, and **exporting PDF** from the same source so layout stays under your control. See `VISION.md` for the full product narrative.
 
-Rename branding in `apps/site/src/utils/system.tsx` (`AppConfig`) and adjust routes to match your product.
+The codebase is a **pnpm + Turbo** monorepo with **Vite+** tooling and **`apps/site`** as a **TanStack Start** app (TanStack Router, TanStack Query, SSR-capable React).
+
+Branding and copy live in `apps/site/src/utils/system.tsx` (`AppConfig`).
 
 ---
 
@@ -12,8 +14,8 @@ Rename branding in `apps/site/src/utils/system.tsx` (`AppConfig`) and adjust rou
 
 | Path | Role |
 | --- | --- |
-| `apps/site` | TanStack Start app: UI, routes, client data layer |
-| `packages/*` | Shared libraries (e.g. `isomorphic` types, configs) |
+| `apps/site` | TanStack Start app: UI, routes, auth, future JSON editor + PDF |
+| `packages/*` | Shared libraries (types, configs) |
 | Root | `package.json` scripts, Turbo pipeline, Vite+ CLI (`vp`) |
 
 ---
@@ -21,41 +23,34 @@ Rename branding in `apps/site/src/utils/system.tsx` (`AppConfig`) and adjust rou
 ## Frontend (`apps/site`)
 
 - **TanStack Router** — File-based routes under `src/routes/`; `routeTree.gen.ts` is generated.
-- **TanStack Query** — Server/client data fetching; SSR integration via `@tanstack/react-router-ssr-query`.
-- **Styling** — Tailwind CSS v4, shadcn-style UI primitives, DaisyUI theme tokens where needed.
-- **Auth** — Better Auth (client + server); protect routes with `beforeLoad` / middleware as in `_dashboard` layout.
+- **TanStack Query** — Data fetching; SSR integration via `@tanstack/react-router-ssr-query`.
+- **Styling** — Tailwind CSS v4, shadcn-style UI, DaisyUI theme tokens where needed.
+- **Auth** — Better Auth; dashboard routes can be protected with `beforeLoad` / middleware.
 
-Router bootstrap lives in `apps/site/src/router.tsx` (pending/not-found/error defaults, query integration).
+Planned product modules: **JSON schema** for résumé, **preview** components, **PDF** generation (e.g. print CSS, `@react-pdf/renderer`, or server-side render-to-PDF)—to be added as you implement the builder.
 
 ---
 
 ## Tooling (Vite+)
 
-- **`vp`** — Install, dev, build, lint, format, test (see project `CLAUDE.md`).
-- Prefer **`vp install` / `vp check` / `vp test`** over calling underlying package managers or Vitest/Oxlint directly.
+- **`vp`** — Install, dev, build, lint, format, test (see `CLAUDE.md`).
+- Prefer **`vp install` / `vp check` / `vp test`** over ad hoc package-manager or tool invocations.
 
 ---
 
 ## Environment (examples)
 
-Use names that match your deployment; placeholders only:
-
 ```bash
 DATABASE_URL=postgresql://user:pass@localhost:5432/app?sslmode=require
-REDIS_URL=redis://localhost:6379
-S3_BUCKET=your-bucket
-S3_PUBLIC_URL=https://cdn.example.com
-EMAIL_FROM="App <hello@example.com>"
+# Add secrets for auth, email, and future PDF storage as needed
 ```
 
 ---
 
-## Customization checklist
+## Customization
 
-1. Update `AppConfig` (name, links, `themeStorageKey`, OG URLs in `src/routes/__root.tsx` if you use absolute Open Graph URLs).
-2. Replace placeholder landing copy and assets under `apps/site/public/`.
-3. Align `packages/isomorphic` roles and API contracts with your backend.
-4. Configure CI (e.g. `voidzero-dev/setup-vp`) to run `vp check` and `vp test`.
+1. Set `AppConfig` and absolute OG URLs in `src/routes/__root.tsx` when you have a production domain.
+2. Implement the résumé JSON types (e.g. under `packages/isomorphic`) and the editor + PDF pipeline in `apps/site`.
 
 ---
 
@@ -63,4 +58,4 @@ EMAIL_FROM="App <hello@example.com>"
 
 - [TanStack Start](https://tanstack.com/start)
 - [TanStack Router](https://tanstack.com/router)
-- [Vite+](https://github.com/voidzero-dev/vite-plus) (project `CLAUDE.md`)
+- Vite+ (`CLAUDE.md` in this repo)

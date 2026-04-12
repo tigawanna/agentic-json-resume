@@ -16,7 +16,7 @@ export const Route = createFileRoute("/search")({
     meta: [
       {
         title: `${AppConfig.name} | Search`,
-        description: "Search across the app.",
+        description: "Search roles or employers (placeholder until wired up).",
       },
     ],
   }),
@@ -40,8 +40,7 @@ function SearchPage() {
             )}
           </h1>
           <p className="max-w-md text-center text-base-content/60">
-            This page is a placeholder. Wire it to your search backend or Algolia when you are
-            ready.
+            This page is a placeholder. Later it could filter saved résumé versions or job targets.
           </p>
         </div>
         <Footer />

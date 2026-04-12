@@ -14,11 +14,11 @@ export function LandingCTA() {
 
           <div className="relative z-10">
             <h2 className="mb-4 font-serif text-4xl leading-tight text-primary-content md:text-5xl">
-              Ready to build something <span className="italic text-primary-content/80">real</span>?
+              Start from <span className="italic text-primary-content/80">your</span> JSON
             </h2>
             <p className="mx-auto mb-10 max-w-md text-lg text-primary-content/70">
-              Clone the repo, run install, and start from the dashboard and auth flows already wired
-              for you.
+              Sign in to open the dashboard, paste or upload your schema, and iterate toward PDF
+              export. The builder UI is next on the roadmap—this is the home for the product story.
             </p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Link to="/auth" search={{ returnTo: pathname }}>
@@ -27,7 +27,7 @@ export function LandingCTA() {
                   size="lg"
                   className="gap-2 rounded-full px-8 text-base shadow-lg"
                 >
-                  Get started
+                  Sign in
                   <ArrowRight className="size-4" />
                 </Button>
               </Link>

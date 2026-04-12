@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_dashboard")({
     meta: [
       {
         title: `${AppConfig.name} | Dashboard`,
-        description: "Your dashboard",
+        description: "Your résumé JSON and PDF exports",
       },
     ],
   }),

@@ -44,7 +44,7 @@ export function LandingHero() {
         <div className="max-w-2xl">
           <div className="animate-fade-in">
             <span className="mb-6 inline-block rounded-full border border-primary/30 bg-primary/20 px-4 py-1.5 text-sm font-medium text-primary backdrop-blur-sm">
-              Vite+ · TanStack Start · Monorepo
+              JSON in · LLM in the middle · PDF out
             </span>
           </div>
 
@@ -52,15 +52,16 @@ export function LandingHero() {
             className="animate-fade-in mb-6 font-serif text-5xl leading-[1.1] text-base-100 dark:text-base-content md:text-7xl"
             style={{ animationDelay: "100ms" }}
           >
-            Ship <span className="italic text-primary">full-stack</span> apps faster
+            Résumé as <span className="italic text-primary">data</span>, not a wall of text
           </h1>
 
           <p
             className="animate-fade-in mb-10 max-w-lg text-lg leading-relaxed text-base-100/70 dark:text-base-content/70 md:text-xl"
             style={{ animationDelay: "200ms" }}
           >
-            This template combines a typed TanStack Router tree, React Query, Tailwind CSS, and
-            workspace tooling so you can focus on product code.
+            Store your experience as structured JSON, copy it into any chatbot with the job
+            description, paste the revised JSON back here, and get a print-ready PDF—without
+            reformatting a Google Doc or risking an obvious LLM-dump look.
           </p>
 
           <div className="animate-fade-in" style={{ animationDelay: "300ms" }}>
@@ -74,7 +75,7 @@ export function LandingHero() {
             style={{ animationDelay: "600ms" }}
           >
             <div className="flex -space-x-2">
-              {["A", "M", "S", "R"].map((initial) => (
+              {["J", "D", "S", "M"].map((initial) => (
                 <div
                   key={initial}
                   className="flex size-8 items-center justify-center rounded-full border-2 border-base-100/30 bg-primary/70 text-xs font-medium text-primary-content dark:border-base-content/30"
@@ -84,8 +85,8 @@ export function LandingHero() {
               ))}
             </div>
             <span>
-              <strong className="text-base-100 dark:text-base-content">Ready</strong> to customize
-              for your team
+              <strong className="text-base-100 dark:text-base-content">You</strong> own the JSON;
+              the model only edits the file
             </span>
           </div>
         </div>

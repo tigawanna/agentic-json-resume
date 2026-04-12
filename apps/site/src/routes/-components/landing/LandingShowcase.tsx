@@ -4,9 +4,9 @@ interface StatItem {
 }
 
 const STATS: StatItem[] = [
-  { number: "1", label: "Router" },
-  { number: "pnpm", label: "Workspaces" },
-  { number: "SSR", label: "TanStack Start" },
+  { number: "01", label: "Export JSON" },
+  { number: "02", label: "Prompt + job post" },
+  { number: "03", label: "Import + PDF" },
 ];
 
 export function LandingShowcase() {
@@ -59,12 +59,13 @@ export function LandingShowcase() {
 
           <div>
             <h2 className="mb-6 font-serif text-4xl leading-tight text-base-content md:text-5xl">
-              Opinionated <span className="italic text-primary">defaults</span>, flexible escape
-              hatches
+              Why <span className="italic text-primary">JSON</span> beats a pasted essay
             </h2>
             <p className="mb-8 text-lg leading-relaxed text-base-content/60">
-              Replace placeholder copy, plug in your API client, and keep the same routing and data
-              patterns as your app grows.
+              Pasting a full résumé back into a document often reads like raw model output. Here the
+              model edits a compact schema you control; you review diffs in structure, not five
+              pages of prose. Later, agentic features could suggest roles from your history and
+              public job listings—today the focus is the editor and PDF path.
             </p>
 
             <div className="grid grid-cols-3 gap-6">
