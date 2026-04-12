@@ -9,7 +9,13 @@ const base = StyleSheet.create({
   name: { fontSize: 18, marginBottom: 4 },
   headline: { fontSize: 11, marginBottom: 6, color: "#333" },
   contact: { fontSize: 9, marginBottom: 8, color: "#555" },
-  h2: { fontSize: 12, marginTop: 10, marginBottom: 6, borderBottomWidth: 1, borderBottomColor: "#ccc" },
+  h2: {
+    fontSize: 12,
+    marginTop: 10,
+    marginBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
   h3: { fontSize: 10, marginTop: 6, marginBottom: 2 },
   body: { fontSize: 9, lineHeight: 1.4, marginBottom: 4 },
   bullet: { fontSize: 9, marginLeft: 8, marginBottom: 2 },
@@ -155,7 +161,7 @@ function ClassicPdf({ doc }: { doc: ResumeDocumentV1 }) {
         <Text style={centeredName.name}>{doc.header.fullName}</Text>
         <Text style={centeredName.headline}>{doc.header.headline}</Text>
         <Text style={centeredName.contact}>
-          {doc.header.email}  •  {doc.header.location}
+          {doc.header.email} • {doc.header.location}
         </Text>
         <View style={centeredName.linkRow}>
           {doc.header.links.map((l) => (
@@ -214,16 +220,20 @@ function SidebarPdf({ doc }: { doc: ResumeDocumentV1 }) {
       ) : null}
       <View style={sidebarStyles.twoCol}>
         <View style={sidebarStyles.main}>
-          {doc.sectionOrder.filter((k) => mainKeys.includes(k)).map((key) => {
-            const node = sectionMap[key];
-            return node ? <View key={key}>{node}</View> : null;
-          })}
+          {doc.sectionOrder
+            .filter((k) => mainKeys.includes(k))
+            .map((key) => {
+              const node = sectionMap[key];
+              return node ? <View key={key}>{node}</View> : null;
+            })}
         </View>
         <View style={sidebarStyles.side}>
-          {doc.sectionOrder.filter((k) => sideKeys.includes(k)).map((key) => {
-            const node = sectionMap[key];
-            return node ? <View key={key}>{node}</View> : null;
-          })}
+          {doc.sectionOrder
+            .filter((k) => sideKeys.includes(k))
+            .map((key) => {
+              const node = sectionMap[key];
+              return node ? <View key={key}>{node}</View> : null;
+            })}
         </View>
       </View>
     </Page>
@@ -235,7 +245,13 @@ function AccentPdf({ doc }: { doc: ResumeDocumentV1 }) {
     name: { fontSize: 20, marginBottom: 2 },
     headline: { fontSize: 11, marginBottom: 4, color: "#333" },
     contact: { fontSize: 9, marginBottom: 6, color: ACCENT_COLOR },
-    h2: { fontSize: 12, marginTop: 10, marginBottom: 6, borderBottomWidth: 1, borderBottomColor: ACCENT_COLOR },
+    h2: {
+      fontSize: 12,
+      marginTop: 10,
+      marginBottom: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: ACCENT_COLOR,
+    },
   });
 
   const sectionMap: Record<SectionKey, React.ReactNode> = {
@@ -244,7 +260,7 @@ function AccentPdf({ doc }: { doc: ResumeDocumentV1 }) {
         <Text style={accentStyles.name}>{doc.header.fullName}</Text>
         <Text style={accentStyles.headline}>{doc.header.headline}</Text>
         <Text style={accentStyles.contact}>
-          {doc.header.email}  •  {doc.header.location}
+          {doc.header.email} • {doc.header.location}
         </Text>
         <Links doc={doc} />
       </View>
@@ -261,12 +277,15 @@ function AccentPdf({ doc }: { doc: ResumeDocumentV1 }) {
         {doc.experience.items.map((ex) => (
           <View key={ex.company + ex.role} wrap={false}>
             <Text style={base.h3}>
-              {ex.role} ·{" "}
-              <Text style={{ color: ACCENT_COLOR }}>{ex.company}</Text>
+              {ex.role} · <Text style={{ color: ACCENT_COLOR }}>{ex.company}</Text>
             </Text>
-            <Text style={base.body}>{ex.start} – {ex.end}</Text>
+            <Text style={base.body}>
+              {ex.start} – {ex.end}
+            </Text>
             {ex.bullets.map((b) => (
-              <Text key={b} style={base.bullet}>• {b}</Text>
+              <Text key={b} style={base.bullet}>
+                • {b}
+              </Text>
             ))}
           </View>
         ))}
@@ -287,7 +306,9 @@ function AccentPdf({ doc }: { doc: ResumeDocumentV1 }) {
         <Text style={accentStyles.h2}>Projects</Text>
         {doc.projects.items.map((p) => (
           <View key={p.name} wrap={false}>
-            <Link src={p.url} style={{ ...base.h3, color: ACCENT_COLOR }}>{p.name}</Link>
+            <Link src={p.url} style={{ ...base.h3, color: ACCENT_COLOR }}>
+              {p.name}
+            </Link>
             <Text style={base.body}>{p.description}</Text>
             {p.tech.length > 0 ? <Text style={base.skillLine}>{p.tech.join(", ")}</Text> : null}
           </View>
@@ -315,7 +336,13 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
     name: { fontSize: 20, marginBottom: 2, color: MODERN_COLOR },
     headline: { fontSize: 11, marginBottom: 4, color: "#333" },
     contact: { fontSize: 9, marginBottom: 6, color: MODERN_COLOR },
-    h2: { fontSize: 12, marginTop: 10, marginBottom: 6, borderBottomWidth: 1, borderBottomColor: MODERN_COLOR },
+    h2: {
+      fontSize: 12,
+      marginTop: 10,
+      marginBottom: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: MODERN_COLOR,
+    },
   });
 
   const leftKeys: SectionKey[] = ["experience", "education"];
@@ -341,9 +368,13 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
                 <Text style={base.h3}>
                   {ex.role} · <Text style={{ color: MODERN_COLOR }}>{ex.company}</Text>
                 </Text>
-                <Text style={base.body}>{ex.start} – {ex.end}</Text>
+                <Text style={base.body}>
+                  {ex.start} – {ex.end}
+                </Text>
                 {ex.bullets.map((b) => (
-                  <Text key={b} style={base.bullet}>• {b}</Text>
+                  <Text key={b} style={base.bullet}>
+                    • {b}
+                  </Text>
                 ))}
               </View>
             ))}
@@ -368,9 +399,13 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
             <Text style={h2Style}>Projects</Text>
             {doc.projects.items.map((p) => (
               <View key={p.name} wrap={false}>
-                <Link src={p.url} style={{ ...base.h3, color: MODERN_COLOR }}>{p.name}</Link>
+                <Link src={p.url} style={{ ...base.h3, color: MODERN_COLOR }}>
+                  {p.name}
+                </Link>
                 <Text style={base.body}>{p.description}</Text>
-                {p.tech.length > 0 ? <Text style={base.skillLine}>{p.tech.join(" · ")}</Text> : null}
+                {p.tech.length > 0 ? (
+                  <Text style={base.skillLine}>{p.tech.join(" · ")}</Text>
+                ) : null}
               </View>
             ))}
           </View>
@@ -383,7 +418,9 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
             {doc.skills.groups.map((g) => (
               <View key={g.name} style={{ marginBottom: 4 }}>
                 <Text style={base.h3}>{g.name}</Text>
-                {g.items.length > 0 ? <Text style={base.skillLine}>{g.items.join(", ")}</Text> : null}
+                {g.items.length > 0 ? (
+                  <Text style={base.skillLine}>{g.items.join(", ")}</Text>
+                ) : null}
               </View>
             ))}
           </View>
@@ -400,23 +437,27 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
           <Text style={modernStyles.name}>{doc.header.fullName}</Text>
           <Text style={modernStyles.headline}>{doc.header.headline}</Text>
           <Text style={modernStyles.contact}>
-            {doc.header.email}  •  {doc.header.location}
+            {doc.header.email} • {doc.header.location}
           </Text>
           <Links doc={doc} />
         </View>
       ) : null}
       <View style={modernStyles.twoCol}>
         <View style={modernStyles.main}>
-          {doc.sectionOrder.filter((k) => leftKeys.includes(k)).map((key) => {
-            const node = buildSection(key, modernStyles.h2);
-            return node ? <View key={key}>{node}</View> : null;
-          })}
+          {doc.sectionOrder
+            .filter((k) => leftKeys.includes(k))
+            .map((key) => {
+              const node = buildSection(key, modernStyles.h2);
+              return node ? <View key={key}>{node}</View> : null;
+            })}
         </View>
         <View style={modernStyles.side}>
-          {doc.sectionOrder.filter((k) => rightKeys.includes(k)).map((key) => {
-            const node = buildSection(key, modernStyles.h2);
-            return node ? <View key={key}>{node}</View> : null;
-          })}
+          {doc.sectionOrder
+            .filter((k) => rightKeys.includes(k))
+            .map((key) => {
+              const node = buildSection(key, modernStyles.h2);
+              return node ? <View key={key}>{node}</View> : null;
+            })}
         </View>
       </View>
     </Page>
@@ -430,7 +471,13 @@ const pdfTemplates: Record<TemplateId, (props: { doc: ResumeDocumentV1 }) => Rea
   modern: ModernPdf,
 };
 
-export function ResumePdfDocument({ doc, templateId }: { doc: ResumeDocumentV1; templateId?: TemplateId }) {
+export function ResumePdfDocument({
+  doc,
+  templateId,
+}: {
+  doc: ResumeDocumentV1;
+  templateId?: TemplateId;
+}) {
   const tid = templateId ?? doc.meta.templateId;
   const Template = pdfTemplates[tid];
   return (

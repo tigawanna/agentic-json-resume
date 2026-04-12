@@ -148,11 +148,7 @@ function buildSkillsBadges(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   return c;
 }
 
-function wrapInCard(
-  ctx: SpecCtx,
-  title: string,
-  children: string[],
-): string {
+function wrapInCard(ctx: SpecCtx, title: string, children: string[]): string {
   const cardId = nid(ctx);
   ctx.elements[cardId] = el(
     cardId,
@@ -163,7 +159,12 @@ function wrapInCard(
   return cardId;
 }
 
-function wrapInStack(ctx: SpecCtx, dir: "vertical" | "horizontal", gap: string, children: string[]): string {
+function wrapInStack(
+  ctx: SpecCtx,
+  dir: "vertical" | "horizontal",
+  gap: string,
+  children: string[],
+): string {
   const id = nid(ctx);
   ctx.elements[id] = el(id, "Stack", { direction: dir, gap }, children);
   return id;

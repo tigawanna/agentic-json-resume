@@ -1,8 +1,6 @@
 import { resumeRegistry } from "@/features/resume/resume-catalog";
 import { ResumePdfDocument } from "@/features/resume/resume-pdf";
-import { buildTailorPrompt } from "@/features/resume/resume-prompt";
 import {
-  createDefaultResume,
   safeParseResumeJson,
   TEMPLATE_IDS,
   TEMPLATE_LABELS,
@@ -10,110 +8,79 @@ import {
   type TemplateId,
 } from "@/features/resume/resume-schema";
 import { resumeDocumentToSpec } from "@/features/resume/resume-to-spec";
+import { updateResume } from "@/data-access-layer/resume/resume.server-fns";
+import type { ResumeDTO } from "@/data-access-layer/resume/resume.types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { ResumeEditForm } from "@/routes/_public/resume/-components/ResumeEditForm";
 import { JSONUIProvider, Renderer } from "@json-render/react";
 import { PatchDiff } from "@pierre/diffs/react";
 import { pdf } from "@react-pdf/renderer";
-import { Link } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
 import { createPatch } from "diff";
 import { twMerge } from "tailwind-merge";
-import { Check, ClipboardCopy, ClipboardPaste, Download, Loader2, RefreshCw } from "lucide-react";
+import { Download, Loader2, RefreshCw, Save } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { ResumeEditForm } from "./ResumeEditForm";
 
-const STORAGE_KEY = "agentic-json-resume:v1";
+interface SavedResumeWorkbenchProps {
+  savedResume: ResumeDTO;
+}
 
-export function ResumeWorkbench() {
-  const [doc, setDoc] = useState<ResumeDocumentV1 | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-  const [jobDescription, setJobDescription] = useState("");
-  const [pasteText, setPasteText] = useState("");
-  const [promptCopied, setPromptCopied] = useState(false);
+export function SavedResumeWorkbench({ savedResume }: SavedResumeWorkbenchProps) {
+  const initialDoc = savedResume.data;
+  const [doc, setDoc] = useState<ResumeDocumentV1>(initialDoc);
+  const [name, setName] = useState(savedResume.name);
+  const [description, setDescription] = useState(savedResume.description);
+  const [jobDescription, setJobDescription] = useState(savedResume.jobDescription);
   const [baselineJson, setBaselineJson] = useState<string | null>(null);
   const [importText, setImportText] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const initialJson = useRef(JSON.stringify(initialDoc));
 
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const r = safeParseResumeJson(raw);
-      if (r.ok) setDoc(r.data);
-    }
-    setHydrated(true);
-  }, []);
+    const currentJson = JSON.stringify(doc);
+    const metaChanged =
+      name !== savedResume.name ||
+      description !== savedResume.description ||
+      jobDescription !== savedResume.jobDescription;
+    setHasUnsavedChanges(currentJson !== initialJson.current || metaChanged);
+  }, [doc, name, description, jobDescription, savedResume]);
 
-  useEffect(() => {
-    if (!hydrated || !doc) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(doc));
-  }, [doc, hydrated]);
-
-  const baseResumeForPrompt = doc ?? createDefaultResume();
-  const prompt = jobDescription.trim()
-    ? buildTailorPrompt(baseResumeForPrompt, jobDescription)
-    : "";
-
-  async function handleCopyPrompt() {
-    await navigator.clipboard.writeText(prompt);
-    setPromptCopied(true);
-    toast.success("Prompt copied to clipboard");
-    setTimeout(() => setPromptCopied(false), 2000);
-  }
-
-  function handlePasteApply() {
-    const trimmed = pasteText.trim();
-    if (!trimmed) {
-      toast.error("Paste your JSON first");
-      return;
-    }
-    const result = safeParseResumeJson(trimmed);
-    if (result.ok) {
-      setDoc(result.data);
-      setPasteText("");
-      toast.success("JSON applied — you can now edit and preview your resume");
-    } else {
-      toast.error("Invalid resume JSON", { description: result.error });
-    }
-  }
-
-  if (!doc) {
-    return (
-      <div className="flex w-full max-w-3xl flex-col gap-6" data-test="resume-workbench">
-        <div>
-          <h1 className="font-serif text-3xl text-base-content">Quick resume builder</h1>
-          <p className="text-base-content/70 mt-1 text-sm">
-            Paste a job description, copy the prompt into any chatbot, then paste the JSON output
-            back. Everything stays in your browser — nothing is saved to a server.
-          </p>
-          <p className="text-base-content/50 mt-2 text-xs">
-            Want persistent storage across devices?{" "}
-            <Link to="/dashboard" className="link link-primary">
-              Sign in and use the dashboard
-            </Link>
-            .
-          </p>
-        </div>
-
-        <JdPromptFlow
-          jobDescription={jobDescription}
-          onJobDescriptionChange={setJobDescription}
-          prompt={prompt}
-          promptCopied={promptCopied}
-          onCopyPrompt={handleCopyPrompt}
-          pasteText={pasteText}
-          onPasteTextChange={setPasteText}
-          onPasteApply={handlePasteApply}
-        />
-      </div>
-    );
-  }
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      return updateResume({
+        data: {
+          id: savedResume.id,
+          name: name.trim(),
+          description: description.trim(),
+          jobDescription: jobDescription.trim(),
+          data: doc,
+        },
+      });
+    },
+    onSuccess() {
+      initialJson.current = JSON.stringify(doc);
+      setHasUnsavedChanges(false);
+      toast.success("Resume saved");
+    },
+    onError(err: unknown) {
+      toast.error("Failed to save", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    },
+    meta: { invalidates: [["resumes"]] },
+  });
 
   const templateId = doc.meta.templateId;
 
   function setTemplate(tid: TemplateId) {
-    setDoc((prev) => (prev ? { ...prev, meta: { ...prev.meta, templateId: tid } } : prev));
+    setDoc((prev) => ({ ...prev, meta: { ...prev.meta, templateId: tid } }));
   }
 
   const previewSpec = resumeDocumentToSpec(doc, templateId);
@@ -135,12 +102,41 @@ export function ResumeWorkbench() {
   }
 
   return (
-    <div className="flex w-full max-w-6xl flex-col gap-6" data-test="resume-workbench">
-      <div>
-        <h1 className="font-serif text-3xl text-base-content">Quick resume builder</h1>
-        <p className="text-base-content/70 mt-1 text-sm">
-          Editing locally in this browser. Changes are not synced across devices.
-        </p>
+    <div className="flex w-full flex-col gap-6" data-test="saved-resume-workbench">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="edit-name" className="text-xs">
+              Name
+            </Label>
+            <Input
+              id="edit-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="max-w-md"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="edit-desc" className="text-xs">
+              Description
+            </Label>
+            <Input
+              id="edit-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="max-w-md"
+              placeholder="Brief note about this version"
+            />
+          </div>
+        </div>
+        <Button
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending || !hasUnsavedChanges}
+          className="shrink-0 gap-2"
+        >
+          <Save className="size-4" />
+          {saveMutation.isPending ? "Saving..." : hasUnsavedChanges ? "Save changes" : "Saved"}
+        </Button>
       </div>
 
       <TemplatePicker selected={templateId} onSelect={setTemplate} />
@@ -152,7 +148,7 @@ export function ResumeWorkbench() {
           <TabsTrigger value="pdf">PDF</TabsTrigger>
           <TabsTrigger value="diff">Diff</TabsTrigger>
           <TabsTrigger value="json">JSON</TabsTrigger>
-          <TabsTrigger value="tailor">Tailor</TabsTrigger>
+          <TabsTrigger value="jd">Job description</TabsTrigger>
         </TabsList>
 
         <TabsContent value="edit" className="mt-4">
@@ -248,115 +244,25 @@ export function ResumeWorkbench() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="tailor" className="mt-4">
-          <JdPromptFlow
-            jobDescription={jobDescription}
-            onJobDescriptionChange={setJobDescription}
-            prompt={prompt}
-            promptCopied={promptCopied}
-            onCopyPrompt={handleCopyPrompt}
-            pasteText={pasteText}
-            onPasteTextChange={setPasteText}
-            onPasteApply={handlePasteApply}
-          />
+        <TabsContent value="jd" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Job description</CardTitle>
+              <CardDescription>
+                The job posting this resume was tailored for. Update it anytime.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                rows={12}
+                placeholder="Paste the job posting here..."
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function JdPromptFlow({
-  jobDescription,
-  onJobDescriptionChange,
-  prompt,
-  promptCopied,
-  onCopyPrompt,
-  pasteText,
-  onPasteTextChange,
-  onPasteApply,
-}: {
-  jobDescription: string;
-  onJobDescriptionChange: (v: string) => void;
-  prompt: string;
-  promptCopied: boolean;
-  onCopyPrompt: () => void;
-  pasteText: string;
-  onPasteTextChange: (v: string) => void;
-  onPasteApply: () => void;
-}) {
-  return (
-    <div className="flex flex-col gap-5">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">1. Paste job description</CardTitle>
-          <CardDescription>
-            Paste the full job posting so the chatbot knows what to tailor your resume to.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            rows={8}
-            placeholder="Paste the job posting here..."
-            value={jobDescription}
-            onChange={(e) => onJobDescriptionChange(e.target.value)}
-            data-test="jd-input"
-          />
-        </CardContent>
-      </Card>
-
-      {jobDescription.trim() && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">2. Copy prompt for chatbot</CardTitle>
-              <CardDescription>
-                This includes your resume template, the job description, and instructions for the
-                chatbot to return valid JSON. Paste it into ChatGPT, Claude, or any LLM.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <Textarea readOnly className="font-mono text-xs" rows={6} value={prompt} />
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onCopyPrompt}
-                className="gap-2 self-start"
-              >
-                {promptCopied ? <Check className="size-4" /> : <ClipboardCopy className="size-4" />}
-                {promptCopied ? "Copied!" : "Copy prompt"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">3. Paste the chatbot output</CardTitle>
-              <CardDescription>
-                After the chatbot returns tailored JSON, paste it below. It will be validated
-                against the resume schema.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <Textarea
-                className="font-mono text-xs"
-                rows={8}
-                placeholder='{"version": 1, "meta": {...}, ...}'
-                value={pasteText}
-                onChange={(e) => onPasteTextChange(e.target.value)}
-              />
-              <Button
-                type="button"
-                onClick={onPasteApply}
-                disabled={!pasteText.trim()}
-                className="gap-2 self-start"
-              >
-                <ClipboardPaste className="size-4" />
-                Apply JSON
-              </Button>
-            </CardContent>
-          </Card>
-        </>
-      )}
     </div>
   );
 }
@@ -490,7 +396,9 @@ function TemplatePicker({
             )}
             data-test={`template-${tid}`}
           >
-            <span className="text-base-content text-sm font-semibold">{TEMPLATE_LABELS[tid]}</span>
+            <span className="text-base-content text-sm font-semibold">
+              {TEMPLATE_LABELS[tid]}
+            </span>
             <span className="text-base-content/60 text-xs">{TEMPLATE_DESCRIPTIONS[tid]}</span>
           </button>
         ))}

@@ -1,5 +1,5 @@
 import { SidebarItem } from "@/components/sidebar/types";
-import { Building2, Heart, Settings, Shield, ShoppingBag, Star, User } from "lucide-react";
+import { FileText, LayoutDashboard, Settings, Shield } from "lucide-react";
 
 export const dashboard_account_routes = [
   { title: "Settings", href: "/settings", icon: Settings },
@@ -9,21 +9,15 @@ export const dashboard_admin_routes = [
   { title: "Admin", href: "/admin", icon: Shield },
 ] satisfies SidebarItem[];
 
-export function getDashboardPrimaryRoutes(hasOrganizations: boolean): SidebarItem[] {
-  const start: SidebarItem[] = hasOrganizations
-    ? [{ title: "Organizations", href: "/dashboard", icon: Building2 }]
-    : [{ title: "Profile", href: "/profile", icon: User }];
-
+export function getDashboardPrimaryRoutes(): SidebarItem[] {
   return [
-    ...start,
-    { title: "Orders", href: "/orders", icon: ShoppingBag },
-    { title: "Favorites", href: "/favorites", icon: Heart },
-    { title: "Reviews", href: "/reviews", icon: Star },
+    { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { title: "Resumes", href: "/resumes", icon: FileText },
   ];
 }
 
 export const dashboard_routes = [
-  ...getDashboardPrimaryRoutes(false),
+  ...getDashboardPrimaryRoutes(),
   ...dashboard_account_routes,
   ...dashboard_admin_routes,
 ] satisfies SidebarItem[];

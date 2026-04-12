@@ -19,7 +19,10 @@ import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as DashboardProfileRouteImport } from './routes/_dashboard/profile'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
 import { Route as PublicResumeIndexRouteImport } from './routes/_public/resume/index'
+import { Route as DashboardResumesIndexRouteImport } from './routes/_dashboard/resumes/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as DashboardResumesCreateIndexRouteImport } from './routes/_dashboard/resumes/create/index'
+import { Route as DashboardResumesResumeIdIndexRouteImport } from './routes/_dashboard/resumes/$resumeId/index'
 
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
@@ -69,11 +72,28 @@ const PublicResumeIndexRoute = PublicResumeIndexRouteImport.update({
   path: '/resume/',
   getParentRoute: () => PublicLayoutRoute,
 } as any)
+const DashboardResumesIndexRoute = DashboardResumesIndexRouteImport.update({
+  id: '/resumes/',
+  path: '/resumes/',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardResumesCreateIndexRoute =
+  DashboardResumesCreateIndexRouteImport.update({
+    id: '/resumes/create/',
+    path: '/resumes/create/',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
+const DashboardResumesResumeIdIndexRoute =
+  DashboardResumesResumeIdIndexRouteImport.update({
+    id: '/resumes/$resumeId/',
+    path: '/resumes/$resumeId/',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -84,7 +104,10 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/resumes/': typeof DashboardResumesIndexRoute
   '/resume/': typeof PublicResumeIndexRoute
+  '/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
+  '/resumes/create/': typeof DashboardResumesCreateIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,7 +117,10 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/resumes': typeof DashboardResumesIndexRoute
   '/resume': typeof PublicResumeIndexRoute
+  '/resumes/$resumeId': typeof DashboardResumesResumeIdIndexRoute
+  '/resumes/create': typeof DashboardResumesCreateIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -108,7 +134,10 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_dashboard/resumes/': typeof DashboardResumesIndexRoute
   '/_public/resume/': typeof PublicResumeIndexRoute
+  '/_dashboard/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
+  '/_dashboard/resumes/create/': typeof DashboardResumesCreateIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,7 +150,10 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
+    | '/resumes/'
     | '/resume/'
+    | '/resumes/$resumeId/'
+    | '/resumes/create/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -131,7 +163,10 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth'
     | '/api/auth/$'
+    | '/resumes'
     | '/resume'
+    | '/resumes/$resumeId'
+    | '/resumes/create'
   id:
     | '__root__'
     | '/'
@@ -144,7 +179,10 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
+    | '/_dashboard/resumes/'
     | '/_public/resume/'
+    | '/_dashboard/resumes/$resumeId/'
+    | '/_dashboard/resumes/create/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -228,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicResumeIndexRouteImport
       parentRoute: typeof PublicLayoutRoute
     }
+    '/_dashboard/resumes/': {
+      id: '/_dashboard/resumes/'
+      path: '/resumes'
+      fullPath: '/resumes/'
+      preLoaderRoute: typeof DashboardResumesIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -235,17 +280,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_dashboard/resumes/create/': {
+      id: '/_dashboard/resumes/create/'
+      path: '/resumes/create'
+      fullPath: '/resumes/create/'
+      preLoaderRoute: typeof DashboardResumesCreateIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/_dashboard/resumes/$resumeId/': {
+      id: '/_dashboard/resumes/$resumeId/'
+      path: '/resumes/$resumeId'
+      fullPath: '/resumes/$resumeId/'
+      preLoaderRoute: typeof DashboardResumesResumeIdIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
   }
 }
 
 interface DashboardLayoutRouteChildren {
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
+  DashboardResumesIndexRoute: typeof DashboardResumesIndexRoute
+  DashboardResumesResumeIdIndexRoute: typeof DashboardResumesResumeIdIndexRoute
+  DashboardResumesCreateIndexRoute: typeof DashboardResumesCreateIndexRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardProfileRoute: DashboardProfileRoute,
+  DashboardResumesIndexRoute: DashboardResumesIndexRoute,
+  DashboardResumesResumeIdIndexRoute: DashboardResumesResumeIdIndexRoute,
+  DashboardResumesCreateIndexRoute: DashboardResumesCreateIndexRoute,
 }
 
 const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(

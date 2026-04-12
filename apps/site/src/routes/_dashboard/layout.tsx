@@ -1,8 +1,7 @@
-import { authClient } from "@/lib/better-auth/client";
 import { RouterNotFoundComponent } from "@/lib/tanstack/router/RouterNotFoundComponent";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { RouterErrorComponent } from "@/lib/tanstack/router/routerErrorComponent";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { DashboardLayout } from "./-components/dashoboard-sidebar/DashboardLayout";
 import { AppConfig } from "@/utils/system";
 import {
@@ -10,7 +9,6 @@ import {
   dashboard_admin_routes,
   getDashboardPrimaryRoutes,
 } from "./-components/dashoboard-sidebar/dashboard_routes";
-import { viewerMiddleware } from "@/data-access-layer/auth/viewer";
 
 export const Route = createFileRoute("/_dashboard")({
   pendingComponent: () => <RouterPendingComponent />,
@@ -36,9 +34,7 @@ export const Route = createFileRoute("/_dashboard")({
 });
 
 function DashboardShell() {
-  const { data: organizations } = authClient.useListOrganizations();
-  const hasOrganizations = Boolean(organizations?.length);
-  const primaryRoutes = getDashboardPrimaryRoutes(hasOrganizations);
+  const primaryRoutes = getDashboardPrimaryRoutes();
   return (
     <DashboardLayout
       sidebarRoutes={primaryRoutes}

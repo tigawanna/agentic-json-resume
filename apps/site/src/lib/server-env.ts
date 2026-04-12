@@ -12,7 +12,7 @@ const envSchema = z.object({
         return false;
       }
     },
-    { message: "Invalid DATABASE_URL; must be a valid URL or file: URL" }
+    { message: "Invalid DATABASE_URL; must be a valid URL or file: URL" },
   ),
   DATABASE_AUTH_TOKEN: z.string(),
   BETTER_AUTH_SECRET: z.string(),
