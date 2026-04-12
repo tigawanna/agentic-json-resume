@@ -121,7 +121,9 @@ type TOrganizationMembersInput = NonNullable<
 
 // Organization CRUD Mutations
 
-export type TCreateOrganizationInput = NonNullable<Parameters<typeof authClient.organization.create>[0]>;
+export type TCreateOrganizationInput = NonNullable<
+  Parameters<typeof authClient.organization.create>[0]
+>;
 export const createOrganizationMutationOptions = mutationOptions({
   mutationFn: async (payload: TCreateOrganizationInput) => {
     const { data, error } = await authClient.organization.create(payload);
@@ -133,7 +135,9 @@ export const createOrganizationMutationOptions = mutationOptions({
   },
 });
 
-export type TUpdateOrganizationInput = NonNullable<Parameters<typeof authClient.organization.update>[0]>;
+export type TUpdateOrganizationInput = NonNullable<
+  Parameters<typeof authClient.organization.update>[0]
+>;
 export const updateOrganizationMutationOptions = mutationOptions({
   mutationFn: async (payload: TUpdateOrganizationInput) => {
     const { data, error } = await authClient.organization.update(payload);
@@ -260,4 +264,3 @@ export const checkPermissionMutationOptions = mutationOptions({
 //     invalidates: [[queryKeyPrefixes.organizations, "roles"]],
 //   },
 // });
-

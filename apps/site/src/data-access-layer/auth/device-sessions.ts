@@ -17,8 +17,6 @@ export const deviceSessionsQueryOptions = queryOptions({
   retry: false,
 });
 
-
-
 export const setActiveSessionMutationOptions = mutationOptions({
   mutationFn: async (sessionToken: string) => {
     const { data, error } = await authClient.multiSession.setActive({

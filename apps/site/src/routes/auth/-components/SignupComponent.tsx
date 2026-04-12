@@ -26,8 +26,6 @@ const formOpts = formOptions({
   } satisfies SignupUserPayload,
 });
 
-
-
 export function SignupComponent() {
   const { returnTo } = useSearch({ from: "/auth/signup" });
   const [showPassword, setShowPassword] = useState(false);
@@ -96,7 +94,8 @@ export function SignupComponent() {
           e.stopPropagation();
           form.handleSubmit();
         }}
-        className="bg-base-300/20 flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg p-[2%] md:w-[70%] lg:w-[40%]">
+        className="bg-base-300/20 flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg p-[2%] md:w-[70%] lg:w-[40%]"
+      >
         <div className="flex h-full w-full flex-col items-center justify-center gap-4">
           <h1 className="text-4xl font-bold">Sign up</h1>
 
@@ -104,7 +103,8 @@ export function SignupComponent() {
             name="name"
             validators={{
               onChange: z.string().min(1, "Name is required"),
-            }}>
+            }}
+          >
             {(field) => <field.TextField label="Username" />}
           </form.AppField>
 
@@ -112,7 +112,8 @@ export function SignupComponent() {
             name="email"
             validators={{
               onChange: z.email("Invalid email address"),
-            }}>
+            }}
+          >
             {(field) => <field.EmailField />}
           </form.AppField>
 
@@ -120,7 +121,8 @@ export function SignupComponent() {
             name="password"
             validators={{
               onChange: z.string().min(8, "Password must be at least 8 characters"),
-            }}>
+            }}
+          >
             {(field) => <field.PasswordField label="Password" showPassword={showPassword} />}
           </form.AppField>
 
@@ -130,7 +132,8 @@ export function SignupComponent() {
               onChange: z.string().min(8, "Password must be at least 8 characters"),
               onChangeListenTo: ["password"],
               onChangeAsyncDebounceMs: 500,
-            }}>
+            }}
+          >
             {(field) => (
               <field.PasswordField label="Confirm password" showPassword={showPassword} />
             )}

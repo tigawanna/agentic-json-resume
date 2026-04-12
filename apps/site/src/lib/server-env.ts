@@ -2,16 +2,22 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.string().refine(
+    (val) => {
+      try {
+        // Accepts standard URLs or 'file:' scheme for sqlite paths
+        const u = new URL(val, "file://");
+        return !!u;
+      } catch {
+        return false;
+      }
+    },
+    { message: "Invalid DATABASE_URL; must be a valid URL or file: URL" }
+  ),
   DATABASE_AUTH_TOKEN: z.string(),
-  BETTER_AUTH_SECRET: z.string().min(32),
-  REFRESH_TOKEN_SECRET: z.string().min(32),
-  API_URL: z.string().url(),
-  FRONTEND_URL: z.string().url(),
+  BETTER_AUTH_SECRET: z.string(),
+  FRONTEND_URL: z.url(),
 });
-
-
-
 
 // Validate client environment
 const { success, error, data } = envSchema.safeParse(process.env);
@@ -22,4 +28,3 @@ if (!success) {
 }
 
 export const serverEnv = data;
-

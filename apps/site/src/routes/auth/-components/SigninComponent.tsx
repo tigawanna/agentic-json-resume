@@ -69,13 +69,15 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
           e.stopPropagation();
           form.handleSubmit();
         }}
-        className="flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg p-[2%] md:w-[70%] lg:w-[40%]">
+        className="flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg p-[2%] md:w-[70%] lg:w-[40%]"
+      >
         <div className="flex w-full flex-col items-center justify-center gap-4">
           {onBackToSessions && (
             <button
               type="button"
               onClick={onBackToSessions}
-              className="text-muted-foreground hover:text-foreground flex items-center gap-1 self-start text-sm transition-colors">
+              className="text-muted-foreground hover:text-foreground flex items-center gap-1 self-start text-sm transition-colors"
+            >
               <ArrowLeft className="size-4" />
               Back to accounts
             </button>
@@ -86,7 +88,8 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
             name="email"
             validators={{
               onChange: z.string().min(1, "Email is required"),
-            }}>
+            }}
+          >
             {(field) => <field.TextField label="Email or username" />}
           </form.AppField>
 
@@ -94,7 +97,8 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
             name="password"
             validators={{
               onChange: z.string().min(8, "Password must be at least 8 characters"),
-            }}>
+            }}
+          >
             {(field) => <field.PasswordField label="Password" showPassword={showPassword} />}
           </form.AppField>
 

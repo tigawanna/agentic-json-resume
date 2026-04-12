@@ -1,5 +1,6 @@
-
 import { authClient, BetterAuthSession } from "@/lib/better-auth/client";
+import { getSession } from "@/lib/auth.functions";
+import { auth } from "@/lib/auth";
 import { safeStringToUrl } from "@/utils/url";
 import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { redirect } from "@tanstack/react-router";
@@ -16,32 +17,17 @@ export type TViewer = {
 };
 export type TViewerLoginPayload = { email: string; password: string };
 
-
-
 export const viewerqueryOptions = queryOptions({
   queryKey: ["viewer"],
   queryFn: async () => {
-    // const { data, error } = await authClient.getSession();
-    const data = {
-      user: {
-        id: "1",
-        name: "John Doe",
-        email: "john.doe@example.com",
-        image: "https://github.com/shadcn.png",
-      },
-      session: {
-        id: "1",
-        userId: "1",
-        deviceId: "1",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    };
-    const error = null;
-    if (error) {
-      return { data: null, error };
+    const session = await getSession();
+    if (!session) {
+      return { data: null, error: null };
     }
-    return { data, error: null };
+    return {
+      data: { user: session.user, session: session.session },
+      error: null,
+    };
   },
 });
 
@@ -66,16 +52,16 @@ export function useViewer() {
   } as const;
 }
 
-export const viewerMiddleware = createMiddleware()
-.server(async ({ next, request }) => {
+export const viewerMiddleware = createMiddleware().server(async ({ next, request }) => {
   const headers = getRequestHeaders();
-  // const data = await honoClient.api.viewer.$get({}, {
-  //   headers,
-  // });
-  // const json = await data.json();
-  // if (!data.ok || !json.user) {
-  //   const returnTo = safeStringToUrl(request.url)?.pathname ?? "/";
-  //   throw redirect({ to: "/auth", search: { returnTo } });
-  // }
-  return await next();
+  const session = await auth.api.getSession({ headers });
+  if (!session) {
+    const returnTo = safeStringToUrl(request.url)?.pathname ?? "/";
+    throw redirect({ to: "/auth", search: { returnTo } });
+  }
+  return await next({
+    context: {
+      viewer: { user: session.user, session: session.session },
+    },
+  });
 });

@@ -1,13 +1,13 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuShortcut,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useViewer } from "@/data-access-layer/auth/viewer";
 import { MutationButton } from "@/lib/tanstack/query/MutationButton";
@@ -34,7 +34,8 @@ export function CurrentUser({}: CurrentUserProps) {
               <Link
                 className="flex items-center gap-2"
                 search={{ returnTo: location.pathname }}
-                to="/auth">
+                to="/auth"
+              >
                 <User className="mr-2 size-4" />
                 <span>Login</span>
                 <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>

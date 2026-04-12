@@ -11,12 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as AuthLayoutRouteImport } from './routes/auth/layout'
+import { Route as PublicLayoutRouteImport } from './routes/_public/layout'
 import { Route as DashboardLayoutRouteImport } from './routes/_dashboard/layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as DashboardProfileRouteImport } from './routes/_dashboard/profile'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
+import { Route as PublicResumeIndexRouteImport } from './routes/_public/resume/index'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
@@ -26,6 +29,10 @@ const SearchRoute = SearchRouteImport.update({
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicLayoutRoute = PublicLayoutRouteImport.update({
+  id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardLayoutRoute = DashboardLayoutRouteImport.update({
@@ -57,6 +64,16 @@ const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const PublicResumeIndexRoute = PublicResumeIndexRouteImport.update({
+  id: '/resume/',
+  path: '/resume/',
+  getParentRoute: () => PublicLayoutRoute,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +83,8 @@ export interface FileRoutesByFullPath {
   '/profile': typeof DashboardProfileRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/resume/': typeof PublicResumeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -74,17 +93,22 @@ export interface FileRoutesByTo {
   '/profile': typeof DashboardProfileRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/resume': typeof PublicResumeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardLayoutRouteWithChildren
+  '/_public': typeof PublicLayoutRouteWithChildren
   '/auth': typeof AuthLayoutRouteWithChildren
   '/search': typeof SearchRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_dashboard/profile': typeof DashboardProfileRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_public/resume/': typeof PublicResumeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,25 +120,40 @@ export interface FileRouteTypes {
     | '/profile'
     | '/auth/signup'
     | '/auth/'
+    | '/api/auth/$'
+    | '/resume/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/search' | '/dashboard' | '/profile' | '/auth/signup' | '/auth'
+  to:
+    | '/'
+    | '/search'
+    | '/dashboard'
+    | '/profile'
+    | '/auth/signup'
+    | '/auth'
+    | '/api/auth/$'
+    | '/resume'
   id:
     | '__root__'
     | '/'
     | '/_dashboard'
+    | '/_public'
     | '/auth'
     | '/search'
     | '/_dashboard/dashboard'
     | '/_dashboard/profile'
     | '/auth/signup'
     | '/auth/'
+    | '/api/auth/$'
+    | '/_public/resume/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
+  PublicLayoutRoute: typeof PublicLayoutRouteWithChildren
   AuthLayoutRoute: typeof AuthLayoutRouteWithChildren
   SearchRoute: typeof SearchRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -131,6 +170,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthLayoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_dashboard': {
@@ -175,6 +221,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_public/resume/': {
+      id: '/_public/resume/'
+      path: '/resume'
+      fullPath: '/resume/'
+      preLoaderRoute: typeof PublicResumeIndexRouteImport
+      parentRoute: typeof PublicLayoutRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -190,6 +250,18 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
 
 const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(
   DashboardLayoutRouteChildren,
+)
+
+interface PublicLayoutRouteChildren {
+  PublicResumeIndexRoute: typeof PublicResumeIndexRoute
+}
+
+const PublicLayoutRouteChildren: PublicLayoutRouteChildren = {
+  PublicResumeIndexRoute: PublicResumeIndexRoute,
+}
+
+const PublicLayoutRouteWithChildren = PublicLayoutRoute._addFileChildren(
+  PublicLayoutRouteChildren,
 )
 
 interface AuthLayoutRouteChildren {
@@ -209,8 +281,10 @@ const AuthLayoutRouteWithChildren = AuthLayoutRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
+  PublicLayoutRoute: PublicLayoutRouteWithChildren,
   AuthLayoutRoute: AuthLayoutRouteWithChildren,
   SearchRoute: SearchRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

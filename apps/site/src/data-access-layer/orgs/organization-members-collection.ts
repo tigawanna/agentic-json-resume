@@ -71,7 +71,11 @@ export const organizationMembersCollection = createCollection(
                 sortBy?: string;
                 sortOrder?: string;
               };
-            }) => Promise<{ ok: boolean; data: MembersApiResponse; error: { message: string } | null }>;
+            }) => Promise<{
+              ok: boolean;
+              data: MembersApiResponse;
+              error: { message: string } | null;
+            }>;
           };
         };
       };

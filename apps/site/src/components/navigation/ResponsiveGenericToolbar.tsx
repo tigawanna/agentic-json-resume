@@ -19,24 +19,28 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
               htmlFor="my-drawer-3"
               aria-label="open sidebar"
               className="btn btn-square btn-ghost btn-sm"
-              data-test="homepage-side-drawer-toggle">
+              data-test="homepage-side-drawer-toggle"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                className="inline-block h-5 w-5 stroke-current">
+                className="inline-block h-5 w-5 stroke-current"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"></path>
+                  d="M4 6h16M4 12h16M4 18h16"
+                ></path>
               </svg>
             </label>
           </div>
           <div className="flex-1 px-2">
             <Link
               to="/"
-              className="text-base-content hover:text-primary flex items-center gap-2 text-lg font-bold">
+              className="text-base-content hover:text-primary flex items-center gap-2 text-lg font-bold"
+            >
               {(() => {
                 const Icon = AppConfig.icon as any;
                 return <Icon className="size-5" />;
@@ -52,11 +56,13 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
         {/* Desktop Navbar */}
         <div
           data-test="homepage-toolbar"
-          className="bg-base-100/80 border-base-300 sticky top-0 z-10 hidden w-full items-center justify-between border-b backdrop-blur-md md:flex px-8 py-2">
+          className="bg-base-100/80 border-base-300 sticky top-0 z-10 hidden w-full items-center justify-between border-b backdrop-blur-md md:flex px-8 py-2"
+        >
           <Link
             to="/"
             data-test="homepage-home-link"
-            className="text-base-content hover:text-primary flex items-center gap-2 text-xl font-bold">
+            className="text-base-content hover:text-primary flex items-center gap-2 text-xl font-bold"
+          >
             {(() => {
               const Icon = AppConfig.icon as any;
               return <Icon className="size-6" />;
@@ -72,13 +78,15 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
         <label htmlFor="my-drawer-3" aria-label="close sidebar" className="drawer-overlay"></label>
         <ul
           data-test="homepage-sidebar"
-          className="menu bg-base-100 border-base-300 min-h-full w-64 md:w-80 border-r p-4 text-sm md:text-base">
+          className="menu bg-base-100 border-base-300 min-h-full w-64 md:w-80 border-r p-4 text-sm md:text-base"
+        >
           {/* Sidebar Header */}
           <li className="menu-title mb-4 px-0">
             <Link
               to="/"
               data-test="sidebar-homepage-home-link"
-              className="hover:text-primary flex items-center justify-center md:justify-start gap-2 p-3 text-lg md:text-xl font-bold rounded-lg hover:bg-base-200">
+              className="hover:text-primary flex items-center justify-center md:justify-start gap-2 p-3 text-lg md:text-xl font-bold rounded-lg hover:bg-base-200"
+            >
               {(() => {
                 const Icon = AppConfig.icon as any;
                 return <Icon className="size-6 md:size-8" />;
@@ -111,9 +119,9 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
 
           <div className="divider my-2">Explore</div>
           <li>
-            <Link to="/orders" className="gap-3">
+            <Link to="/resume" className="gap-3">
               <ShoppingBag className="size-5" />
-              <span>Orders</span>
+              <span>Résumé builder</span>
             </Link>
           </li>
 

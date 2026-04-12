@@ -66,7 +66,8 @@ export function SessionPicker({ onUseAnotherAccount }: SessionPickerProps) {
               type="button"
               disabled={setActiveMutation.isPending}
               onClick={() => handleSelectSession(session.token)}
-              className="hover:bg-accent flex w-full items-center gap-4 border-b px-4 py-3 transition-colors last:border-b-0 disabled:opacity-50">
+              className="hover:bg-accent flex w-full items-center gap-4 border-b px-4 py-3 transition-colors last:border-b-0 disabled:opacity-50"
+            >
               <Avatar size="lg">
                 {user.image && <AvatarImage src={user.image} alt={user.name} />}
                 <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
@@ -84,7 +85,8 @@ export function SessionPicker({ onUseAnotherAccount }: SessionPickerProps) {
           <button
             type="button"
             onClick={onUseAnotherAccount}
-            className="hover:bg-accent flex w-full items-center gap-4 px-4 py-3 transition-colors">
+            className="hover:bg-accent flex w-full items-center gap-4 px-4 py-3 transition-colors"
+          >
             <div className="bg-muted flex size-10 items-center justify-center rounded-full">
               <UserPlus className="text-muted-foreground size-5" />
             </div>

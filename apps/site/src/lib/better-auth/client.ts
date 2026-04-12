@@ -3,17 +3,14 @@ import { adminClient, multiSessionClient, organizationClient } from "better-auth
 import { createAuthClient } from "better-auth/react";
 import { clientEnv } from "../client-env";
 
+const organizationClientPlugin = organizationClient({
+  ac: organizationAc as never,
+  roles: organizationRoles,
+});
+
 export const authClient = createAuthClient({
-  /** The base URL of the server (optional if you're using the same domain) */
   baseURL: clientEnv.VITE_API_URL,
-  plugins: [
-    adminClient({
-      ac: organizationAc as any,
-      roles: organizationRoles,
-    }),
-    organizationClient(),
-    multiSessionClient(),
-  ],
+  plugins: [adminClient(), organizationClientPlugin, multiSessionClient()],
 });
 
 export type BetterAuthSession = typeof authClient.$Infer.Session;
