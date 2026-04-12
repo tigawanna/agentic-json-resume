@@ -7,19 +7,68 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   createDefaultResume,
   moveSectionOrder,
+  SECTION_KEYS,
   type ResumeDocumentV1,
   type SectionKey,
 } from "@/features/resume/resume-schema";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 
-const SECTION_LABELS: Record<SectionKey, string> = {
-  header: "Profile",
-  summary: "Summary",
-  experience: "Experience",
-  education: "Education",
-  projects: "Projects",
-  skills: "Skills",
-};
+function SectionOrderControls({
+  sectionKey,
+  order,
+  onReorder,
+}: {
+  sectionKey: SectionKey;
+  order: SectionKey[];
+  onReorder: (next: SectionKey[]) => void;
+}) {
+  const idx = order.indexOf(sectionKey);
+  const canMoveUp = idx > 0;
+  const canMoveDown = idx >= 0 && idx < order.length - 1;
+  return (
+    <div className="flex gap-1" data-test={`section-order-${sectionKey}`}>
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className="size-8"
+        disabled={!canMoveUp}
+        onClick={() => onReorder(moveSectionOrder(order, sectionKey, -1))}
+        aria-label="Move section up"
+      >
+        <ChevronUp className="size-4" />
+      </Button>
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className="size-8"
+        disabled={!canMoveDown}
+        onClick={() => onReorder(moveSectionOrder(order, sectionKey, 1))}
+        aria-label="Move section down"
+      >
+        <ChevronDown className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+function normalizeSectionOrder(order: SectionKey[]): SectionKey[] {
+  const seen = new Set<SectionKey>();
+  const out: SectionKey[] = [];
+  for (const k of order) {
+    if (SECTION_KEYS.includes(k) && !seen.has(k)) {
+      seen.add(k);
+      out.push(k);
+    }
+  }
+  for (const k of SECTION_KEYS) {
+    if (!seen.has(k)) {
+      out.push(k);
+    }
+  }
+  return out;
+}
 
 export function ResumeEditForm({
   doc,
@@ -32,56 +81,33 @@ export function ResumeEditForm({
     onChange({ ...doc, [key]: value });
   }
 
+  const orderedKeys = normalizeSectionOrder(doc.sectionOrder);
+
   return (
     <div className="flex flex-col gap-6" data-test="resume-edit-form">
-      <Card>
+      {orderedKeys.map((sectionKey) => {
+        switch (sectionKey) {
+          case "header":
+            return (
+      <Card key={sectionKey}>
         <CardHeader>
-          <CardTitle>Section order</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          {doc.sectionOrder.map((key) => (
-            <div
-              key={key}
-              className="bg-base-200 flex items-center justify-between gap-2 rounded-md border px-3 py-2"
-            >
-              <span className="text-sm font-medium">{SECTION_LABELS[key]}</span>
-              <div className="flex gap-1">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-8"
-                  onClick={() => set("sectionOrder", moveSectionOrder(doc.sectionOrder, key, -1))}
-                  aria-label="Move section up"
-                >
-                  <ChevronUp className="size-4" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-8"
-                  onClick={() => set("sectionOrder", moveSectionOrder(doc.sectionOrder, key, 1))}
-                  aria-label="Move section down"
-                >
-                  <ChevronDown className="size-4" />
-                </Button>
-              </div>
+          <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-1">
+              <CardTitle>Profile</CardTitle>
+              <SectionOrderControls
+                sectionKey="header"
+                order={doc.sectionOrder}
+                onReorder={(next) => set("sectionOrder", next)}
+              />
             </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Profile</CardTitle>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="en-header">On</Label>
-            <Switch
-              id="en-header"
-              checked={doc.header.enabled}
-              onCheckedChange={(v) => set("header", { ...doc.header, enabled: v })}
-            />
+            <div className="flex shrink-0 items-center gap-2">
+              <Label htmlFor="en-header">On</Label>
+              <Switch
+                id="en-header"
+                checked={doc.header.enabled}
+                onCheckedChange={(v) => set("header", { ...doc.header, enabled: v })}
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
@@ -175,17 +201,28 @@ export function ResumeEditForm({
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Summary</CardTitle>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="en-sum">On</Label>
-            <Switch
-              id="en-sum"
-              checked={doc.summary.enabled}
-              onCheckedChange={(v) => set("summary", { ...doc.summary, enabled: v })}
-            />
+            );
+          case "summary":
+            return (
+      <Card key={sectionKey}>
+        <CardHeader>
+          <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-1">
+              <CardTitle>Summary</CardTitle>
+              <SectionOrderControls
+                sectionKey="summary"
+                order={doc.sectionOrder}
+                onReorder={(next) => set("sectionOrder", next)}
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Label htmlFor="en-sum">On</Label>
+              <Switch
+                id="en-sum"
+                checked={doc.summary.enabled}
+                onCheckedChange={(v) => set("summary", { ...doc.summary, enabled: v })}
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -196,14 +233,27 @@ export function ResumeEditForm({
           />
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Experience</CardTitle>
-          <Switch
-            checked={doc.experience.enabled}
-            onCheckedChange={(v) => set("experience", { ...doc.experience, enabled: v })}
-          />
+            );
+          case "experience":
+            return (
+      <Card key={sectionKey}>
+        <CardHeader>
+          <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-1">
+              <CardTitle>Experience</CardTitle>
+              <SectionOrderControls
+                sectionKey="experience"
+                order={doc.sectionOrder}
+                onReorder={(next) => set("sectionOrder", next)}
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Switch
+                checked={doc.experience.enabled}
+                onCheckedChange={(v) => set("experience", { ...doc.experience, enabled: v })}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           {doc.experience.items.map((ex, i) => (
@@ -313,14 +363,27 @@ export function ResumeEditForm({
           </Button>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Education</CardTitle>
-          <Switch
-            checked={doc.education.enabled}
-            onCheckedChange={(v) => set("education", { ...doc.education, enabled: v })}
-          />
+            );
+          case "education":
+            return (
+      <Card key={sectionKey}>
+        <CardHeader>
+          <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-1">
+              <CardTitle>Education</CardTitle>
+              <SectionOrderControls
+                sectionKey="education"
+                order={doc.sectionOrder}
+                onReorder={(next) => set("sectionOrder", next)}
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Switch
+                checked={doc.education.enabled}
+                onCheckedChange={(v) => set("education", { ...doc.education, enabled: v })}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {doc.education.items.map((ed, i) => (
@@ -372,14 +435,27 @@ export function ResumeEditForm({
           </Button>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Projects</CardTitle>
-          <Switch
-            checked={doc.projects.enabled}
-            onCheckedChange={(v) => set("projects", { ...doc.projects, enabled: v })}
-          />
+            );
+          case "projects":
+            return (
+      <Card key={sectionKey}>
+        <CardHeader>
+          <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-1">
+              <CardTitle>Projects</CardTitle>
+              <SectionOrderControls
+                sectionKey="projects"
+                order={doc.sectionOrder}
+                onReorder={(next) => set("sectionOrder", next)}
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Switch
+                checked={doc.projects.enabled}
+                onCheckedChange={(v) => set("projects", { ...doc.projects, enabled: v })}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {doc.projects.items.map((p, i) => (
@@ -448,14 +524,27 @@ export function ResumeEditForm({
           </Button>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Skills</CardTitle>
-          <Switch
-            checked={doc.skills.enabled}
-            onCheckedChange={(v) => set("skills", { ...doc.skills, enabled: v })}
-          />
+            );
+          case "skills":
+            return (
+      <Card key={sectionKey}>
+        <CardHeader>
+          <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-1">
+              <CardTitle>Skills</CardTitle>
+              <SectionOrderControls
+                sectionKey="skills"
+                order={doc.sectionOrder}
+                onReorder={(next) => set("sectionOrder", next)}
+              />
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <Switch
+                checked={doc.skills.enabled}
+                onCheckedChange={(v) => set("skills", { ...doc.skills, enabled: v })}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {doc.skills.groups.map((g, gi) => (
@@ -502,6 +591,11 @@ export function ResumeEditForm({
           </Button>
         </CardContent>
       </Card>
+            );
+          default:
+            return null;
+        }
+      })}
 
       <div className="flex gap-2">
         <Button type="button" variant="secondary" onClick={() => onChange(createDefaultResume())}>
