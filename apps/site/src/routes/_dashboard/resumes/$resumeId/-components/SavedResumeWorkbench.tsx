@@ -1,3 +1,11 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { updateResume } from "@/data-access-layer/resume/resume.server.fns";
+import type { ResumeDTO } from "@/data-access-layer/resume/resume.types";
 import { resumeRegistry } from "@/features/resume/resume-catalog";
 import { ResumePdfDocument } from "@/features/resume/resume-pdf";
 import {
@@ -8,24 +16,16 @@ import {
   type TemplateId,
 } from "@/features/resume/resume-schema";
 import { resumeDocumentToSpec } from "@/features/resume/resume-to-spec";
-import { updateResume } from "@/data-access-layer/resume/resume.server-fns";
-import type { ResumeDTO } from "@/data-access-layer/resume/resume.types";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { ResumeEditForm } from "@/routes/_public/resume/-components/ResumeEditForm";
 import { JSONUIProvider, Renderer } from "@json-render/react";
 import { PatchDiff } from "@pierre/diffs/react";
 import { pdf } from "@react-pdf/renderer";
 import { useMutation } from "@tanstack/react-query";
 import { createPatch } from "diff";
-import { twMerge } from "tailwind-merge";
 import { Download, Loader2, RefreshCw, Save } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { twMerge } from "tailwind-merge";
 
 interface SavedResumeWorkbenchProps {
   savedResume: ResumeDTO;
@@ -132,8 +132,7 @@ export function SavedResumeWorkbench({ savedResume }: SavedResumeWorkbenchProps)
         <Button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending || !hasUnsavedChanges}
-          className="shrink-0 gap-2"
-        >
+          className="shrink-0 gap-2">
           <Save className="size-4" />
           {saveMutation.isPending ? "Saving..." : hasUnsavedChanges ? "Save changes" : "Saved"}
         </Button>
@@ -219,8 +218,7 @@ export function SavedResumeWorkbench({ savedResume }: SavedResumeWorkbenchProps)
                 onClick={async () => {
                   await navigator.clipboard.writeText(currentJson);
                   toast.success("Copied to clipboard");
-                }}
-              >
+                }}>
                 Copy JSON
               </Button>
             </CardContent>
@@ -321,8 +319,7 @@ function PdfPreview({ doc, templateId }: { doc: ResumeDocumentV1; templateId: Te
               size="sm"
               disabled={generating}
               onClick={() => void generate()}
-              className="gap-1.5"
-            >
+              className="gap-1.5">
               {generating ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
@@ -335,8 +332,7 @@ function PdfPreview({ doc, templateId }: { doc: ResumeDocumentV1; templateId: Te
               size="sm"
               disabled={!blobUrl || generating}
               onClick={handleDownload}
-              className="gap-1.5"
-            >
+              className="gap-1.5">
               <Download className="size-4" />
               Download
             </Button>
@@ -394,11 +390,8 @@ function TemplatePicker({
                 ? "border-primary bg-primary/5"
                 : "border-base-300 hover:border-base-content/30",
             )}
-            data-test={`template-${tid}`}
-          >
-            <span className="text-base-content text-sm font-semibold">
-              {TEMPLATE_LABELS[tid]}
-            </span>
+            data-test={`template-${tid}`}>
+            <span className="text-base-content text-sm font-semibold">{TEMPLATE_LABELS[tid]}</span>
             <span className="text-base-content/60 text-xs">{TEMPLATE_DESCRIPTIONS[tid]}</span>
           </button>
         ))}

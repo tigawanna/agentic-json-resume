@@ -1,7 +1,7 @@
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  schema: ["./src/lib/drizzle/auth-schema.ts", "./src/lib/drizzle/resume-schema.ts"],
+  schema: "./src/lib/drizzle/scheam/*.ts",
   out: "./drizzle/migrations",
   dialect: "sqlite",
   dbCredentials: {

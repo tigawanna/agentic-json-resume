@@ -1,11 +1,13 @@
+import "@tanstack/react-start/server-only";
+
+import type { ResumeDocumentV1 } from "@/features/resume/resume-schema";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/drizzle/client";
-import { resume } from "@/lib/drizzle/resume-schema";
-import type { ResumeDocumentV1 } from "@/features/resume/resume-schema";
-import type { ResumeDTO } from "./resume.types";
+import { resume } from "@/lib/drizzle/scheam/resume-schema";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { desc, eq, and } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
+import type { ResumeDTO } from "./resume.types";
 
 async function requireUser() {
   const headers = getRequestHeaders();

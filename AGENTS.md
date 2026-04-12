@@ -13,6 +13,19 @@
 - **shadcn/ui components**
 - **Zod v4** (don't do z.string().email() do z.email()/z.url()), **Sonner**, **Lucide React**
 
+## TanStack Start: import protection and server functions
+
+- Import protection (Vite plugin, on by default) scans imports for TanStack Start's client and server targets and blocks or mocks cross-environment imports; scope is usually Start's `srcDirectory`.
+- By default the client build denies resolved paths matching `**/*.server.*` and the specifier `@tanstack/react-start/server`; the server build denies `**/*.client.*`; `node_modules` resolved paths are skipped for file-pattern checks unless you change `excludeFiles`.
+- Mark restricted modules with `import '@tanstack/react-start/server-only'` or `import '@tanstack/react-start/client-only'` when filenames do not use the `.server` / `.client` convention; never use both markers in one file.
+- Default `behavior` is `mock` in dev (warn and substitute a safe Proxy) and `error` on production build; tune or disable via `tanstackStart({ importProtection })` in Vite (`include` / `exclude` / `ignoreImporters`, extra `client` / `server` deny rules, `onViolation`).
+- The compiler can strip server-only imports used only inside `createServerFn().handler(...)`; if the same import is referenced outside that boundary, it stays in the client graph and import protection will still fire—split modules or use `createServerOnlyFn` / `createIsomorphicFn` instead of “leaky” helpers.
+- Build-time checks run after tree-shaking, so dev-only warnings from barrels re-exporting `.server` files may be false positives; treat a failing build as the source of truth.
+- Server functions are `createServerFn({ method? }).inputValidator(...).handler(async ({ data }) => ...)` from `@tanstack/react-start`; they run on the server but are callable from loaders, components (`useServerFn`), events, and other server functions with static imports preferred over dynamic `import()`.
+- Organize with `*.functions.ts` for exported server functions (safe to import anywhere) and `*.server.ts` for DB and other helpers imported only inside handlers; keep shared schemas and types in plain `*.ts` files.
+- Crossing the wire uses a single `data` payload—validate with Zod or other validators; handlers may throw errors, `redirect()`, or `notFound()` from TanStack Router.
+- Request/response helpers (`getRequest`, `setResponseHeaders`, etc.) live in `@tanstack/react-start/server` and must only run in server contexts, consistent with import protection rules.
+
 ---
 
 ## ✅ DO
