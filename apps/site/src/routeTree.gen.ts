@@ -19,12 +19,12 @@ import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as DashboardSetiingsRouteImport } from './routes/_dashboard/setiings'
 import { Route as DashboardProfileRouteImport } from './routes/_dashboard/profile'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
+import { Route as VerificationFailedIndexRouteImport } from './routes/verification/failed/index'
 import { Route as PublicResumeIndexRouteImport } from './routes/_public/resume/index'
 import { Route as DashboardResumesIndexRouteImport } from './routes/_dashboard/resumes/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as DashboardResumesCreateIndexRouteImport } from './routes/_dashboard/resumes/create/index'
 import { Route as DashboardResumesResumeIdIndexRouteImport } from './routes/_dashboard/resumes/$resumeId/index'
-import { Route as VerificationFailedRouteImport } from './routes/verification/failed/index'
 
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
@@ -74,6 +74,11 @@ const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const VerificationFailedIndexRoute = VerificationFailedIndexRouteImport.update({
+  id: '/verification/failed/',
+  path: '/verification/failed/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PublicResumeIndexRoute = PublicResumeIndexRouteImport.update({
   id: '/resume/',
   path: '/resume/',
@@ -87,11 +92,6 @@ const DashboardResumesIndexRoute = DashboardResumesIndexRouteImport.update({
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VerificationFailedRoute = VerificationFailedRouteImport.update({
-  id: '/verification/failed',
-  path: '/verification/failed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardResumesCreateIndexRoute =
@@ -119,9 +119,9 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/resumes/': typeof DashboardResumesIndexRoute
   '/resume/': typeof PublicResumeIndexRoute
+  '/verification/failed/': typeof VerificationFailedIndexRoute
   '/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
   '/resumes/create/': typeof DashboardResumesCreateIndexRoute
-  '/verification/failed': typeof VerificationFailedRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,9 +134,9 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/resumes': typeof DashboardResumesIndexRoute
   '/resume': typeof PublicResumeIndexRoute
+  '/verification/failed': typeof VerificationFailedIndexRoute
   '/resumes/$resumeId': typeof DashboardResumesResumeIdIndexRoute
   '/resumes/create': typeof DashboardResumesCreateIndexRoute
-  '/verification/failed': typeof VerificationFailedRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -153,9 +153,9 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_dashboard/resumes/': typeof DashboardResumesIndexRoute
   '/_public/resume/': typeof PublicResumeIndexRoute
+  '/verification/failed/': typeof VerificationFailedIndexRoute
   '/_dashboard/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
   '/_dashboard/resumes/create/': typeof DashboardResumesCreateIndexRoute
-  '/verification/failed': typeof VerificationFailedRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,9 +171,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/resumes/'
     | '/resume/'
+    | '/verification/failed/'
     | '/resumes/$resumeId/'
     | '/resumes/create/'
-    | '/verification/failed'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -186,9 +186,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/resumes'
     | '/resume'
+    | '/verification/failed'
     | '/resumes/$resumeId'
     | '/resumes/create'
-    | '/verification/failed'
   id:
     | '__root__'
     | '/'
@@ -204,9 +204,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/_dashboard/resumes/'
     | '/_public/resume/'
+    | '/verification/failed/'
     | '/_dashboard/resumes/$resumeId/'
     | '/_dashboard/resumes/create/'
-    | '/verification/failed'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -216,7 +216,7 @@ export interface RootRouteChildren {
   AuthLayoutRoute: typeof AuthLayoutRouteWithChildren
   SearchRoute: typeof SearchRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  VerificationFailedRoute: typeof VerificationFailedRoute
+  VerificationFailedIndexRoute: typeof VerificationFailedIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -291,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/verification/failed/': {
+      id: '/verification/failed/'
+      path: '/verification/failed'
+      fullPath: '/verification/failed/'
+      preLoaderRoute: typeof VerificationFailedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_public/resume/': {
       id: '/_public/resume/'
       path: '/resume'
@@ -325,13 +332,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/resumes/$resumeId/'
       preLoaderRoute: typeof DashboardResumesResumeIdIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
-    }
-    '/verification/failed': {
-      id: '/verification/failed'
-      path: '/verification/failed'
-      fullPath: '/verification/failed'
-      preLoaderRoute: typeof VerificationFailedRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -391,7 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLayoutRoute: AuthLayoutRouteWithChildren,
   SearchRoute: SearchRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  VerificationFailedRoute: VerificationFailedRoute,
+  VerificationFailedIndexRoute: VerificationFailedIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
