@@ -52,12 +52,12 @@ export function SignupComponent() {
       await qc.fetchQuery(viewerqueryOptions);
       navigate({ to: returnTo ?? "/profile" });
     },
-    // onError(error) {
-    //   toast.error("Something went wrong", {
-    //     description: error instanceof Error ? error.message : "Unknown error",
-    //     duration: 10_000,
-    //   });
-    // },
+    onError(error) {
+      toast.error("Something went wrong", {
+        description: error instanceof Error ? error.message : "Unknown error",
+        duration: 10_000,
+      });
+    },
   });
 
   const form = useAppForm({
@@ -65,14 +65,12 @@ export function SignupComponent() {
     onSubmit: async ({ value }) => {
       const formData = value as SignupUserPayload;
       if (formData.password !== formData.passwordConfirm) {
-        toast.error("Passwords don't match", { position: "top-center" });
-        return;
+        throw new Error("Passwords don't match");
       }
       try {
         await mutation.mutateAsync(formData);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        console.log(" = error creating user = ",message);
         toast.error("Something went wrong", { description: message, position: "top-center" });
       }
     },
@@ -82,6 +80,7 @@ export function SignupComponent() {
     <div className="flex h-full w-full items-center justify-evenly gap-2 p-5">
       <img src="/logo.svg" alt="logo" className="hidden w-[30%] object-cover md:flex" />
       <form
+        autoComplete="on"
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -98,7 +97,9 @@ export function SignupComponent() {
               onChange: z.string().min(1, "Name is required"),
             }}
           >
-            {(field) => <field.TextField label="Username" />}
+            {(field) => (
+              <field.TextField label="Username" name="username" autoComplete="username" />
+            )}
           </form.AppField>
 
           <form.AppField
@@ -107,7 +108,9 @@ export function SignupComponent() {
               onChange: z.email("Invalid email address"),
             }}
           >
-            {(field) => <field.EmailField />}
+            {(field) => (
+              <field.EmailField autoComplete="section-signup email" inputMode="email" />
+            )}
           </form.AppField>
 
           <form.AppField
@@ -116,7 +119,13 @@ export function SignupComponent() {
               onChange: z.string().min(8, "Password must be at least 8 characters"),
             }}
           >
-            {(field) => <field.PasswordField label="Password" showPassword={showPassword} />}
+            {(field) => (
+              <field.PasswordField
+                label="Password"
+                showPassword={showPassword}
+                autoComplete="section-signup new-password"
+              />
+            )}
           </form.AppField>
 
           <form.AppField
@@ -128,7 +137,11 @@ export function SignupComponent() {
             }}
           >
             {(field) => (
-              <field.PasswordField label="Confirm password" showPassword={showPassword} />
+              <field.PasswordField
+                label="Confirm password"
+                showPassword={showPassword}
+                autoComplete="section-signup new-password"
+              />
             )}
           </form.AppField>
 
@@ -141,6 +154,7 @@ export function SignupComponent() {
                 type="checkbox"
                 id="showPassword"
                 name="showPassword"
+                autoComplete="off"
                 className="checkbox-primary checkbox ring-primary ring-1"
                 checked={showPassword}
                 onChange={() => setShowPassword(!showPassword)}

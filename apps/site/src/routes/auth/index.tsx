@@ -38,8 +38,7 @@ export const Route = createFileRoute("/auth/")({
 export function SigninPage() {
   const [showSigninForm, setShowSigninForm] = useState(false);
   const { data: sessions = [], isLoading } = useQuery(deviceSessionsQueryOptions);
-
-  const hasDeviceSessions = sessions.length > 0 && !showSigninForm;
+  const hasDeviceSessions = sessions.length > 0;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
@@ -49,12 +48,12 @@ export function SigninPage() {
             <div className="flex h-full flex-1 items-center justify-center">
               <Spinner className="size-6" />
             </div>
-          ) : hasDeviceSessions ? (
-            <SessionPicker onUseAnotherAccount={() => setShowSigninForm(true)} />
+          ) : !hasDeviceSessions ? (
+            <SigninComponent />
+          ) : showSigninForm ? (
+            <SigninComponent onBackToSessions={() => setShowSigninForm(false)} />
           ) : (
-            <SigninComponent
-              onBackToSessions={sessions.length > 0 ? () => setShowSigninForm(false) : undefined}
-            />
+            <SessionPicker onUseAnotherAccount={() => setShowSigninForm(true)} />
           )}
         </div>
         <Footer />

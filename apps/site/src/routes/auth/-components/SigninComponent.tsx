@@ -64,6 +64,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
     <div className="flex h-full w-full items-center justify-evenly gap-2 p-5">
       <img src="/logo.svg" alt="logo" className="hidden w-[30%] object-cover md:flex" />
       <form
+        autoComplete="on"
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -90,7 +91,9 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
               onChange: z.string().min(1, "Email is required"),
             }}
           >
-            {(field) => <field.TextField label="Email or username" />}
+            {(field) => (
+              <field.TextField label="Email or username" name="username" autoComplete="username" />
+            )}
           </form.AppField>
 
           <form.AppField
@@ -99,7 +102,13 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
               onChange: z.string().min(8, "Password must be at least 8 characters"),
             }}
           >
-            {(field) => <field.PasswordField label="Password" showPassword={showPassword} />}
+            {(field) => (
+              <field.PasswordField
+                label="Password"
+                showPassword={showPassword}
+                autoComplete="current-password"
+              />
+            )}
           </form.AppField>
 
           <div className="w-full">
@@ -111,6 +120,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
                 type="checkbox"
                 id="showPassword"
                 name="showPassword"
+                autoComplete="off"
                 className="checkbox-primary checkbox ring-primary ring-1"
                 checked={showPassword}
                 onChange={() => setShowPassword(!showPassword)}
