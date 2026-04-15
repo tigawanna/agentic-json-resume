@@ -1,5 +1,5 @@
 import { resumeRegistry } from "@/features/resume/resume-catalog";
-import { ResumePdfDocument } from "@/features/resume/resume-pdf";
+import { ResumePdfPreviewCard } from "@/features/resume/ResumePdfPreviewCard";
 import { buildTailorPrompt } from "@/features/resume/resume-prompt";
 import {
   createDefaultResume,
@@ -17,12 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { JSONUIProvider, Renderer } from "@json-render/react";
 import { PatchDiff } from "@pierre/diffs/react";
-import { pdf } from "@react-pdf/renderer";
 import { Link } from "@tanstack/react-router";
 import { createPatch } from "diff";
 import { twMerge } from "tailwind-merge";
-import { Check, ClipboardCopy, ClipboardPaste, Download, Loader2, RefreshCw } from "lucide-react";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { Check, ClipboardCopy, ClipboardPaste } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { ResumeEditForm } from "./ResumeEditForm";
 
@@ -185,7 +184,7 @@ export function ResumeWorkbench() {
         </TabsContent>
 
         <TabsContent value="pdf" className="mt-4">
-          <PdfPreview doc={doc} templateId={templateId} />
+          <ResumePdfPreviewCard doc={doc} templateId={templateId} />
         </TabsContent>
 
         <TabsContent value="diff" className="mt-4 flex flex-col gap-4">
@@ -369,104 +368,6 @@ function JdPromptFlow({
         </>
       )}
     </div>
-  );
-}
-
-function PdfPreview({ doc, templateId }: { doc: ResumeDocumentV1; templateId: TemplateId }) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const prevUrlRef = useRef<string | null>(null);
-
-  async function generate() {
-    setGenerating(true);
-    try {
-      const blob = await pdf(<ResumePdfDocument doc={doc} templateId={templateId} />).toBlob();
-      if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
-      const url = URL.createObjectURL(blob);
-      prevUrlRef.current = url;
-      setBlobUrl(url);
-    } catch (err: unknown) {
-      toast.error("Failed to generate PDF", {
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
-    } finally {
-      setGenerating(false);
-    }
-  }
-
-  useEffect(() => {
-    void generate();
-    return () => {
-      if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function handleDownload() {
-    if (!blobUrl) return;
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = "resume.pdf";
-    a.click();
-    toast.success("PDF downloaded");
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>PDF preview</CardTitle>
-            <CardDescription>Regenerate after edits to see the latest version.</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={generating}
-              onClick={() => void generate()}
-              className="gap-1.5"
-            >
-              {generating ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <RefreshCw className="size-4" />
-              )}
-              Regenerate
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={!blobUrl || generating}
-              onClick={handleDownload}
-              className="gap-1.5"
-            >
-              <Download className="size-4" />
-              Download
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {generating && !blobUrl ? (
-          <div className="flex min-h-[600px] items-center justify-center">
-            <Loader2 className="text-base-content/40 size-8 animate-spin" />
-          </div>
-        ) : blobUrl ? (
-          <iframe
-            src={blobUrl}
-            title="PDF preview"
-            className="h-[80vh] min-h-[600px] w-full rounded-lg border"
-            data-test="pdf-preview-iframe"
-          />
-        ) : (
-          <p className="text-base-content/60 py-12 text-center text-sm">
-            Click Regenerate to build the PDF preview.
-          </p>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 

@@ -107,6 +107,36 @@ function buildProjectsChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   return c;
 }
 
+function buildTalksChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
+  const c: string[] = [];
+  if (!doc.talks.enabled) return c;
+  for (const t of doc.talks.items) {
+    pushHeading(ctx, c, t.title, "h3");
+    const meta = [t.event, t.date].filter((x) => x.trim()).join(" · ");
+    if (meta) pushText(ctx, c, meta);
+    if (t.links.length > 0) {
+      const linkIds: string[] = [];
+      for (const l of t.links) {
+        if (l.url.trim()) {
+          const lid = nid(ctx);
+          ctx.elements[lid] = el(lid, "Link", { href: l.url, label: l.label });
+          linkIds.push(lid);
+        } else if (l.label.trim()) {
+          const tid = nid(ctx);
+          ctx.elements[tid] = el(tid, "Text", { text: l.label, variant: "body" });
+          linkIds.push(tid);
+        }
+      }
+      if (linkIds.length > 0) {
+        const rowId = nid(ctx);
+        ctx.elements[rowId] = el(rowId, "Stack", { direction: "horizontal", gap: "sm" }, linkIds);
+        c.push(rowId);
+      }
+    }
+  }
+  return c;
+}
+
 function buildSkillsFlat(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   const c: string[] = [];
   if (!doc.skills.enabled) return c;
@@ -188,6 +218,8 @@ function buildSection(
       return buildEducationChildren(ctx, doc);
     case "projects":
       return buildProjectsChildren(ctx, doc);
+    case "talks":
+      return buildTalksChildren(ctx, doc);
     case "skills":
       if (skillsStyle === "flat") return buildSkillsFlat(ctx, doc);
       if (skillsStyle === "badges") return buildSkillsBadges(ctx, doc);
@@ -220,7 +252,7 @@ function buildClassicSpec(doc: ResumeDocumentV1): Spec {
 function buildSidebarSpec(doc: ResumeDocumentV1): Spec {
   const ctx: SpecCtx = { elements: {}, counter: 0 };
 
-  const mainSections: SectionKey[] = ["header", "summary", "experience"];
+  const mainSections: SectionKey[] = ["header", "summary", "experience", "talks"];
   const sidebarSections: SectionKey[] = ["skills", "education", "projects"];
 
   const mainChildren: string[] = [];
@@ -265,7 +297,7 @@ function buildAccentSpec(doc: ResumeDocumentV1): Spec {
 function buildModernSpec(doc: ResumeDocumentV1): Spec {
   const ctx: SpecCtx = { elements: {}, counter: 0 };
 
-  const leftSections: SectionKey[] = ["header", "experience", "education"];
+  const leftSections: SectionKey[] = ["header", "experience", "education", "talks"];
   const rightSections: SectionKey[] = ["summary", "skills", "projects"];
 
   const leftChildren: string[] = [];

@@ -4,7 +4,11 @@ import { db } from "@/lib/drizzle/client";
 import { resume } from "@/lib/drizzle/scheam/resume-schema";
 import { pinnedProject } from "@/lib/drizzle/scheam/github-schema";
 import { desc, eq, and } from "drizzle-orm";
-import type { ResumeDocumentV1 } from "@/features/resume/resume-schema";
+import {
+  migrateResumeDocumentV1,
+  resumeDocumentV1Schema,
+  type ResumeDocumentV1,
+} from "@/features/resume/resume-schema";
 import { buildTailorPrompt } from "@/features/resume/resume-prompt";
 
 export async function mcpListResumes(userId: string) {
@@ -42,7 +46,7 @@ export async function mcpGetResume(userId: string, resumeId: string) {
     name: row.name,
     description: row.description,
     jobDescription: row.jobDescription,
-    data: JSON.parse(row.data) as ResumeDocumentV1,
+    data: resumeDocumentV1Schema.parse(migrateResumeDocumentV1(JSON.parse(row.data))),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

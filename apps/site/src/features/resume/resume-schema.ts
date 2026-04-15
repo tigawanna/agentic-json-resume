@@ -16,6 +16,7 @@ export const SECTION_KEYS = [
   "experience",
   "education",
   "projects",
+  "talks",
   "skills",
 ] as const;
 
@@ -64,7 +65,7 @@ const educationBlock = z.object({
   items: z.array(educationItem),
 });
 
-const projectItem = z.object({
+export const projectItemSchema = z.object({
   name: z.string(),
   url: z.string(),
   homepageUrl: z.string().optional(),
@@ -72,9 +73,23 @@ const projectItem = z.object({
   tech: z.array(z.string()),
 });
 
+export type ResumeProjectItem = z.infer<typeof projectItemSchema>;
+
 const projectsBlock = z.object({
   enabled: z.boolean(),
-  items: z.array(projectItem),
+  items: z.array(projectItemSchema),
+});
+
+const talkItem = z.object({
+  title: z.string(),
+  event: z.string(),
+  date: z.string(),
+  links: z.array(linkPair),
+});
+
+const talksBlock = z.object({
+  enabled: z.boolean(),
+  items: z.array(talkItem),
 });
 
 const skillsBlock = z.object({
@@ -98,6 +113,7 @@ export const resumeDocumentV1Schema = z.object({
   experience: experienceBlock,
   education: educationBlock,
   projects: projectsBlock,
+  talks: talksBlock,
   skills: skillsBlock,
 });
 
@@ -105,7 +121,7 @@ export type ResumeDocumentV1 = z.infer<typeof resumeDocumentV1Schema>;
 
 export function parseResumeJson(raw: string): ResumeDocumentV1 {
   const parsed: unknown = JSON.parse(raw);
-  return resumeDocumentV1Schema.parse(parsed);
+  return resumeDocumentV1Schema.parse(migrateResumeDocumentV1(parsed));
 }
 
 function migrateTemplateId(parsed: unknown): unknown {
@@ -123,11 +139,47 @@ function migrateTemplateId(parsed: unknown): unknown {
   return parsed;
 }
 
+const defaultTalksBlock = (): z.infer<typeof talksBlock> => ({
+  enabled: false,
+  items: [],
+});
+
+export function migrateResumeDocumentV1(parsed: unknown): unknown {
+  const withTemplate = migrateTemplateId(parsed);
+  if (typeof withTemplate !== "object" || withTemplate === null) {
+    return withTemplate;
+  }
+  const o = withTemplate as Record<string, unknown>;
+  const out: Record<string, unknown> = { ...o };
+  if (!("talks" in out) || typeof out.talks !== "object" || out.talks === null) {
+    out.talks = defaultTalksBlock();
+  }
+  if (Array.isArray(out.sectionOrder)) {
+    const order = out.sectionOrder as unknown[];
+    const keys = SECTION_KEYS as readonly string[];
+    const seen = new Set<string>();
+    const normalized: string[] = [];
+    for (const k of order) {
+      if (typeof k === "string" && keys.includes(k) && !seen.has(k)) {
+        seen.add(k);
+        normalized.push(k);
+      }
+    }
+    for (const k of keys) {
+      if (!seen.has(k)) {
+        normalized.push(k);
+      }
+    }
+    out.sectionOrder = normalized;
+  }
+  return out;
+}
+
 export function safeParseResumeJson(
   raw: string,
 ): { ok: true; data: ResumeDocumentV1 } | { ok: false; error: string } {
   try {
-    const parsed = migrateTemplateId(JSON.parse(raw));
+    const parsed = migrateResumeDocumentV1(JSON.parse(raw));
     const r = resumeDocumentV1Schema.safeParse(parsed);
     if (r.success) return { ok: true, data: r.data };
     return { ok: false, error: r.error.message };
@@ -185,6 +237,10 @@ export function createDefaultResume(): ResumeDocumentV1 {
           tech: ["TypeScript", "TanStack Start", "React"],
         },
       ],
+    },
+    talks: {
+      enabled: false,
+      items: [],
     },
     skills: {
       enabled: true,

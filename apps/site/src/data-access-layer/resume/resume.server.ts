@@ -1,6 +1,10 @@
 import "@tanstack/react-start/server-only";
 
-import type { ResumeDocumentV1 } from "@/features/resume/resume-schema";
+import {
+  migrateResumeDocumentV1,
+  resumeDocumentV1Schema,
+  type ResumeDocumentV1,
+} from "@/features/resume/resume-schema";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/drizzle/client";
 import { resume } from "@/lib/drizzle/scheam/resume-schema";
@@ -22,7 +26,7 @@ function toDTO(row: typeof resume.$inferSelect): ResumeDTO {
     name: row.name,
     description: row.description,
     jobDescription: row.jobDescription,
-    data: JSON.parse(row.data) as ResumeDocumentV1,
+    data: resumeDocumentV1Schema.parse(migrateResumeDocumentV1(JSON.parse(row.data))),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

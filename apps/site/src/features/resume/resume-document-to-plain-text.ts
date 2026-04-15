@@ -43,6 +43,19 @@ export function resumeDocumentToPlainText(doc: ResumeDocumentV1): string {
       lines.push("");
     }
   }
+  if (doc.talks.enabled && doc.talks.items.length > 0) {
+    lines.push("Talks");
+    for (const t of doc.talks.items) {
+      const meta = [t.event, t.date].filter((x) => x.trim()).join(" · ");
+      lines.push(meta ? `${t.title} — ${meta}` : t.title);
+      for (const l of t.links) {
+        if (l.label.trim() || l.url.trim()) {
+          lines.push(`${l.label}: ${l.url}`);
+        }
+      }
+      lines.push("");
+    }
+  }
   if (doc.skills.enabled && doc.skills.groups.length > 0) {
     lines.push("Skills");
     for (const g of doc.skills.groups) {

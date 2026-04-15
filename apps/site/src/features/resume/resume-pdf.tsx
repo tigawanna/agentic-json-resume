@@ -110,6 +110,40 @@ function Projects({ doc }: { doc: ResumeDocumentV1 }) {
   );
 }
 
+function Talks({ doc }: { doc: ResumeDocumentV1 }) {
+  if (!doc.talks.enabled) return null;
+  return (
+    <View>
+      <Text style={base.h2}>Talks</Text>
+      {doc.talks.items.map((t, idx) => (
+        <View key={`${t.title}-${t.date}-${idx}`} wrap={false}>
+          <Text style={base.h3}>{t.title}</Text>
+          <Text style={base.body}>
+            {t.event}
+            {t.event && t.date ? " · " : ""}
+            {t.date}
+          </Text>
+          {t.links.length > 0 ? (
+            <View style={base.linkRow}>
+              {t.links.map((l, li) =>
+                l.url.trim() ? (
+                  <Link key={`${l.label}-${li}`} src={l.url} style={base.link}>
+                    {l.label}
+                  </Link>
+                ) : (
+                  <Text key={`${l.label}-${li}`} style={base.body}>
+                    {l.label}
+                  </Text>
+                ),
+              )}
+            </View>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function SkillsFlat({ doc }: { doc: ResumeDocumentV1 }) {
   if (!doc.skills.enabled) return null;
   const all = doc.skills.groups.flatMap((g) => g.items);
@@ -176,6 +210,7 @@ function ClassicPdf({ doc }: { doc: ResumeDocumentV1 }) {
     experience: <Experience doc={doc} />,
     education: <Education doc={doc} />,
     projects: <Projects doc={doc} />,
+    talks: <Talks doc={doc} />,
     skills: <SkillsFlat doc={doc} />,
   };
 
@@ -196,7 +231,7 @@ function SidebarPdf({ doc }: { doc: ResumeDocumentV1 }) {
     side: { flex: 1 },
   });
 
-  const mainKeys: SectionKey[] = ["summary", "experience"];
+  const mainKeys: SectionKey[] = ["summary", "experience", "talks"];
   const sideKeys: SectionKey[] = ["skills", "education", "projects"];
 
   const sectionMap: Record<SectionKey, React.ReactNode> = {
@@ -205,6 +240,7 @@ function SidebarPdf({ doc }: { doc: ResumeDocumentV1 }) {
     experience: <Experience doc={doc} />,
     education: <Education doc={doc} />,
     projects: <Projects doc={doc} />,
+    talks: <Talks doc={doc} />,
     skills: <SkillsGrouped doc={doc} />,
   };
 
@@ -315,6 +351,7 @@ function AccentPdf({ doc }: { doc: ResumeDocumentV1 }) {
         ))}
       </View>
     ) : null,
+    talks: <Talks doc={doc} />,
     skills: <SkillsComma doc={doc} />,
   };
 
@@ -345,7 +382,7 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
     },
   });
 
-  const leftKeys: SectionKey[] = ["experience", "education"];
+  const leftKeys: SectionKey[] = ["experience", "education", "talks"];
   const rightKeys: SectionKey[] = ["summary", "skills", "projects"];
 
   const buildSection = (key: SectionKey): React.ReactNode => {
@@ -405,6 +442,38 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
                 <Text style={base.body}>{p.description}</Text>
                 {p.tech.length > 0 ? (
                   <Text style={base.skillLine}>{p.tech.join(" · ")}</Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        );
+      case "talks":
+        if (!doc.talks.enabled) return null;
+        return (
+          <View>
+            <Text style={modernStyles.h2}>Talks</Text>
+            {doc.talks.items.map((t, idx) => (
+              <View key={`${t.title}-${t.date}-${idx}`} wrap={false}>
+                <Text style={base.h3}>{t.title}</Text>
+                <Text style={base.body}>
+                  {t.event}
+                  {t.event && t.date ? " · " : ""}
+                  {t.date}
+                </Text>
+                {t.links.length > 0 ? (
+                  <View style={base.linkRow}>
+                    {t.links.map((l, li) =>
+                      l.url.trim() ? (
+                        <Link key={`${l.label}-${li}`} src={l.url} style={{ ...base.link, color: MODERN_COLOR }}>
+                          {l.label}
+                        </Link>
+                      ) : (
+                        <Text key={`${l.label}-${li}`} style={base.body}>
+                          {l.label}
+                        </Text>
+                      ),
+                    )}
+                  </View>
                 ) : null}
               </View>
             ))}
@@ -474,14 +543,18 @@ const pdfTemplates: Record<TemplateId, (props: { doc: ResumeDocumentV1 }) => Rea
 export function ResumePdfDocument({
   doc,
   templateId,
+  pdfTitle,
 }: {
   doc: ResumeDocumentV1;
   templateId?: TemplateId;
+  pdfTitle?: string;
 }) {
   const tid = templateId ?? doc.meta.templateId;
   const Template = pdfTemplates[tid];
+  const title =
+    pdfTitle?.trim() || doc.header.fullName.trim() || "Resume";
   return (
-    <Document>
+    <Document title={title}>
       <Template doc={doc} />
     </Document>
   );

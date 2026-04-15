@@ -7,26 +7,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { updateResume } from "@/data-access-layer/resume/resume.functions";
 import type { ResumeDTO } from "@/data-access-layer/resume/resume.types";
+import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
+import { createSavedProject } from "@/data-access-layer/saved-project/saved-project.functions";
 import { resumeRegistry } from "@/features/resume/resume-catalog";
-import { ResumePdfDocument } from "@/features/resume/resume-pdf";
+import { ResumePdfPreviewCard } from "@/features/resume/ResumePdfPreviewCard";
 import {
   safeParseResumeJson,
   TEMPLATE_IDS,
   TEMPLATE_LABELS,
   type ResumeDocumentV1,
+  type ResumeProjectItem,
   type TemplateId,
 } from "@/features/resume/resume-schema";
 import { resumeDocumentToSpec } from "@/features/resume/resume-to-spec";
 import { ResumeEditForm } from "@/routes/_public/resume/-components/ResumeEditForm";
+import { ProjectLibraryDialog } from "./ProjectLibraryDialog";
 import { JSONUIProvider, Renderer } from "@json-render/react";
 import { PatchDiff } from "@pierre/diffs/react";
-import { pdf } from "@react-pdf/renderer";
 import { useMutation } from "@tanstack/react-query";
 import { createPatch } from "diff";
-import { Download, Loader2, RefreshCw, Save } from "lucide-react";
+import { Library, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
+import { unwrapUnknownError } from "@/utils/errors";
 
 interface SavedResumeWorkbenchProps {
   savedResume: ResumeDTO;
@@ -41,6 +45,7 @@ export function SavedResumeWorkbench({ savedResume }: SavedResumeWorkbenchProps)
   const [baselineJson, setBaselineJson] = useState<string | null>(null);
   const [importText, setImportText] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [projectLibraryOpen, setProjectLibraryOpen] = useState(false);
 
   const initialJson = useRef(JSON.stringify(initialDoc));
 
@@ -78,6 +83,19 @@ export function SavedResumeWorkbench({ savedResume }: SavedResumeWorkbenchProps)
     meta: { invalidates: [["resumes"]] },
   });
 
+  const saveProjectToLibraryMutation = useMutation({
+    mutationFn: (item: ResumeProjectItem) => createSavedProject({ data: item }),
+    onSuccess() {
+      toast.success("Saved to project library");
+    },
+    onError(err: unknown) {
+      toast.error("Failed to save to library", {
+        description: unwrapUnknownError(err).message,
+      });
+    },
+    meta: { invalidates: [[queryKeyPrefixes.savedProjects]] },
+  });
+
   const templateId = doc.meta.templateId;
 
   function setTemplate(tid: TemplateId) {
@@ -110,41 +128,37 @@ export function SavedResumeWorkbench({ savedResume }: SavedResumeWorkbenchProps)
   }
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="saved-resume-workbench">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-name" className="text-xs">
-              Name
-            </Label>
-            <Input
-              id="edit-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="max-w-md"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-desc" className="text-xs">
-              Description
-            </Label>
-            <Input
-              id="edit-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="max-w-md"
-              placeholder="Brief note about this version"
-            />
+    <>
+      <div
+        className="flex w-full flex-col gap-6 pb-24 md:pb-28"
+        data-test="saved-resume-workbench">
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-name" className="text-xs">
+                Name
+              </Label>
+              <Input
+                id="edit-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="max-w-md"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-desc" className="text-xs">
+                Description
+              </Label>
+              <Input
+                id="edit-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="max-w-md"
+                placeholder="Brief note about this version"
+              />
+            </div>
           </div>
         </div>
-        <Button
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending || !hasUnsavedChanges}
-          className="shrink-0 gap-2">
-          <Save className="size-4" />
-          {saveMutation.isPending ? "Saving..." : hasUnsavedChanges ? "Save changes" : "Saved"}
-        </Button>
-      </div>
 
       <TemplatePicker selected={templateId} onSelect={setTemplate} />
 
@@ -158,8 +172,40 @@ export function SavedResumeWorkbench({ savedResume }: SavedResumeWorkbenchProps)
           <TabsTrigger value="jd">Job description</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="edit" className="mt-4">
-          <ResumeEditForm doc={doc} onChange={setDoc} />
+        <TabsContent value="edit" className="mt-4 flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="gap-2"
+              onClick={() => setProjectLibraryOpen(true)}
+              data-test="open-project-library"
+            >
+              <Library className="size-4" />
+              Attach from library
+            </Button>
+          </div>
+          <ResumeEditForm
+            doc={doc}
+            onChange={setDoc}
+            onSaveProjectToLibrary={(item) => saveProjectToLibraryMutation.mutate(item)}
+          />
+          <ProjectLibraryDialog
+            open={projectLibraryOpen}
+            onOpenChange={setProjectLibraryOpen}
+            onAttach={(items) => {
+              setDoc((prev) => ({
+                ...prev,
+                projects: {
+                  ...prev.projects,
+                  items: [...prev.projects.items, ...items],
+                },
+              }));
+              toast.success(
+                items.length === 1 ? "Project attached" : `${items.length} projects attached`,
+              );
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
@@ -180,7 +226,7 @@ export function SavedResumeWorkbench({ savedResume }: SavedResumeWorkbenchProps)
         </TabsContent>
 
         <TabsContent value="pdf" className="mt-4">
-          <PdfPreview doc={doc} templateId={templateId} />
+          <ResumePdfPreviewCard doc={doc} templateId={templateId} resumeName={name} />
         </TabsContent>
 
         <TabsContent value="diff" className="mt-4 flex flex-col gap-4">
@@ -272,103 +318,26 @@ export function SavedResumeWorkbench({ savedResume }: SavedResumeWorkbenchProps)
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
+      </div>
 
-function PdfPreview({ doc, templateId }: { doc: ResumeDocumentV1; templateId: TemplateId }) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const prevUrlRef = useRef<string | null>(null);
-
-  async function generate() {
-    setGenerating(true);
-    try {
-      const blob = await pdf(<ResumePdfDocument doc={doc} templateId={templateId} />).toBlob();
-      if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
-      const url = URL.createObjectURL(blob);
-      prevUrlRef.current = url;
-      setBlobUrl(url);
-    } catch (err: unknown) {
-      toast.error("Failed to generate PDF", {
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
-    } finally {
-      setGenerating(false);
-    }
-  }
-
-  useEffect(() => {
-    void generate();
-    return () => {
-      if (prevUrlRef.current) URL.revokeObjectURL(prevUrlRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function handleDownload() {
-    if (!blobUrl) return;
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = "resume.pdf";
-    a.click();
-    toast.success("PDF downloaded");
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>PDF preview</CardTitle>
-            <CardDescription>Regenerate after edits to see the latest version.</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={generating}
-              onClick={() => void generate()}
-              className="gap-1.5">
-              {generating ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <RefreshCw className="size-4" />
-              )}
-              Regenerate
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={!blobUrl || generating}
-              onClick={handleDownload}
-              className="gap-1.5">
-              <Download className="size-4" />
-              Download
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {generating && !blobUrl ? (
-          <div className="flex min-h-[600px] items-center justify-center">
-            <Loader2 className="text-base-content/40 size-8 animate-spin" />
-          </div>
-        ) : blobUrl ? (
-          <iframe
-            src={blobUrl}
-            title="PDF preview"
-            className="h-[80vh] min-h-[600px] w-full rounded-lg border"
-            data-test="pdf-preview-iframe"
-          />
-        ) : (
-          <p className="text-base-content/60 py-12 text-center text-sm">
-            Click Regenerate to build the PDF preview.
-          </p>
-        )}
-      </CardContent>
-    </Card>
+      <div
+        className="border-base-300 bg-base-100/95 supports-backdrop-filter:bg-base-100/85 pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md"
+        role="region"
+        aria-label="Save resume"
+      >
+        <Button
+          type="button"
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending || !hasUnsavedChanges}
+          className="pointer-events-auto min-w-48 gap-2 shadow-lg md:min-w-56"
+          size="lg"
+          data-test="saved-resume-save-button"
+        >
+          <Save className="size-4" />
+          {saveMutation.isPending ? "Saving..." : hasUnsavedChanges ? "Save changes" : "Saved"}
+        </Button>
+      </div>
+    </>
   );
 }
 

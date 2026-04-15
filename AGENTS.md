@@ -245,3 +245,7 @@ DON'T
       toast.error("Failed to create organization", { description: String(err?.message ?? err) });
     },
 ```
+
+DO NOT manually bypass drizzle and edit the sql migratins files unless when explicitly allowed to do it go through the drizzle schema and commnads everytime
+
+DO NOT manually edit the auth.schema it should be auto genrated by the auth:migrate command

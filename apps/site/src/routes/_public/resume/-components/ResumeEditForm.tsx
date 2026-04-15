@@ -9,6 +9,7 @@ import {
   moveSectionOrder,
   SECTION_KEYS,
   type ResumeDocumentV1,
+  type ResumeProjectItem,
   type SectionKey,
 } from "@/features/resume/resume-schema";
 import { ChevronDown, ChevronUp, GripVertical, Plus, Trash2 } from "lucide-react";
@@ -81,9 +82,11 @@ function normalizeSectionOrder(order: SectionKey[]): SectionKey[] {
 export function ResumeEditForm({
   doc,
   onChange,
+  onSaveProjectToLibrary,
 }: {
   doc: ResumeDocumentV1;
   onChange: (next: ResumeDocumentV1) => void;
+  onSaveProjectToLibrary?: (item: ResumeProjectItem) => void | Promise<void>;
 }) {
   function set<K extends keyof ResumeDocumentV1>(key: K, value: ResumeDocumentV1[K]) {
     onChange({ ...doc, [key]: value });
@@ -525,6 +528,149 @@ export function ResumeEditForm({
                 </CardContent>
               </Card>
             );
+          case "talks":
+            return (
+              <Card key={sectionKey}>
+                <CardHeader>
+                  <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-1">
+                      <CardTitle>Talks</CardTitle>
+                      <SectionOrderControls
+                        sectionKey="talks"
+                        order={doc.sectionOrder}
+                        onReorder={(next) => set("sectionOrder", next)}
+                      />
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Switch
+                        checked={doc.talks.enabled}
+                        onCheckedChange={(v) => set("talks", { ...doc.talks, enabled: v })}
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-4">
+                  {doc.talks.items.map((t, i) => (
+                    <div key={i} className="border-base-300 space-y-2 rounded-lg border p-4">
+                      <Input
+                        placeholder="Title"
+                        value={t.title}
+                        onChange={(e) => {
+                          const items = [...doc.talks.items];
+                          const cur = items[i];
+                          if (cur) items[i] = { ...cur, title: e.target.value };
+                          set("talks", { ...doc.talks, items });
+                        }}
+                      />
+                      <Input
+                        placeholder="Event"
+                        value={t.event}
+                        onChange={(e) => {
+                          const items = [...doc.talks.items];
+                          const cur = items[i];
+                          if (cur) items[i] = { ...cur, event: e.target.value };
+                          set("talks", { ...doc.talks, items });
+                        }}
+                      />
+                      <Input
+                        placeholder="Date"
+                        value={t.date}
+                        onChange={(e) => {
+                          const items = [...doc.talks.items];
+                          const cur = items[i];
+                          if (cur) items[i] = { ...cur, date: e.target.value };
+                          set("talks", { ...doc.talks, items });
+                        }}
+                      />
+                      <div className="space-y-2">
+                        <Label>Links</Label>
+                        {t.links.map((link, li) => (
+                          <div key={li} className="flex gap-2">
+                            <Input
+                              placeholder="Label"
+                              value={link.label}
+                              onChange={(e) => {
+                                const items = [...doc.talks.items];
+                                const cur = items[i];
+                                if (!cur) return;
+                                const links = [...cur.links];
+                                const lc = links[li];
+                                if (lc) links[li] = { ...lc, label: e.target.value };
+                                items[i] = { ...cur, links };
+                                set("talks", { ...doc.talks, items });
+                              }}
+                            />
+                            <Input
+                              placeholder="https://"
+                              value={link.url}
+                              onChange={(e) => {
+                                const items = [...doc.talks.items];
+                                const cur = items[i];
+                                if (!cur) return;
+                                const links = [...cur.links];
+                                const lc = links[li];
+                                if (lc) links[li] = { ...lc, url: e.target.value };
+                                items[i] = { ...cur, links };
+                                set("talks", { ...doc.talks, items });
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => {
+                                const items = [...doc.talks.items];
+                                const cur = items[i];
+                                if (!cur) return;
+                                items[i] = {
+                                  ...cur,
+                                  links: cur.links.filter((_, j) => j !== li),
+                                };
+                                set("talks", { ...doc.talks, items });
+                              }}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => {
+                            const items = [...doc.talks.items];
+                            const cur = items[i];
+                            if (!cur) return;
+                            items[i] = { ...cur, links: [...cur.links, { label: "", url: "" }] };
+                            set("talks", { ...doc.talks, items });
+                          }}
+                        >
+                          <Plus className="size-4" />
+                          Add link
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      set("talks", {
+                        ...doc.talks,
+                        items: [
+                          ...doc.talks.items,
+                          { title: "", event: "", date: "", links: [] },
+                        ],
+                      })
+                    }
+                  >
+                    Add talk
+                  </Button>
+                </CardContent>
+              </Card>
+            );
           case "projects":
             return (
               <Card key={sectionKey}>
@@ -585,17 +731,50 @@ export function ResumeEditForm({
                         onChange={(e) => {
                           const items = [...doc.projects.items];
                           const cur = items[i];
-                          if (cur)
-                            items[i] = {
-                              ...cur,
-                              tech: e.target.value
-                                .split(",")
-                                .map((s) => s.trim())
-                                .filter(Boolean),
-                            };
+                          if (!cur) return;
+                          const v = e.target.value;
+                          items[i] = {
+                            ...cur,
+                            tech: v === "" ? [] : v.split(",").map((s) => s.trim()),
+                          };
+                          set("projects", { ...doc.projects, items });
+                        }}
+                        onBlur={() => {
+                          const items = [...doc.projects.items];
+                          const cur = items[i];
+                          if (!cur) return;
+                          const tech = cur.tech.map((t) => t.trim()).filter(Boolean);
+                          items[i] = { ...cur, tech };
                           set("projects", { ...doc.projects, items });
                         }}
                       />
+                      <div className="flex flex-wrap gap-2">
+                        {onSaveProjectToLibrary ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            data-test={`save-project-to-library-${i}`}
+                            onClick={() => void Promise.resolve(onSaveProjectToLibrary(p))}
+                          >
+                            Save to library
+                          </Button>
+                        ) : null}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          data-test={`remove-project-${i}`}
+                          onClick={() =>
+                            set("projects", {
+                              ...doc.projects,
+                              items: doc.projects.items.filter((_, j) => j !== i),
+                            })
+                          }
+                        >
+                          Remove project
+                        </Button>
+                      </div>
                     </div>
                   ))}
                   <Button
