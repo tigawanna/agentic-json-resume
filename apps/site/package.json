@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vp dev --port 3040",
+    "no-dev": "vp dev --port 3040",
     "build": "vp build",
     "preview": "vp preview",
     "test": "vp test run",

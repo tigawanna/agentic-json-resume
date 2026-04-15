@@ -3,7 +3,7 @@ import { createMcpServerForUser } from "@/lib/mcp/mcp-server.server";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createFileRoute } from "@tanstack/react-router";
 
-async function handleMcpRequest({ request }: { request: Request }): Promise<Response> {
+async function handleMcpRequest({ request }: { request: Request }):Promise<Response> {
   const session = await auth.api.getMcpSession({
     headers: request.headers,
   });
