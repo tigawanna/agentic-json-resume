@@ -102,8 +102,7 @@ export function SignupComponent() {
           e.stopPropagation();
           form.handleSubmit();
         }}
-        className="bg-base-300/20 flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg p-[2%] md:w-[70%] lg:w-[40%]"
-      >
+        className="bg-base-300/20 flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg p-[2%] md:w-[70%] lg:w-[40%]">
         <div className="flex h-full w-full flex-col items-center justify-center gap-4">
           <h1 className="text-4xl font-bold">Sign up</h1>
 
@@ -111,8 +110,7 @@ export function SignupComponent() {
             name="name"
             validators={{
               onChange: z.string().min(1, "Name is required"),
-            }}
-          >
+            }}>
             {(field) => (
               <field.TextField label="Username" name="username" autoComplete="username" />
             )}
@@ -122,19 +120,15 @@ export function SignupComponent() {
             name="email"
             validators={{
               onChange: z.email("Invalid email address"),
-            }}
-          >
-            {(field) => (
-              <field.EmailField autoComplete="section-signup email" inputMode="email" />
-            )}
+            }}>
+            {(field) => <field.EmailField autoComplete="section-signup email" inputMode="email" />}
           </form.AppField>
 
           <form.AppField
             name="password"
             validators={{
               onChange: z.string().min(8, "Password must be at least 8 characters"),
-            }}
-          >
+            }}>
             {(field) => (
               <field.PasswordField
                 label="Password"
@@ -150,8 +144,7 @@ export function SignupComponent() {
               onChange: z.string().min(8, "Password must be at least 8 characters"),
               onChangeListenTo: ["password"],
               onChangeAsyncDebounceMs: 500,
-            }}
-          >
+            }}>
             {(field) => (
               <field.PasswordField
                 label="Confirm password"
@@ -193,15 +186,17 @@ export function SignupComponent() {
           type="button"
           disabled={githubMutation.isPending || mutation.isPending}
           onClick={() => githubMutation.mutate()}
-          className="btn btn-ghost border border-gray-600 w-full gap-2 hover:border-gray-400 hover:bg-gray-900"
-        >
+          className="btn btn-ghost border border-gray-600 w-full gap-2 hover:border-gray-400 hover:bg-gray-900">
           <Github className="size-5" />
           <span className="font-semibold">Continue with GitHub</span>
         </button>
 
         <div className="flex items-center justify-center gap-1 text-sm">
           <span className="text-gray-400">Already have an account?</span>
-          <Link to="/auth" search={{ returnTo: returnTo ?? "/" }} className="link link-primary font-semibold">
+          <Link
+            to="/auth"
+            search={{ returnTo: returnTo ?? "/" }}
+            className="link link-primary font-semibold">
             Sign in
           </Link>
         </div>
