@@ -9,7 +9,7 @@ import { FileText, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ResumeListCard } from "./-components/ResumeListCard";
 
-export const Route = createFileRoute("/_dashboard/resume/")({
+export const Route = createFileRoute("/_dashboard/resumes/")({
   component: ResumeListPage,
   loader: ({ context }) => context.queryClient.ensureQueryData(resumeListQueryOptions),
   head: () => ({
@@ -35,7 +35,7 @@ function ResumeListPage() {
     },
     onSuccess(result) {
       toast.success("Resume created");
-      navigate({ to: "/resume/$resumeId", params: { resumeId: result.id } });
+      navigate({ to: "/resumes/$resumeId", params: { resumeId: result.id } });
     },
     onError(err: unknown) {
       toast.error("Failed to create resume", {
@@ -46,7 +46,7 @@ function ResumeListPage() {
   });
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="resume-list-page">
+    <div className="flex w-full min-h-screen flex-col gap-6" data-test="resume-list-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Resumes</h1>
@@ -59,19 +59,22 @@ function ResumeListPage() {
           New Resume
         </Button>
       </div>
-
-      {resumes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-4 py-16">
-          <FileText className="text-muted-foreground size-12" />
-          <p className="text-muted-foreground text-sm">No resumes yet. Create your first one!</p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {resumes.map((resume) => (
-            <ResumeListCard key={resume.id} resume={resume} />
-          ))}
-        </div>
-      )}
+      <div className="flex-1" data-test="resume-list">
+        {resumes.length === 0 ? (
+          <div className="flex flex-col h-full items-center justify-center gap-4 py-16">
+          <div className="flex flex-col items-center justify-center gap-4 py-16">
+            <FileText className="text-muted-foreground size-12" />
+            <p className="text-muted-foreground text-sm">No resumes yet. Create your first one!</p>
+          </div>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {resumes.map((resume) => (
+              <ResumeListCard key={resume.id} resume={resume} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

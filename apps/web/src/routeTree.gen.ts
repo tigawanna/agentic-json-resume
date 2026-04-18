@@ -23,9 +23,9 @@ import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dash
 import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known/oauth-protected-resource'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/_dashboard/settings/index'
-import { Route as DashboardResumeIndexRouteImport } from './routes/_dashboard/resume/index'
+import { Route as DashboardResumesIndexRouteImport } from './routes/_dashboard/resumes/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as DashboardResumeResumeIdIndexRouteImport } from './routes/_dashboard/resume/$resumeId/index'
+import { Route as DashboardResumesResumeIdIndexRouteImport } from './routes/_dashboard/resumes/$resumeId/index'
 
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
@@ -97,9 +97,9 @@ const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
-const DashboardResumeIndexRoute = DashboardResumeIndexRouteImport.update({
-  id: '/resume/',
-  path: '/resume/',
+const DashboardResumesIndexRoute = DashboardResumesIndexRouteImport.update({
+  id: '/resumes/',
+  path: '/resumes/',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -107,10 +107,10 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardResumeResumeIdIndexRoute =
-  DashboardResumeResumeIdIndexRouteImport.update({
-    id: '/resume/$resumeId/',
-    path: '/resume/$resumeId/',
+const DashboardResumesResumeIdIndexRoute =
+  DashboardResumesResumeIdIndexRouteImport.update({
+    id: '/resumes/$resumeId/',
+    path: '/resumes/$resumeId/',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
 
@@ -127,9 +127,9 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/resume/': typeof DashboardResumeIndexRoute
+  '/resumes/': typeof DashboardResumesIndexRoute
   '/settings/': typeof DashboardSettingsIndexRoute
-  '/resume/$resumeId/': typeof DashboardResumeResumeIdIndexRoute
+  '/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -143,9 +143,9 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/resume': typeof DashboardResumeIndexRoute
+  '/resumes': typeof DashboardResumesIndexRoute
   '/settings': typeof DashboardSettingsIndexRoute
-  '/resume/$resumeId': typeof DashboardResumeResumeIdIndexRoute
+  '/resumes/$resumeId': typeof DashboardResumesResumeIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -163,9 +163,9 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/_dashboard/resume/': typeof DashboardResumeIndexRoute
+  '/_dashboard/resumes/': typeof DashboardResumesIndexRoute
   '/_dashboard/settings/': typeof DashboardSettingsIndexRoute
-  '/_dashboard/resume/$resumeId/': typeof DashboardResumeResumeIdIndexRoute
+  '/_dashboard/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -182,9 +182,9 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
-    | '/resume/'
+    | '/resumes/'
     | '/settings/'
-    | '/resume/$resumeId/'
+    | '/resumes/$resumeId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -198,9 +198,9 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth'
     | '/api/auth/$'
-    | '/resume'
+    | '/resumes'
     | '/settings'
-    | '/resume/$resumeId'
+    | '/resumes/$resumeId'
   id:
     | '__root__'
     | '/'
@@ -217,9 +217,9 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
-    | '/_dashboard/resume/'
+    | '/_dashboard/resumes/'
     | '/_dashboard/settings/'
-    | '/_dashboard/resume/$resumeId/'
+    | '/_dashboard/resumes/$resumeId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -333,11 +333,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
-    '/_dashboard/resume/': {
-      id: '/_dashboard/resume/'
-      path: '/resume'
-      fullPath: '/resume/'
-      preLoaderRoute: typeof DashboardResumeIndexRouteImport
+    '/_dashboard/resumes/': {
+      id: '/_dashboard/resumes/'
+      path: '/resumes'
+      fullPath: '/resumes/'
+      preLoaderRoute: typeof DashboardResumesIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
     '/api/auth/$': {
@@ -347,11 +347,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_dashboard/resume/$resumeId/': {
-      id: '/_dashboard/resume/$resumeId/'
-      path: '/resume/$resumeId'
-      fullPath: '/resume/$resumeId/'
-      preLoaderRoute: typeof DashboardResumeResumeIdIndexRouteImport
+    '/_dashboard/resumes/$resumeId/': {
+      id: '/_dashboard/resumes/$resumeId/'
+      path: '/resumes/$resumeId'
+      fullPath: '/resumes/$resumeId/'
+      preLoaderRoute: typeof DashboardResumesResumeIdIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
   }
@@ -360,17 +360,17 @@ declare module '@tanstack/react-router' {
 interface DashboardLayoutRouteChildren {
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
-  DashboardResumeIndexRoute: typeof DashboardResumeIndexRoute
+  DashboardResumesIndexRoute: typeof DashboardResumesIndexRoute
   DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
-  DashboardResumeResumeIdIndexRoute: typeof DashboardResumeResumeIdIndexRoute
+  DashboardResumesResumeIdIndexRoute: typeof DashboardResumesResumeIdIndexRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardProfileRoute: DashboardProfileRoute,
-  DashboardResumeIndexRoute: DashboardResumeIndexRoute,
+  DashboardResumesIndexRoute: DashboardResumesIndexRoute,
   DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
-  DashboardResumeResumeIdIndexRoute: DashboardResumeResumeIdIndexRoute,
+  DashboardResumesResumeIdIndexRoute: DashboardResumesResumeIdIndexRoute,
 }
 
 const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(

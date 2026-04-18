@@ -6,7 +6,7 @@ import { ResumeEditTab } from "./-components/ResumeEditTab";
 import { ResumeJsonTab } from "./-components/ResumeJsonTab";
 import { ResumePreviewTab } from "./-components/ResumePreviewTab";
 
-export const Route = createFileRoute("/_dashboard/resume/$resumeId/")({
+export const Route = createFileRoute("/_dashboard/resumes/$resumeId/")({
   component: ResumeWorkbench,
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(resumeDetailQueryOptions(params.resumeId)),

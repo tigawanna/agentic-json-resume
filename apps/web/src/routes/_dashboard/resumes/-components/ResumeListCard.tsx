@@ -28,7 +28,7 @@ export function ResumeListCard({ resume }: ResumeListCardProps) {
 
   return (
     <Card className="group relative" data-test={`resume-card-${resume.id}`}>
-      <Link to="/resume/$resumeId" params={{ resumeId: resume.id }} className="block">
+      <Link to="/resumes/$resumeId" params={{ resumeId: resume.id }} className="block">
         <CardHeader>
           <div className="flex items-start gap-3">
             <FileText className="text-primary mt-0.5 size-5 shrink-0" />
