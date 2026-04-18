@@ -77,7 +77,8 @@ export function ResumePdfPreviewCard({
               size="sm"
               disabled={generating}
               onClick={() => void generate()}
-              className="gap-1.5">
+              className="gap-1.5"
+            >
               {generating ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
@@ -90,7 +91,8 @@ export function ResumePdfPreviewCard({
               size="sm"
               disabled={!blobUrl || generating}
               onClick={handleDownload}
-              className="gap-1.5">
+              className="gap-1.5"
+            >
               <Download className="size-4" />
               Download
             </Button>
@@ -99,14 +101,14 @@ export function ResumePdfPreviewCard({
       </CardHeader>
       <CardContent>
         {generating && !blobUrl ? (
-          <div className="flex min-h-[600px] items-center justify-center">
+          <div className="flex min-h-150 items-center justify-center">
             <Loader2 className="text-base-content/40 size-8 animate-spin" />
           </div>
         ) : blobUrl ? (
           <iframe
             src={blobUrl}
             title={fileLabel}
-            className="h-[80vh] min-h-[600px] w-full rounded-lg border"
+            className="h-[80vh] min-h-150 w-full rounded-lg border"
             data-test="pdf-preview-iframe"
           />
         ) : (

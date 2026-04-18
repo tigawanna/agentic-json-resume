@@ -1,5 +1,6 @@
 import type { ResumeDocumentV1 } from "./resume-schema";
 
+// oxlint-disable-next-line no-control-regex
 const ILLEGAL_FILE_CHARS = /[<>:"/\\|?*\u0000-\u001f]/g;
 
 export function resumePdfFileStem(resumeName: string | undefined, doc: ResumeDocumentV1): string {

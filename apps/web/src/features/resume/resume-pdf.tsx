@@ -22,7 +22,6 @@ const base = StyleSheet.create({
   linkRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 4 },
   link: { fontSize: 9, color: "#2563eb", marginRight: 8 },
   skillLine: { fontSize: 9, lineHeight: 1.4, color: "#333" },
-  separator: { borderBottomWidth: 0.5, borderBottomColor: "#ddd", marginVertical: 6 },
 });
 
 function ContactLine({ doc }: { doc: ResumeDocumentV1 }) {
@@ -466,7 +465,8 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
                         <Link
                           key={`${l.label}-${li}`}
                           src={l.url}
-                          style={{ ...base.link, color: MODERN_COLOR }}>
+                          style={{ ...base.link, color: MODERN_COLOR }}
+                        >
                           {l.label}
                         </Link>
                       ) : (
