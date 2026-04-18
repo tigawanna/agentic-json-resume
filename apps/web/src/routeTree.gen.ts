@@ -18,13 +18,14 @@ import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthGithubRouteImport } from './routes/auth/github'
 import { Route as PublicWorkbenchRouteImport } from './routes/_public/workbench'
-import { Route as DashboardResumeRouteImport } from './routes/_dashboard/resume'
 import { Route as DashboardProfileRouteImport } from './routes/_dashboard/profile'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
 import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known/oauth-protected-resource'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/_dashboard/settings/index'
+import { Route as DashboardResumeIndexRouteImport } from './routes/_dashboard/resume/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as DashboardResumeResumeIdIndexRouteImport } from './routes/_dashboard/resume/$resumeId/index'
 
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
@@ -69,11 +70,6 @@ const PublicWorkbenchRoute = PublicWorkbenchRouteImport.update({
   path: '/workbench',
   getParentRoute: () => PublicLayoutRoute,
 } as any)
-const DashboardResumeRoute = DashboardResumeRouteImport.update({
-  id: '/resume',
-  path: '/resume',
-  getParentRoute: () => DashboardLayoutRoute,
-} as any)
 const DashboardProfileRoute = DashboardProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -101,11 +97,22 @@ const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardResumeIndexRoute = DashboardResumeIndexRouteImport.update({
+  id: '/resume/',
+  path: '/resume/',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardResumeResumeIdIndexRoute =
+  DashboardResumeResumeIdIndexRouteImport.update({
+    id: '/resume/$resumeId/',
+    path: '/resume/$resumeId/',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -115,13 +122,14 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/profile': typeof DashboardProfileRoute
-  '/resume': typeof DashboardResumeRoute
   '/workbench': typeof PublicWorkbenchRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/resume/': typeof DashboardResumeIndexRoute
   '/settings/': typeof DashboardSettingsIndexRoute
+  '/resume/$resumeId/': typeof DashboardResumeResumeIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -130,13 +138,14 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/profile': typeof DashboardProfileRoute
-  '/resume': typeof DashboardResumeRoute
   '/workbench': typeof PublicWorkbenchRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/resume': typeof DashboardResumeIndexRoute
   '/settings': typeof DashboardSettingsIndexRoute
+  '/resume/$resumeId': typeof DashboardResumeResumeIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,13 +158,14 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_dashboard/profile': typeof DashboardProfileRoute
-  '/_dashboard/resume': typeof DashboardResumeRoute
   '/_public/workbench': typeof PublicWorkbenchRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_dashboard/resume/': typeof DashboardResumeIndexRoute
   '/_dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/_dashboard/resume/$resumeId/': typeof DashboardResumeResumeIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,13 +177,14 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/profile'
-    | '/resume'
     | '/workbench'
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
+    | '/resume/'
     | '/settings/'
+    | '/resume/$resumeId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -182,13 +193,14 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/profile'
-    | '/resume'
     | '/workbench'
     | '/auth/github'
     | '/auth/signup'
     | '/auth'
     | '/api/auth/$'
+    | '/resume'
     | '/settings'
+    | '/resume/$resumeId'
   id:
     | '__root__'
     | '/'
@@ -200,13 +212,14 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_dashboard/dashboard'
     | '/_dashboard/profile'
-    | '/_dashboard/resume'
     | '/_public/workbench'
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
+    | '/_dashboard/resume/'
     | '/_dashboard/settings/'
+    | '/_dashboard/resume/$resumeId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -285,13 +298,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicWorkbenchRouteImport
       parentRoute: typeof PublicLayoutRoute
     }
-    '/_dashboard/resume': {
-      id: '/_dashboard/resume'
-      path: '/resume'
-      fullPath: '/resume'
-      preLoaderRoute: typeof DashboardResumeRouteImport
-      parentRoute: typeof DashboardLayoutRoute
-    }
     '/_dashboard/profile': {
       id: '/_dashboard/profile'
       path: '/profile'
@@ -327,6 +333,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_dashboard/resume/': {
+      id: '/_dashboard/resume/'
+      path: '/resume'
+      fullPath: '/resume/'
+      preLoaderRoute: typeof DashboardResumeIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -334,21 +347,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_dashboard/resume/$resumeId/': {
+      id: '/_dashboard/resume/$resumeId/'
+      path: '/resume/$resumeId'
+      fullPath: '/resume/$resumeId/'
+      preLoaderRoute: typeof DashboardResumeResumeIdIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
   }
 }
 
 interface DashboardLayoutRouteChildren {
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
-  DashboardResumeRoute: typeof DashboardResumeRoute
+  DashboardResumeIndexRoute: typeof DashboardResumeIndexRoute
   DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
+  DashboardResumeResumeIdIndexRoute: typeof DashboardResumeResumeIdIndexRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardProfileRoute: DashboardProfileRoute,
-  DashboardResumeRoute: DashboardResumeRoute,
+  DashboardResumeIndexRoute: DashboardResumeIndexRoute,
   DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
+  DashboardResumeResumeIdIndexRoute: DashboardResumeResumeIdIndexRoute,
 }
 
 const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(

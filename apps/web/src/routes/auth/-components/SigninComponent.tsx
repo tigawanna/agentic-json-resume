@@ -2,7 +2,7 @@ import { useAppForm } from "@/lib/tanstack/form";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Github } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -50,6 +50,21 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
       await router.invalidate();
       await qc.fetchQuery(viewerqueryOptions);
       navigate({ to: returnTo || "/", search: { returnTo: returnTo || "/" } });
+    },
+  });
+
+  const githubMutation = useMutation({
+    mutationFn: async () => {
+      await authClient.signIn.social({
+        provider: "github",
+        callbackURL: returnTo || "/",
+      });
+    },
+    onError: async (error: unknown) => {
+      toast.error("GitHub sign-in failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+        duration: 10_000,
+      });
     },
   });
 
@@ -133,10 +148,26 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
           <form.SubmitButton label="Sign in" className="w-full" />
         </form.AppForm>
 
+        <div className="flex w-full items-center gap-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-400 to-transparent" />
+          <span className="text-xs font-medium text-gray-500">OR</span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-400 to-transparent" />
+        </div>
+
+        <button
+          type="button"
+          disabled={githubMutation.isPending || mutation.isPending}
+          onClick={() => githubMutation.mutate()}
+          className="btn btn-ghost border border-gray-600 w-full gap-2 hover:border-gray-400 hover:bg-gray-900"
+        >
+          <Github className="size-5" />
+          <span className="font-semibold">Continue with GitHub</span>
+        </button>
+
         <div className="flex w-full flex-col items-center justify-center gap-4">
-          <div className="flex items-center gap-1">
-            <span>Don&apos;t have an account?</span>
-            <Link to="/auth/signup" search={{ returnTo }} className="link link-primary">
+          <div className="flex items-center justify-center gap-1 text-sm">
+            <span className="text-gray-400">Don&apos;t have an account?</span>
+            <Link to="/auth/signup" search={{ returnTo }} className="link link-primary font-semibold">
               Sign up
             </Link>
           </div>
