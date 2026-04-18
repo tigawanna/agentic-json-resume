@@ -12,7 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { resumeDetailToDocument } from "@/data-access-layer/resume/resume-converters";
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
-import { safeParseResumeJson, type ResumeDocumentV1 } from "@/features/resume/resume-schema";
+import {
+  resumeDocumentV1Schema,
+  safeParseResumeJson,
+  type ResumeDocumentV1,
+} from "@/features/resume/resume-schema";
+import { useDebouncedValue } from "@/hooks/use-debouncer";
 import type { JsonValue } from "@visual-json/core";
 import { DiffView, JsonEditor } from "@visual-json/react";
 import {
@@ -320,6 +325,20 @@ export function ResumeJsonTab({ resume, onImport }: ResumeJsonTabProps) {
 
   const dropRef = useRef<HTMLDivElement>(null);
 
+  // Debounce jsonValue changes so we don't validate on every keystroke
+  const { debouncedValue: debouncedJson } = useDebouncedValue(jsonValue, 500);
+  const lastPropagatedRef = useRef<JsonValue>(jsonValue);
+
+  // Propagate valid edits back to parent (marks form dirty + updates pendingDoc)
+  useEffect(() => {
+    if (debouncedJson === lastPropagatedRef.current) return;
+    const result = resumeDocumentV1Schema.safeParse(debouncedJson);
+    if (result.success) {
+      lastPropagatedRef.current = debouncedJson;
+      onImport?.(result.data);
+    }
+  }, [debouncedJson, onImport]);
+
   /* ---- helpers ---- */
 
   function loadAndValidateJson(text: string) {
@@ -469,7 +488,10 @@ export function ResumeJsonTab({ resume, onImport }: ResumeJsonTabProps) {
           <div className="flex h-full p-5" style={VJ_THEME_VARS}>
             <JsonEditor
               value={jsonValue}
-              onChange={setJsonValue}
+              onChange={(v) => {
+                setJsonValue(v);
+                setRawText(JSON.stringify(v, null, 2));
+              }}
               treeShowValues={treeShowValues}
               treeShowCounts={treeShowCounts}
               editorShowDescriptions={editorShowDescriptions}
