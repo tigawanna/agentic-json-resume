@@ -110,7 +110,7 @@ export function PickFromExistingDialog<T>({
           />
         </div>
 
-        <ScrollArea className="h-[320px]">
+        <ScrollArea className="h-80">
           {query.isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="text-muted-foreground size-5 animate-spin" />
@@ -131,14 +131,16 @@ export function PickFromExistingDialog<T>({
                       isSelected ? "bg-accent" : ""
                     }`}
                     onClick={() => toggleItem(item)}
-                    data-test={`pick-item-${item.id}`}>
+                    data-test={`pick-item-${item.id}`}
+                  >
                     {multi && (
                       <div
                         className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-sm border ${
                           isSelected
                             ? "border-primary bg-primary text-primary-foreground"
                             : "border-muted-foreground"
-                        }`}>
+                        }`}
+                      >
                         {isSelected && <Check className="size-3" />}
                       </div>
                     )}
@@ -167,7 +169,8 @@ export function PickFromExistingDialog<T>({
                 onOpenChange(false);
                 setSearch("");
                 setSelected(new Set());
-              }}>
+              }}
+            >
               Cancel
             </Button>
             <Button size="sm" disabled={selected.size === 0} onClick={handleConfirm}>
