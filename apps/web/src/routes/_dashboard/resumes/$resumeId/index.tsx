@@ -1,8 +1,9 @@
+import { ResumeJsonTab } from "@/components/resume/resume-json-editor";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { resumeDetailToDocument } from "@/data-access-layer/resume/resume-converters";
 import { resumeDetailQueryOptions } from "@/data-access-layer/resume/resume-query-options";
-import { replaceResumeDoc, updateResumeMeta } from "@/data-access-layer/resume/resume.functions";
+import { updateResumeMeta } from "@/data-access-layer/resume/resume.functions";
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
 import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
 import {
@@ -21,7 +22,6 @@ import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 import { PromptCopySection } from "./-components/PromptCopySection";
 import { ResumeEditTab } from "./-components/ResumeEditTab";
-import { ResumeJsonTab } from "./-components/ResumeJsonTab";
 import { ResumePreviewTab } from "./-components/ResumePreviewTab";
 
 export const Route = createFileRoute("/_dashboard/resumes/$resumeId/")({
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_dashboard/resumes/$resumeId/")({
   head: () => ({
     meta: [{ title: "Edit Resume", description: "Resume workbench" }],
   }),
-  ssr:false
+  ssr: false,
 });
 
 // ─── Template Picker ────────────────────────────────────────
@@ -95,7 +95,6 @@ function ResumeWorkbench() {
   const [initialTemplateId] = useState<TemplateId>(
     (serverResume?.templateId as TemplateId) ?? "classic",
   );
-  const [pendingDoc, setPendingDoc] = useState<ResumeDocumentV1 | null>(null);
 
   const displayResume = resume ?? serverResume;
 
@@ -103,8 +102,8 @@ function ResumeWorkbench() {
     return <p className="text-muted-foreground py-8 text-center">Resume not found.</p>;
   }
 
-  const doc = pendingDoc ?? resumeDetailToDocument(displayResume);
-  const hasUnsavedChanges = pendingDoc !== null || selectedTemplate !== initialTemplateId;
+  const doc = resumeDetailToDocument(displayResume);
+  const hasTemplateChange = selectedTemplate !== initialTemplateId;
 
   return (
     <ResumeWorkbenchInner
@@ -112,10 +111,8 @@ function ResumeWorkbench() {
       resume={displayResume}
       selectedTemplate={selectedTemplate}
       setSelectedTemplate={setSelectedTemplate}
-      pendingDoc={pendingDoc}
-      setPendingDoc={setPendingDoc}
       doc={doc}
-      hasUnsavedChanges={hasUnsavedChanges}
+      hasTemplateChange={hasTemplateChange}
     />
   );
 }
@@ -125,10 +122,8 @@ interface ResumeWorkbenchInnerProps {
   resume: ResumeDetailDTO;
   selectedTemplate: TemplateId;
   setSelectedTemplate: (t: TemplateId) => void;
-  pendingDoc: ResumeDocumentV1 | null;
-  setPendingDoc: (doc: ResumeDocumentV1 | null) => void;
   doc: ResumeDocumentV1;
-  hasUnsavedChanges: boolean;
+  hasTemplateChange: boolean;
 }
 
 function ResumeWorkbenchInner({
@@ -136,32 +131,19 @@ function ResumeWorkbenchInner({
   resume,
   selectedTemplate,
   setSelectedTemplate,
-  pendingDoc,
-  setPendingDoc,
   doc,
-  hasUnsavedChanges,
+  hasTemplateChange,
 }: ResumeWorkbenchInnerProps) {
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const promises: Promise<unknown>[] = [];
-
-      if (selectedTemplate !== (resume.templateId as TemplateId)) {
-        promises.push(updateResumeMeta({ data: { id: resumeId, templateId: selectedTemplate } }));
-      }
-
-      if (pendingDoc) {
-        promises.push(replaceResumeDoc({ data: { id: resumeId, doc: pendingDoc } }));
-      }
-
-      await Promise.all(promises);
+      await updateResumeMeta({ data: { id: resumeId, templateId: selectedTemplate } });
     },
     onSuccess() {
-      setPendingDoc(null);
       resumeCollection.utils.writeUpdate({
         id: resumeId,
         templateId: selectedTemplate,
       });
-      toast.success("Resume saved");
+      toast.success("Template saved");
     },
     onError(err: unknown) {
       toast.error("Failed to save", {
@@ -199,12 +181,12 @@ function ResumeWorkbenchInner({
           <Button
             type="button"
             onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending || !hasUnsavedChanges}
+            disabled={saveMutation.isPending || !hasTemplateChange}
             className="gap-2"
             size="sm"
             data-test="resume-save-button">
             <Save className="size-4" />
-            {saveMutation.isPending ? "Saving..." : hasUnsavedChanges ? "Save changes" : "Saved"}
+            {saveMutation.isPending ? "Saving..." : hasTemplateChange ? "Save template" : "Saved"}
           </Button>
         </div>
 
@@ -217,11 +199,7 @@ function ResumeWorkbenchInner({
         </TabsContent>
 
         <TabsContent value="json" forceMount className="mt-4 data-[state=inactive]:hidden">
-          <ResumeJsonTab
-            resumeId={resumeId}
-            setPendingDoc={setPendingDoc}
-            setSelectedTemplate={setSelectedTemplate}
-          />
+          <ResumeJsonTab resumeId={resumeId} />
         </TabsContent>
 
         <TabsContent value="prompt" className="mt-4">

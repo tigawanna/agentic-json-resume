@@ -1,0 +1,20 @@
+/** CSS variable mapping for visual-json to use our theme */
+export const VJ_THEME_VARS = {
+  "--vj-bg": "var(--background)",
+  "--vj-bg-panel": "var(--background)",
+  "--vj-bg-hover": "var(--accent)",
+  "--vj-bg-selected": "var(--primary)",
+  "--vj-bg-selected-muted": "var(--accent)",
+  "--vj-text-selected": "var(--primary-foreground)",
+  "--vj-border": "var(--border)",
+  "--vj-border-subtle": "var(--border)",
+  "--vj-text": "var(--foreground)",
+  "--vj-text-muted": "var(--muted-foreground)",
+  "--vj-text-dim": "var(--muted-foreground)",
+  "--vj-text-dimmer": "var(--muted-foreground)",
+  "--vj-input-bg": "var(--input)",
+  "--vj-input-border": "var(--border)",
+  "--vj-accent": "var(--primary)",
+  "--vj-accent-muted": "var(--accent)",
+  "--vj-font": "var(--font-mono)",
+} as React.CSSProperties;

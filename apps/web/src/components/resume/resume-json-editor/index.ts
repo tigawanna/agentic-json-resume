@@ -1,0 +1,1 @@
+export { ResumeJsonTab } from "./ResumeJsonTab";
