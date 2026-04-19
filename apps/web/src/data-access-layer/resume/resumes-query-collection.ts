@@ -1,5 +1,5 @@
 import { queryClient } from "@/lib/tanstack/query/queryclient";
-import { createCollection, eq, parseLoadSubsetOptions, Query } from "@tanstack/db";
+import { createCollection, parseLoadSubsetOptions } from "@tanstack/db";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { getResume } from "./resume.functions";
 
@@ -26,4 +26,3 @@ export const resumeCollection = createCollection(
     queryClient,
   }),
 );
-

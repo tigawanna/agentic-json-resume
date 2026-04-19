@@ -1,5 +1,5 @@
 import { ParsedOrderBy, parseWhereExpression } from "@tanstack/db";
-import { BasicExpression } from "node_modules/@tanstack/db/dist/esm/query/ir";
+
 
 type SortDirection = { asc?: string[]; desc?: string[] };
 

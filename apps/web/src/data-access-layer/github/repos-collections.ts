@@ -1,13 +1,13 @@
+import { authClient } from "@/lib/better-auth/client";
 import { tanstackDBPersistence } from "@/lib/tanstack/db/browser-presistor";
 import { queryClient } from "@/lib/tanstack/query/queryclient";
 import { persistedCollectionOptions } from "@tanstack/browser-db-sqlite-persistence";
 import { createCollection } from "@tanstack/db";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
-import { getRepositories, RepositoryResponse } from "./repos.octo";
 import { queryOptions } from "@tanstack/react-query";
-import { authClient } from "@/lib/better-auth/client";
-import { queryKeyPrefixes } from "../query-keys";
 import { redirect } from "@tanstack/react-router";
+import { queryKeyPrefixes } from "../query-keys";
+import { getRepositories, RepositoryResponse } from "./repos.octo";
 
 export const githubAccessTokenQueryOptions = queryOptions({
   queryKey: [queryKeyPrefixes.githubAccessToken],
@@ -34,7 +34,7 @@ export const githubReposCollection = createCollection(
         });
 
         if (acesssTokenResponse.error || !acesssTokenResponse.data?.accessToken) {
-          throw redirect({to:"/auth/github",search:{returnTo:"/dashboard/projects"}});
+          throw redirect({ to: "/auth/github", search: { returnTo: "/dashboard/projects" } });
         }
         const data = await getRepositories(acesssTokenResponse.data.accessToken);
         return data;

@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_dashboard/projects/")({
 
 function RouteComponent() {
   return (
-    <div className="w-full min-h-screen flex flex-col justify-center">
+    <div className="w-full min-h-screen flex flex-col">
       <ProjectsAndRepositries />
     </div>
   );
