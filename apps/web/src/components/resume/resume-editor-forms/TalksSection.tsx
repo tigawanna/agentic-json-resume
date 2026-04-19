@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { createTalk, editTalk, removeTalk } from "@/data-access-layer/resume/resume.functions";
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
 import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
@@ -10,10 +11,28 @@ import { unwrapUnknownError } from "@/utils/errors";
 import { eq, useLiveQuery } from "@tanstack/react-db";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
-import { Plus, Trash2, X } from "lucide-react";
+import { ExternalLink, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+
+function parseLinks(raw: string): { label: string; url: string }[] {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(
+        (x): x is { label: string; url: string } =>
+          typeof x === "object" &&
+          x !== null &&
+          typeof (x as Record<string, unknown>).label === "string" &&
+          typeof (x as Record<string, unknown>).url === "string",
+      );
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
 
 interface TalksSectionProps {
   resumeId: string;
@@ -33,12 +52,16 @@ export function TalksSection({ resumeId }: TalksSectionProps) {
       {resume.talks.map((talk) => (
         <TalkCard key={talk.id} talk={talk} resumeId={resumeId} allTalks={resume.talks} />
       ))}
-      <AddTalkForm resumeId={resumeId} existingCount={resume.talks.length} allTalks={resume.talks} />
+      <AddTalkForm
+        resumeId={resumeId}
+        existingCount={resume.talks.length}
+        allTalks={resume.talks}
+      />
     </div>
   );
 }
 
-// ─── Single Talk Card ───────────────────────────────────────
+// ─── Single Talk Card (editable) ────────────────────────────
 
 interface TalkCardProps {
   talk: ResumeDetailDTO["talks"][number];
@@ -47,23 +70,14 @@ interface TalkCardProps {
 }
 
 function TalkCard({ talk, resumeId, allTalks }: TalkCardProps) {
-  const [links, setLinks] = useState<{ label: string; url: string }[]>(() => {
-    try {
-      const parsed: unknown = JSON.parse(talk.links);
-      if (Array.isArray(parsed)) {
-        return parsed.filter(
-          (x): x is { label: string; url: string } =>
-            typeof x === "object" &&
-            x !== null &&
-            typeof (x as Record<string, unknown>).label === "string" &&
-            typeof (x as Record<string, unknown>).url === "string",
-        );
-      }
-      return [];
-    } catch {
-      return [];
-    }
-  });
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(talk.title);
+  const [event, setEvent] = useState(talk.event);
+  const [date, setDate] = useState(talk.date);
+  const [description, setDescription] = useState(talk.description);
+  const [links, setLinks] = useState<{ label: string; url: string }[]>(() =>
+    parseLinks(talk.links),
+  );
 
   const deleteMutation = useMutation({
     mutationFn: async () => removeTalk({ data: { id: talk.id } }),
@@ -82,19 +96,25 @@ function TalkCard({ talk, resumeId, allTalks }: TalkCardProps) {
     meta: { invalidates: [["resumes"]] },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async () => editTalk({ data: { id: talk.id, links } }),
+  const saveMutation = useMutation({
+    mutationFn: async () =>
+      editTalk({
+        data: { id: talk.id, title, event, date, description, links },
+      }),
     onSuccess() {
-      toast.success("Talk links saved");
+      toast.success("Talk saved");
+      setEditing(false);
       resumeCollection.utils.writeUpdate({
         id: resumeId,
         talks: allTalks.map((t) =>
-          t.id === talk.id ? { ...t, links: JSON.stringify(links) } : t,
+          t.id === talk.id
+            ? { ...t, title, event, date, description, links: JSON.stringify(links) }
+            : t,
         ),
       });
     },
     onError(err: unknown) {
-      toast.error("Failed to update talk", {
+      toast.error("Failed to save talk", {
         description: unwrapUnknownError(err).message,
       });
     },
@@ -113,33 +133,89 @@ function TalkCard({ talk, resumeId, allTalks }: TalkCardProps) {
     setLinks((prev) => prev.map((l, i) => (i === index ? { ...l, [key]: value } : l)));
   }
 
+  const parsedLinks = parseLinks(talk.links);
+
+  if (!editing) {
+    return (
+      <Card data-test={`talk-card-${talk.id}`}>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base">{talk.title}</CardTitle>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="size-7" onClick={() => setEditing(true)}>
+              <Pencil className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}>
+              <Trash2 className="size-3.5" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-1.5">
+          <p className="text-muted-foreground text-xs">
+            {talk.event}
+            {talk.date ? ` · ${talk.date}` : ""}
+          </p>
+          {talk.description && <p className="mt-1 text-sm">{talk.description}</p>}
+          {parsedLinks.length > 0 && (
+            <div className="mt-1 flex flex-col gap-1">
+              {parsedLinks.map((link, i) => (
+                <a
+                  key={i}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary inline-flex items-center gap-1 text-xs hover:underline">
+                  <ExternalLink className="size-3" />
+                  {link.label || link.url}
+                </a>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card data-test={`talk-card-${talk.id}`}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base">{talk.title}</CardTitle>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7"
-          onClick={() => deleteMutation.mutate()}
-          disabled={deleteMutation.isPending}>
-          <Trash2 className="size-3.5" />
-        </Button>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <p className="text-muted-foreground text-xs">
-          {talk.event}
-          {talk.date ? ` · ${talk.date}` : ""}
-        </p>
+      <CardContent className="flex flex-col gap-3 pt-4">
+        <div>
+          <Label className="text-xs">Title</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label className="text-xs">Event</Label>
+            <Input value={event} onChange={(e) => setEvent(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-xs">Date</Label>
+            <Input value={date} onChange={(e) => setDate(e.target.value)} className="mt-1" />
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs">Description</Label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="mt-1"
+            rows={2}
+          />
+        </div>
 
+        {/* Links (video, slides, etc.) */}
         <div className="flex flex-col gap-2">
-          <Label className="text-xs font-medium">Links</Label>
+          <Label className="text-xs font-medium">Links (video, slides, etc.)</Label>
           {links.map((link, index) => (
             <div key={index} className="flex items-center gap-2">
               <Input
                 value={link.label}
                 onChange={(e) => updateLink(index, "label", e.target.value)}
-                placeholder="Label"
+                placeholder="Label (e.g. Video, Slides)"
                 className="h-8 text-sm"
               />
               <Input
@@ -157,17 +233,21 @@ function TalkCard({ talk, resumeId, allTalks }: TalkCardProps) {
               </Button>
             </div>
           ))}
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={addLink}>
-              <Plus className="mr-1 size-3" /> Add Link
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => updateMutation.mutate()}
-              disabled={updateMutation.isPending}>
-              Save Links
-            </Button>
-          </div>
+          <Button type="button" variant="outline" size="sm" onClick={addLink} className="w-fit">
+            <Plus className="mr-1 size-3" /> Add Link
+          </Button>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending || !title.trim()}>
+            Save
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -181,6 +261,7 @@ const addTalkFormOpts = formOptions({
     title: "",
     event: "",
     date: "",
+    description: "",
   },
 });
 
@@ -193,6 +274,8 @@ function AddTalkForm({
   existingCount: number;
   allTalks: ResumeDetailDTO["talks"];
 }) {
+  const [open, setOpen] = useState(false);
+
   const mutation = useMutation({
     mutationFn: async (values: typeof addTalkFormOpts.defaultValues) =>
       createTalk({
@@ -201,11 +284,13 @@ function AddTalkForm({
           title: values.title,
           event: values.event,
           date: values.date,
+          description: values.description,
           sortOrder: existingCount,
         },
       }),
     onSuccess(data, values) {
       toast.success("Talk added");
+      setOpen(false);
       resumeCollection.utils.writeUpdate({
         id: resumeId,
         talks: [
@@ -216,7 +301,7 @@ function AddTalkForm({
             title: values.title,
             event: values.event || "",
             date: values.date || "",
-            description: "",
+            description: values.description || "",
             links: "[]",
             sortOrder: existingCount,
           },
@@ -235,12 +320,19 @@ function AddTalkForm({
     ...addTalkFormOpts,
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value);
-      form.reset();
     },
   });
 
+  if (!open) {
+    return (
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Plus className="mr-1 size-3" /> Add Talk
+      </Button>
+    );
+  }
+
   return (
-    <Card data-test="add-talk-form">
+    <Card data-test="add-talk-form" className="w-full">
       <CardContent className="pt-4">
         <form
           onSubmit={(e) => {
@@ -262,9 +354,18 @@ function AddTalkForm({
             <form.AppField name="date">{(field) => <field.TextField label="Date" />}</form.AppField>
           </div>
 
-          <form.AppForm>
-            <form.SubmitButton label="Add Talk" />
-          </form.AppForm>
+          <form.AppField name="description">
+            {(field) => <field.TextAreaField label="Description" />}
+          </form.AppField>
+
+          <div className="flex gap-2">
+            <form.AppForm>
+              <form.SubmitButton label="Add Talk" />
+            </form.AppForm>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>

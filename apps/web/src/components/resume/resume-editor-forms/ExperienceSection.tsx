@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   createExperience,
+  editExperience,
   removeExperience,
   searchExperienceBullets,
   searchExperiences,
@@ -17,7 +18,7 @@ import { unwrapUnknownError } from "@/utils/errors";
 import { eq, useLiveQuery } from "@tanstack/react-db";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
-import { Library, Plus, Trash2, X } from "lucide-react";
+import { Library, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -90,7 +91,7 @@ export function ExperienceSection({ resumeId }: ExperienceSectionProps) {
   );
 }
 
-// ─── Single Experience Card ─────────────────────────────────
+// ─── Single Experience Card (editable) ─────────────────────
 
 interface ExperienceCardProps {
   resumeId: string;
@@ -99,6 +100,12 @@ interface ExperienceCardProps {
 }
 
 function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCardProps) {
+  const [editing, setEditing] = useState(false);
+  const [role, setRole] = useState(experience.role);
+  const [company, setCompany] = useState(experience.company);
+  const [startDate, setStartDate] = useState(experience.startDate);
+  const [endDate, setEndDate] = useState(experience.endDate);
+  const [location, setLocation] = useState(experience.location);
   const [bullets, setBullets] = useState(experience.bullets.map((b) => b.text));
   const [bulletPickOpen, setBulletPickOpen] = useState(false);
 
@@ -113,6 +120,29 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
     },
     onError(err: unknown) {
       toast.error("Failed to remove experience", {
+        description: unwrapUnknownError(err).message,
+      });
+    },
+    meta: { invalidates: [["resumes"]] },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () =>
+      editExperience({
+        data: { id: experience.id, role, company, startDate, endDate, location },
+      }),
+    onSuccess() {
+      toast.success("Experience saved");
+      setEditing(false);
+      resumeCollection.utils.writeUpdate({
+        id: resumeId,
+        experiences: allExperiences.map((e) =>
+          e.id === experience.id ? { ...e, role, company, startDate, endDate, location } : e,
+        ),
+      });
+    },
+    onError(err: unknown) {
+      toast.error("Failed to save experience", {
         description: unwrapUnknownError(err).message,
       });
     },
@@ -161,26 +191,129 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
     setBullets((prev) => prev.map((b, i) => (i === index ? text : b)));
   }
 
+  if (!editing) {
+    return (
+      <Card data-test={`experience-card-${experience.id}`}>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base">
+            {experience.role} at {experience.company}
+          </CardTitle>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="size-7" onClick={() => setEditing(true)}>
+              <Pencil className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}>
+              <Trash2 className="size-3.5" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <p className="text-muted-foreground text-xs">
+            {experience.startDate} – {experience.endDate}
+            {experience.location ? ` · ${experience.location}` : ""}
+          </p>
+
+          <div className="flex flex-col gap-2">
+            <Label className="text-xs font-medium">Bullets</Label>
+            {experience.bullets.map((bullet, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <span className="text-muted-foreground text-xs">•</span>
+                <Input
+                  value={bullet.text}
+                  onChange={(e) => updateBullet(index, e.target.value)}
+                  className="h-8 text-sm"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-6 shrink-0"
+                  onClick={() => removeBullet(index)}>
+                  <X className="size-3" />
+                </Button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={addBullet}>
+                <Plus className="mr-1 size-3" /> Add Bullet
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setBulletPickOpen(true)}>
+                <Library className="mr-1 size-3" /> Pick Bullets
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => bulletMutation.mutate()}
+                disabled={bulletMutation.isPending}>
+                Save Bullets
+              </Button>
+            </div>
+          </div>
+
+          <PickFromExistingDialog
+            open={bulletPickOpen}
+            onOpenChange={setBulletPickOpen}
+            title="Pick Experience Bullets"
+            description="Search bullet points across all your experiences."
+            multi
+            getSearchQueryKey={(q) => ["resumes", "search", "experience-bullets", q]}
+            getSearchQueryFn={(q) => () => searchExperienceBullets({ data: { query: q } })}
+            mapToItems={(data) =>
+              data.map((b: { id: string; text: string }) => ({
+                id: b.id,
+                primary: b.text,
+              }))
+            }
+            onPick={(items) => {
+              setBullets((prev) => [...prev, ...items.map((i) => i.primary)]);
+              toast.success(`Added ${items.length} bullet(s)`);
+            }}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card data-test={`experience-card-${experience.id}`}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base">
-          {experience.role} at {experience.company}
-        </CardTitle>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7"
-          onClick={() => deleteMutation.mutate()}
-          disabled={deleteMutation.isPending}>
-          <Trash2 className="size-3.5" />
-        </Button>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <p className="text-muted-foreground text-xs">
-          {experience.startDate} – {experience.endDate}
-          {experience.location ? ` · ${experience.location}` : ""}
-        </p>
+      <CardContent className="flex flex-col gap-3 pt-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label className="text-xs">Job Title</Label>
+            <Input value={role} onChange={(e) => setRole(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-xs">Company</Label>
+            <Input value={company} onChange={(e) => setCompany(e.target.value)} className="mt-1" />
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label className="text-xs">Start Date</Label>
+            <Input
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">End Date</Label>
+            <Input value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1" />
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-xs">Location</Label>
+          <Input value={location} onChange={(e) => setLocation(e.target.value)} className="mt-1" />
+        </div>
 
         <div className="flex flex-col gap-2">
           <Label className="text-xs font-medium">Bullets</Label>
@@ -212,13 +345,25 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
               onClick={() => setBulletPickOpen(true)}>
               <Library className="mr-1 size-3" /> Pick Bullets
             </Button>
-            <Button
-              size="sm"
-              onClick={() => bulletMutation.mutate()}
-              disabled={bulletMutation.isPending}>
-              Save Bullets
-            </Button>
           </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending || !role.trim() || !company.trim()}>
+            Save
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => bulletMutation.mutate()}
+            disabled={bulletMutation.isPending}>
+            Save Bullets
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
         </div>
 
         <PickFromExistingDialog

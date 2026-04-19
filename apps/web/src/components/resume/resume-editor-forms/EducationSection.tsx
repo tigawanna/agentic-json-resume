@@ -1,8 +1,12 @@
 import { PickFromExistingDialog } from "@/components/PickFromExistingDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   createEducation,
+  editEducation,
   removeEducation,
   searchEducation,
 } from "@/data-access-layer/resume/resume.functions";
@@ -13,7 +17,7 @@ import { unwrapUnknownError } from "@/utils/errors";
 import { eq, useLiveQuery } from "@tanstack/react-db";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
-import { Library, Plus, Trash2 } from "lucide-react";
+import { Library, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -78,7 +82,7 @@ export function EducationSection({ resumeId }: EducationSectionProps) {
   );
 }
 
-// ─── Single Education Card ──────────────────────────────────
+// ─── Single Education Card (editable) ───────────────────────
 
 function EducationCard({
   education,
@@ -89,6 +93,14 @@ function EducationCard({
   resumeId: string;
   allEducation: ResumeDetailDTO["education"];
 }) {
+  const [editing, setEditing] = useState(false);
+  const [school, setSchool] = useState(education.school);
+  const [degree, setDegree] = useState(education.degree);
+  const [field, setField] = useState(education.field);
+  const [startDate, setStartDate] = useState(education.startDate);
+  const [endDate, setEndDate] = useState(education.endDate);
+  const [description, setDescription] = useState(education.description);
+
   const deleteMutation = useMutation({
     mutationFn: async () => removeEducation({ data: { id: education.id } }),
     onSuccess() {
@@ -106,28 +118,119 @@ function EducationCard({
     meta: { invalidates: [["resumes"]] },
   });
 
+  const saveMutation = useMutation({
+    mutationFn: async () =>
+      editEducation({
+        data: { id: education.id, school, degree, field, startDate, endDate, description },
+      }),
+    onSuccess() {
+      toast.success("Education saved");
+      setEditing(false);
+      resumeCollection.utils.writeUpdate({
+        id: resumeId,
+        education: allEducation.map((e) =>
+          e.id === education.id
+            ? { ...e, school, degree, field, startDate, endDate, description }
+            : e,
+        ),
+      });
+    },
+    onError(err: unknown) {
+      toast.error("Failed to save education", {
+        description: unwrapUnknownError(err).message,
+      });
+    },
+    meta: { invalidates: [["resumes"]] },
+  });
+
+  if (!editing) {
+    return (
+      <Card data-test={`education-card-${education.id}`}>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base">
+            {education.degree}
+            {education.field ? ` in ${education.field}` : ""}
+          </CardTitle>
+          <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="size-7" onClick={() => setEditing(true)}>
+              <Pencil className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}>
+              <Trash2 className="size-3.5" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-xs">
+            {education.school}
+            {education.startDate && education.endDate
+              ? ` · ${education.startDate} – ${education.endDate}`
+              : education.endDate
+                ? ` · ${education.endDate}`
+                : ""}
+          </p>
+          {education.description && <p className="mt-1 text-sm">{education.description}</p>}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card data-test={`education-card-${education.id}`}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base">
-          {education.degree}
-          {education.field ? ` in ${education.field}` : ""}
-        </CardTitle>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7"
-          onClick={() => deleteMutation.mutate()}
-          disabled={deleteMutation.isPending}>
-          <Trash2 className="size-3.5" />
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground text-xs">
-          {education.school}
-          {education.endDate ? ` · ${education.endDate}` : ""}
-        </p>
-        {education.description && <p className="mt-1 text-sm">{education.description}</p>}
+      <CardContent className="flex flex-col gap-3 pt-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label className="text-xs">School</Label>
+            <Input value={school} onChange={(e) => setSchool(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-xs">Degree</Label>
+            <Input value={degree} onChange={(e) => setDegree(e.target.value)} className="mt-1" />
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs">Field of Study</Label>
+          <Input value={field} onChange={(e) => setField(e.target.value)} className="mt-1" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <Label className="text-xs">Start Date</Label>
+            <Input
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">End Date</Label>
+            <Input value={endDate} onChange={(e) => setEndDate(e.target.value)} className="mt-1" />
+          </div>
+        </div>
+        <div>
+          <Label className="text-xs">Description</Label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="mt-1"
+            rows={3}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending || !school.trim() || !degree.trim()}>
+            Save
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
