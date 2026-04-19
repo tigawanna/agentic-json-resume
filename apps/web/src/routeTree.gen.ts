@@ -24,6 +24,7 @@ import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known/oauth-authorization-server'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/_dashboard/settings/index'
 import { Route as DashboardResumesIndexRouteImport } from './routes/_dashboard/resumes/index'
+import { Route as DashboardPreviewIndexRouteImport } from './routes/_dashboard/preview/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as DashboardResumesResumeIdIndexRouteImport } from './routes/_dashboard/resumes/$resumeId/index'
 
@@ -102,6 +103,11 @@ const DashboardResumesIndexRoute = DashboardResumesIndexRouteImport.update({
   path: '/resumes/',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardPreviewIndexRoute = DashboardPreviewIndexRouteImport.update({
+  id: '/preview/',
+  path: '/preview/',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/preview/': typeof DashboardPreviewIndexRoute
   '/resumes/': typeof DashboardResumesIndexRoute
   '/settings/': typeof DashboardSettingsIndexRoute
   '/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/preview': typeof DashboardPreviewIndexRoute
   '/resumes': typeof DashboardResumesIndexRoute
   '/settings': typeof DashboardSettingsIndexRoute
   '/resumes/$resumeId': typeof DashboardResumesResumeIdIndexRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_dashboard/preview/': typeof DashboardPreviewIndexRoute
   '/_dashboard/resumes/': typeof DashboardResumesIndexRoute
   '/_dashboard/settings/': typeof DashboardSettingsIndexRoute
   '/_dashboard/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
+    | '/preview/'
     | '/resumes/'
     | '/settings/'
     | '/resumes/$resumeId/'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth'
     | '/api/auth/$'
+    | '/preview'
     | '/resumes'
     | '/settings'
     | '/resumes/$resumeId'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
+    | '/_dashboard/preview/'
     | '/_dashboard/resumes/'
     | '/_dashboard/settings/'
     | '/_dashboard/resumes/$resumeId/'
@@ -340,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardResumesIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_dashboard/preview/': {
+      id: '/_dashboard/preview/'
+      path: '/preview'
+      fullPath: '/preview/'
+      preLoaderRoute: typeof DashboardPreviewIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -360,6 +379,7 @@ declare module '@tanstack/react-router' {
 interface DashboardLayoutRouteChildren {
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
+  DashboardPreviewIndexRoute: typeof DashboardPreviewIndexRoute
   DashboardResumesIndexRoute: typeof DashboardResumesIndexRoute
   DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
   DashboardResumesResumeIdIndexRoute: typeof DashboardResumesResumeIdIndexRoute
@@ -368,6 +388,7 @@ interface DashboardLayoutRouteChildren {
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardProfileRoute: DashboardProfileRoute,
+  DashboardPreviewIndexRoute: DashboardPreviewIndexRoute,
   DashboardResumesIndexRoute: DashboardResumesIndexRoute,
   DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
   DashboardResumesResumeIdIndexRoute: DashboardResumesResumeIdIndexRoute,

@@ -37,8 +37,9 @@ import {
 
 export const listResumes = createServerFn({ method: "GET" })
   .middleware([viewerMiddleware])
-  .handler(async ({ context }) => {
-    return listResumesForUser(context.viewer.user.id);
+  .inputValidator((input: { id?: string }) => input)
+  .handler(async ({ context, data }) => {
+    return listResumesForUser({ userId: context.viewer.user.id, id: data.id });
   });
 
 export const getResume = createServerFn({ method: "GET" })

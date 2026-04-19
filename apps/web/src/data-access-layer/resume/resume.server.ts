@@ -41,11 +41,21 @@ function toListItem(row: typeof resume.$inferSelect): ResumeListItemDTO {
 
 // ─── List ───────────────────────────────────────────────────
 
-export async function listResumesForUser(userId: string): Promise<ResumeListItemDTO[]> {
+export async function listResumesForUser({
+  userId,
+  id,
+}: {
+  userId: string;
+  id?: string;
+}): Promise<ResumeListItemDTO[]> {
+  const conditions = [eq(resume.userId, userId)];
+  if (id) {
+    conditions.push(eq(resume.id, id));
+  }
   const rows = await db
     .select()
     .from(resume)
-    .where(eq(resume.userId, userId))
+    .where(and(...conditions))
     .orderBy(desc(resume.updatedAt));
   return rows.map(toListItem);
 }
