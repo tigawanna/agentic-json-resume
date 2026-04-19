@@ -7,6 +7,7 @@ import { getRepositories, RepositoryResponse } from "./repos.octo";
 import { queryOptions } from "@tanstack/react-query";
 import { authClient } from "@/lib/better-auth/client";
 import { queryKeyPrefixes } from "../query-keys";
+import { redirect } from "@tanstack/react-router";
 
 export const githubAccessTokenQueryOptions = queryOptions({
   queryKey: [queryKeyPrefixes.githubAccessToken],
@@ -27,12 +28,15 @@ export const shoppingItemsCollection = createCollection(
     schemaVersion: 1,
     ...queryCollectionOptions({
       queryKey: [queryKeyPrefixes.github, "repos"] as const,
-      queryFn: async (ctx) => {
-        const githubKey = ctx.client.getQueryData<string>([queryKeyPrefixes.githubAccessToken]);
-        if (!githubKey) {
-          throw new Error("No GitHub access token found");
+      queryFn: async () => {
+        const acesssTokenResponse = await authClient.getAccessToken({
+          providerId: "github",
+        });
+
+        if (acesssTokenResponse.error || !acesssTokenResponse.data?.accessToken) {
+          throw redirect({to:"/auth/github",search:{returnTo:"/dashboard/projects"}});
         }
-        const data = await getRepositories(githubKey);
+        const data = await getRepositories(acesssTokenResponse.data.accessToken);
         return data;
       },
       getKey: (item) => item.id,
