@@ -20,4 +20,5 @@ export const queryKeyPrefixes = {
   savedProjects: "saved-projects",
   apiKeys: "api-keys",
   githubAccessToken: "github-access-token",
+  experiments: "experiments",
 } as const;

@@ -1,9 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+let queryClientInstance: QueryClient | null = null;
+
 export function getTanstackQueryContext() {
-  const queryClient = new QueryClient();
+  if (!queryClientInstance) {
+    queryClientInstance = new QueryClient();
+  }
   return {
-    queryClient,
+    queryClient: queryClientInstance,
   };
 }
 
