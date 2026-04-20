@@ -2,16 +2,19 @@ import "@tanstack/react-start/server-only";
 
 import { db } from "@/lib/drizzle/client";
 import { resume, resumeEducation } from "@/lib/drizzle/scheam";
-import { and, desc, eq, like, or } from "drizzle-orm";
-import type { EducationListItemDTO } from "./education.types";
+import { and, desc, eq, like, lt, or } from "drizzle-orm";
+import type { EducationListItemDTO, PaginatedResult } from "./education.types";
 
-export async function listEducationForUser(
+const PAGE_SIZE = 1;
+
+export async function listEducationForUserPaginated(
   userId: string,
-  keyword?: string,
-): Promise<EducationListItemDTO[]> {
+  opts?: { keyword?: string; cursor?: string },
+): Promise<PaginatedResult<EducationListItemDTO>> {
   const conditions = [eq(resume.userId, userId)];
-  if (keyword) {
-    const pattern = `%${keyword}%`;
+
+  if (opts?.keyword) {
+    const pattern = `%${opts.keyword}%`;
     conditions.push(
       or(
         like(resumeEducation.school, pattern),
@@ -20,6 +23,10 @@ export async function listEducationForUser(
         like(resumeEducation.description, pattern),
       )!,
     );
+  }
+
+  if (opts?.cursor) {
+    conditions.push(lt(resumeEducation.id, opts.cursor));
   }
 
   const rows = await db
@@ -40,13 +47,21 @@ export async function listEducationForUser(
     .from(resumeEducation)
     .innerJoin(resume, eq(resumeEducation.resumeId, resume.id))
     .where(and(...conditions))
-    .orderBy(desc(resumeEducation.updatedAt));
+    .orderBy(desc(resumeEducation.id))
+    .limit(PAGE_SIZE + 1);
 
-  return rows.map((r) => ({
+  const hasMore = rows.length > PAGE_SIZE;
+  const items = (hasMore ? rows.slice(0, PAGE_SIZE) : rows).map((r) => ({
     ...r,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   }));
+
+  return {
+    items,
+    nextCursor: hasMore ? items[items.length - 1].id : undefined,
+    previousCursor: opts?.cursor ?? undefined,
+  };
 }
 
 export async function deleteEducationForUser(educationId: string, userId: string): Promise<void> {

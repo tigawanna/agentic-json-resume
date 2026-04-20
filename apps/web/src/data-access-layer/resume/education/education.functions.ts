@@ -1,12 +1,15 @@
 import { viewerMiddleware } from "@/data-access-layer/auth/viewer";
 import { createServerFn } from "@tanstack/react-start";
-import { deleteEducationForUser, listEducationForUser } from "./education.server";
+import { deleteEducationForUser, listEducationForUserPaginated } from "./education.server";
 
 export const listEducation = createServerFn({ method: "GET" })
   .middleware([viewerMiddleware])
-  .inputValidator((input?: { keyword?: string }) => input)
+  .inputValidator((input?: { keyword?: string; cursor?: string }) => input)
   .handler(async ({ context, data }) => {
-    return listEducationForUser(context.viewer.user.id, data?.keyword);
+    return listEducationForUserPaginated(context.viewer.user.id, {
+      keyword: data?.keyword,
+      cursor: data?.cursor,
+    });
   });
 
 export const deleteEducationFn = createServerFn({ method: "POST" })

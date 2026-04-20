@@ -12,3 +12,9 @@ export interface EducationListItemDTO {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PaginatedResult<T> {
+  items: T[];
+  nextCursor: string | undefined;
+  previousCursor: string | undefined;
+}
