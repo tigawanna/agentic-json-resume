@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { resumeDetailToDocument } from "@/data-access-layer/resume/resume-converters";
 import { resumeDetailQueryOptions } from "@/data-access-layer/resume/resume-query-options";
-import { replaceResumeDoc, updateResumeMeta } from "@/data-access-layer/resume/resume.functions";
+import { updateResumeMeta } from "@/data-access-layer/resume/resume.functions";
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
 import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
 import {
@@ -21,14 +21,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 import { z } from "zod";
-import { PromptCopySection } from "./-components/PromptCopySection";
+import { PromptTab } from "./-components/PromptTab";
 import { ResumeEditTab } from "./-components/ResumeEditTab";
 import { ResumePreviewTab } from "./-components/ResumePreviewTab";
 
-const tabSchema = z
-  .enum(["edit", "preview", "json", "prompt"])
-  .default("edit")
-  .catch("edit");
+const tabSchema = z.enum(["edit", "preview", "json", "prompt"]).default("edit").catch("edit");
 
 export const Route = createFileRoute("/_dashboard/resumes/$resumeId/")({
   component: ResumeWorkbench,
@@ -37,8 +34,7 @@ export const Route = createFileRoute("/_dashboard/resumes/$resumeId/")({
   head: () => ({
     meta: [{ title: "Edit Resume", description: "Resume workbench" }],
   }),
-  validateSearch: (search) =>
-    z.object({ tab: tabSchema }).parse(search),
+  validateSearch: (search) => z.object({ tab: tabSchema }).parse(search),
   ssr: false,
 });
 
@@ -225,48 +221,6 @@ function ResumeWorkbenchInner({
           <PromptTab resumeId={resumeId} doc={doc} />
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function PromptTab({ resumeId, doc }: { resumeId: string; doc: ResumeDocumentV1 }) {
-  const router = useRouter();
-  const { data: resume } = useLiveQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
-
-  const applyMutation = useMutation({
-    mutationFn: async (newDoc: ResumeDocumentV1) => {
-      await replaceResumeDoc({ data: { id: resumeId, doc: newDoc } });
-    },
-    onSuccess() {
-      resumeCollection.utils.refetch();
-      toast.success("Resume updated — switching to editor");
-      void router.navigate({
-        to: ".",
-        search: (prev: Record<string, unknown>) => ({ ...prev, tab: "edit" }),
-        replace: true,
-      });
-    },
-    onError(err: unknown) {
-      toast.error("Failed to apply result", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-    meta: { invalidates: [["resumes"]] },
-  });
-
-  return (
-    <div className="mx-auto max-w-3xl">
-      <PromptCopySection
-        doc={doc}
-        jobDescription={resume?.jobDescription ?? ""}
-        onApplyResult={(newDoc) => applyMutation.mutateAsync(newDoc)}
-        isApplying={applyMutation.isPending}
-      />
     </div>
   );
 }
