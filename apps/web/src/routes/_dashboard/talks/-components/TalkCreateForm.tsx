@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { ResumePickerField } from "@/components/custom-ui/ResumePickerField";
+import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,7 +73,9 @@ export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
       </form.AppField>
       <form.AppField
         name="title"
-        validators={{ onChange: ({ value }) => (!value?.trim() ? "Title is required" : undefined) }}
+        validators={{
+          onChange: ({ value }) => (!value?.trim() ? "Title is required" : undefined),
+        }}
       >
         {(field) => (
           <div>

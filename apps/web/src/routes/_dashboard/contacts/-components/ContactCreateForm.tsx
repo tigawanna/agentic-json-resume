@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { ResumePickerField } from "@/components/custom-ui/ResumePickerField";
+import { Button } from "@/components/ui/button";
 import {
   Combobox,
   ComboboxContent,
@@ -110,7 +110,9 @@ export function ContactCreateForm({ onSuccess }: ContactCreateFormProps) {
       </form.AppField>
       <form.AppField
         name="value"
-        validators={{ onChange: ({ value }) => (!value?.trim() ? "Value is required" : undefined) }}
+        validators={{
+          onChange: ({ value }) => (!value?.trim() ? "Value is required" : undefined),
+        }}
       >
         {(field) => (
           <div>

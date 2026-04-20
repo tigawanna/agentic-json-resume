@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { ResumePickerField } from "@/components/custom-ui/ResumePickerField";
+import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,7 +71,9 @@ export function LinkCreateForm({ onSuccess }: LinkCreateFormProps) {
       </form.AppField>
       <form.AppField
         name="label"
-        validators={{ onChange: ({ value }) => (!value?.trim() ? "Label is required" : undefined) }}
+        validators={{
+          onChange: ({ value }) => (!value?.trim() ? "Label is required" : undefined),
+        }}
       >
         {(field) => (
           <div>
