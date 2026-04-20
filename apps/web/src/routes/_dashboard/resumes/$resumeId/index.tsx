@@ -1,34 +1,38 @@
 import { ResumeJsonTab } from "@/components/resume/resume-json-editor";
 import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { resumeDetailToDocument } from "@/data-access-layer/resume/resume-converters";
 import { resumeDetailQueryOptions } from "@/data-access-layer/resume/resume-query-options";
 import { updateResumeMeta } from "@/data-access-layer/resume/resume.functions";
-import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
 import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
-import {
-  TEMPLATE_IDS,
-  TEMPLATE_LABELS,
-  type ResumeDocumentV1,
-  type TemplateId,
-} from "@/features/resume/resume-schema";
+import { TemplateId } from "@/features/resume/resume-schema";
 import { unwrapUnknownError } from "@/utils/errors";
 import { eq, useLiveQuery } from "@tanstack/react-db";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Save } from "lucide-react";
+import { File, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { twMerge } from "tailwind-merge";
 import { z } from "zod";
 import { PromptTab } from "./-components/PromptTab";
 import { ResumeEditTab } from "./-components/ResumeEditTab";
 import { ResumePreviewTab } from "./-components/ResumePreviewTab";
+import { TemplatePicker } from "./-components/TemplatePicker";
 
-const tabSchema = z.enum(["edit", "preview", "json", "prompt"]).default("edit").catch("edit");
+
+const tabsList = ["edit", "preview", "json", "prompt"] as const;
+const tabSchema = z.enum(tabsList).default("edit").catch("edit");
 
 export const Route = createFileRoute("/_dashboard/resumes/$resumeId/")({
-  component: ResumeWorkbench,
+  component: RouteComponent,
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(resumeDetailQueryOptions(params.resumeId)),
   head: () => ({
@@ -38,54 +42,12 @@ export const Route = createFileRoute("/_dashboard/resumes/$resumeId/")({
   ssr: false,
 });
 
-// ─── Template Picker ────────────────────────────────────────
+// ─── Route Component ────────────────────────────────────────
 
-const TEMPLATE_DESCRIPTIONS: Record<TemplateId, string> = {
-  classic: "Single column, centered headings",
-  sidebar: "Two columns — main left, sidebar right",
-  accent: "Single column with warm accent",
-  modern: "Two columns with cool accent",
-};
-
-function TemplatePicker({
-  selected,
-  onSelect,
-}: {
-  selected: TemplateId;
-  onSelect: (id: TemplateId) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2" data-test="template-picker">
-      <h2 className="text-sm font-medium">Template</h2>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {TEMPLATE_IDS.map((tid) => (
-          <button
-            key={tid}
-            type="button"
-            onClick={() => onSelect(tid)}
-            className={twMerge(
-              "flex flex-col items-start gap-1 rounded-lg border-2 p-3 text-left transition-colors",
-              tid === selected
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-muted-foreground/30",
-            )}
-            data-test={`template-${tid}`}>
-            <span className="text-sm font-semibold">{TEMPLATE_LABELS[tid]}</span>
-            <span className="text-muted-foreground text-xs">{TEMPLATE_DESCRIPTIONS[tid]}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Workbench ──────────────────────────────────────────────
-
-function ResumeWorkbench() {
+function RouteComponent() {
   const { resumeId } = Route.useParams();
   const { data: serverResume } = useSuspenseQuery(resumeDetailQueryOptions(resumeId));
 
-  // Read reactively from the collection (on-demand fetch triggered by the where clause)
   const { data: resume } = useLiveQuery((q) =>
     q
       .from({ resume: resumeCollection })
@@ -100,51 +62,13 @@ function ResumeWorkbench() {
     (serverResume?.templateId as TemplateId) ?? "classic",
   );
 
-  const displayResume = resume ?? serverResume;
-
-  if (!displayResume) {
-    return <p className="text-muted-foreground py-8 text-center">Resume not found.</p>;
-  }
-
-  const doc = resumeDetailToDocument(displayResume);
-  const hasTemplateChange = selectedTemplate !== initialTemplateId;
-
-  return (
-    <ResumeWorkbenchInner
-      resumeId={resumeId}
-      resume={displayResume}
-      selectedTemplate={selectedTemplate}
-      setSelectedTemplate={setSelectedTemplate}
-      doc={doc}
-      hasTemplateChange={hasTemplateChange}
-    />
-  );
-}
-
-interface ResumeWorkbenchInnerProps {
-  resumeId: string;
-  resume: ResumeDetailDTO;
-  selectedTemplate: TemplateId;
-  setSelectedTemplate: (t: TemplateId) => void;
-  doc: ResumeDocumentV1;
-  hasTemplateChange: boolean;
-}
-
-function ResumeWorkbenchInner({
-  resumeId,
-  resume,
-  selectedTemplate,
-  setSelectedTemplate,
-  doc,
-  hasTemplateChange,
-}: ResumeWorkbenchInnerProps) {
   const router = useRouter();
   const { tab } = Route.useSearch();
 
   function navigateToTab(value: string) {
     void router.navigate({
       to: ".",
-      search: (prev: Record<string, unknown>) => ({ ...prev, tab: value }),
+      search: (prev) => ({ ...prev, tab: value as z.infer<typeof tabSchema> }),
       replace: true,
     });
   }
@@ -167,6 +91,37 @@ function ResumeWorkbenchInner({
     },
     meta: { invalidates: [["resumes"]] },
   });
+
+  const displayResume = resume ?? serverResume;
+
+  if (!displayResume) {
+    return <p className="text-muted-foreground py-8 text-center">Resume not found.</p>;
+  }
+
+  const doc = resumeDetailToDocument(displayResume);
+  const hasTemplateChange = selectedTemplate !== initialTemplateId;
+
+  if (!resume) {
+    return (
+      <div className="flex w-full h-screen flex-col gap-6 pb-24">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <File />
+            </EmptyMedia>
+            <EmptyTitle>Resume not found</EmptyTitle>
+            <EmptyDescription>
+              You haven&apos;t created any resumes yet. Get started by creating your first resume.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent className="flex-row justify-center gap-2">
+            <Button>Create Resume</Button>
+            <Button variant="outline">Import Resume</Button>
+          </EmptyContent>
+        </Empty>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-6 pb-24" data-test="resume-workbench">

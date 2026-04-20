@@ -26,7 +26,7 @@ export function PromptTab({ resumeId, doc }: { resumeId: string; doc: ResumeDocu
       toast.success("Resume updated — switching to editor");
       void router.navigate({
         to: ".",
-        search: (prev: Record<string, unknown>) => ({ ...prev, tab: "edit" }),
+        search: (prev) => ({ ...prev, tab: "edit" }),
         replace: true,
       });
     },
