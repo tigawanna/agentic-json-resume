@@ -6,6 +6,7 @@ import {
   FileText,
   FolderGit2,
   FolderKanban,
+  Github,
   Globe,
   GraduationCap,
   Heart,
@@ -48,7 +49,8 @@ export function getDashboardPrimaryRoutes(): SidebarItem[] {
         { title: "Summaries", href: "/summaries", icon: StickyNote },
       ],
     },
-    { title: "Projects", href: "/projects", icon: FolderGit2 },
+    { title: "Repositories", href: "/repos", icon: Github },
+    { title: "Saved Projects", href: "/saved-projects", icon: FolderGit2 },
   ];
 }
 
