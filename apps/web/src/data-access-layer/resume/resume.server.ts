@@ -20,7 +20,7 @@ import {
   resumeTalk,
   resumeVolunteer,
 } from "@/lib/drizzle/scheam";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, like, or } from "drizzle-orm";
 import { documentToInsertData } from "./resume-converters";
 import type { ResumeDetailDTO, ResumeListItemDTO } from "./resume.types";
 
@@ -44,13 +44,26 @@ function toListItem(row: typeof resume.$inferSelect): ResumeListItemDTO {
 export async function listResumesForUser({
   userId,
   id,
+  keyword,
 }: {
   userId: string;
   id?: string;
+  keyword?: string;
 }): Promise<ResumeListItemDTO[]> {
   const conditions = [eq(resume.userId, userId)];
   if (id) {
     conditions.push(eq(resume.id, id));
+  }
+  if (keyword) {
+    const pattern = `%${keyword}%`;
+    conditions.push(
+      or(
+        like(resume.name, pattern),
+        like(resume.fullName, pattern),
+        like(resume.headline, pattern),
+        like(resume.description, pattern),
+      )!,
+    );
   }
   const rows = await db
     .select()

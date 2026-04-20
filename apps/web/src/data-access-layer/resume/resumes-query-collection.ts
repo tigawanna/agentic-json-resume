@@ -31,7 +31,16 @@ export const resumesCollection = createCollection(
   queryCollectionOptions({
     id: "resumes-list",
     queryKey: ["resumes"],
-    queryFn: async () => listResumes(),
+    syncMode: "on-demand",
+    queryFn: async (ctx) => {
+      const parsed = parseLoadSubsetOptions(ctx.meta?.loadSubsetOptions);
+      const nameFilter = parsed.filters.find(
+        ({ field, operator }) => field.join(".") === "name" && operator === "eq",
+      );
+      console.log("nameFilter == ", nameFilter?.value);
+      const keyword = nameFilter?.value as string | undefined;
+      return listResumes({ data: keyword ? { keyword } : undefined })??[]
+    },
     getKey: (resume) => resume.id,
     queryClient,
   }),

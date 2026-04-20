@@ -1,26 +1,55 @@
-import { cloneResumeMuationOptions } from "@/data-access-layer/resume/resume-mutatin-options";
-import { resumesCollection } from "@/data-access-layer/resume/resumes-query-collection";
-import { useLiveSuspenseQuery } from "@tanstack/react-db";
-import { useMutation } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { FileText } from "lucide-react";
+import { SearchBox } from "@/components/search/SearchBox";
+import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
+import { useDebouncer } from "@tanstack/react-pacer";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Suspense, useState } from "react";
+import { z } from "zod";
 import { NewResumeButton } from "./-components/NewResumeButton";
-import { ResumeListCard } from "./-components/ResumeListCard";
+import { ResumeListPage } from "./-components/ResumeList";
+
+const resumesSearchSchema = z.object({
+  sq: z.string().optional().default(""),
+});
 
 export const Route = createFileRoute("/_dashboard/resumes/")({
-  component: ResumeListPage,
+  component: RouteComponent,
   head: () => ({
     meta: [{ title: "Resumes", description: "Manage your resumes" }],
   }),
   ssr: false,
+  validateSearch: (search) => resumesSearchSchema.parse(search),
 });
 
-function ResumeListPage() {
-  const { data: resumes } = useLiveSuspenseQuery((q) => q.from({ resume: resumesCollection }));
-  const cloneMutation = useMutation(cloneResumeMuationOptions);
+export function RouteComponent() {
+  const { sq } = Route.useSearch();
+  const navigate = useNavigate();
+  const [keyword, setKeyword] = useState(sq);
+
+  const debouncer = useDebouncer(
+    (value: string) => {
+      void navigate({
+        to: ".",
+        search: (prev: Record<string, unknown>) => ({
+          ...prev,
+          sq: value || undefined,
+        }),
+        replace: true,
+      });
+    },
+    { wait: 500 },
+    (state) => ({ isPending: state.isPending }),
+  );
+
+  const handleKeywordChange: React.Dispatch<React.SetStateAction<string>> = (action) => {
+    setKeyword((prev) => {
+      const next = typeof action === "function" ? action(prev) : action;
+      debouncer.maybeExecute(next);
+      return next;
+    });
+  };
 
   return (
-    <div className="flex w-full min-h-screen flex-col gap-6" data-test="resume-list-page">
+    <div className="w-full min-h-screen flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Resumes</h1>
@@ -30,24 +59,16 @@ function ResumeListPage() {
         </div>
         <NewResumeButton />
       </div>
-      <div className="flex-1" data-test="resume-list">
-        {resumes.length === 0 ? (
-          <div className="flex flex-col h-full items-center justify-center gap-4 py-16">
-            <FileText className="text-muted-foreground size-12" />
-            <p className="text-muted-foreground text-sm">No resumes yet. Create your first one!</p>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {resumes.map((resume) => (
-              <ResumeListCard
-                key={resume.id}
-                resume={resume}
-                onClone={(id) => cloneMutation.mutate(id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      <SearchBox
+        keyword={keyword}
+        setKeyword={handleKeywordChange}
+        debouncedValue={sq}
+        isDebouncing={debouncer.state.isPending ?? false}
+        inputProps={{ placeholder: "Search resumes..." }}
+      />
+      <Suspense fallback={<RouterPendingComponent />}>
+        <ResumeListPage />
+      </Suspense>
     </div>
   );
 }
