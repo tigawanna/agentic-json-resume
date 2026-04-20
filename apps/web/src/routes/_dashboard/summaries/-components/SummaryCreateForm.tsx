@@ -75,7 +75,7 @@ export function SummaryCreateForm({ onSuccess }: SummaryCreateFormProps) {
             <Textarea
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1 min-h-[120px]"
+              className="mt-1 min-h-30"
               rows={5}
             />
           </div>
