@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { buildTailorPrompt } from "@/features/resume/resume-prompt";
-import type { ResumeDocumentV1 } from "@/features/resume/resume-schema";
+import { safeParseResumeJson, type ResumeDocumentV1 } from "@/features/resume/resume-schema";
 import { Check, ClipboardCopy, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,13 +12,17 @@ import { toast } from "sonner";
 interface PromptCopySectionProps {
   doc: ResumeDocumentV1;
   jobDescription: string;
+  onApplyResult?: (doc: ResumeDocumentV1) => Promise<void>;
+  isApplying?: boolean;
 }
 
-export function PromptCopySection({ doc, jobDescription }: PromptCopySectionProps) {
+export function PromptCopySection({ doc, jobDescription, onApplyResult, isApplying }: PromptCopySectionProps) {
   const [copied, setCopied] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState<string | null>(null);
   const [directives, setDirectives] = useState<string[]>([]);
   const [newDirective, setNewDirective] = useState("");
+  const [pasteText, setPasteText] = useState("");
+  const [pasteError, setPasteError] = useState<string | null>(null);
 
   const basePrompt = buildTailorPrompt(doc, jobDescription);
   const fullPrompt =
@@ -132,6 +136,44 @@ export function PromptCopySection({ doc, jobDescription }: PromptCopySectionProp
           {copied ? <Check className="size-4" /> : <ClipboardCopy className="size-4" />}
           {copied ? "Copied!" : "Copy prompt"}
         </Button>
+
+        {/* Paste LLM result */}
+        {onApplyResult && (
+          <div className="flex flex-col gap-2 border-t pt-4">
+            <Label className="text-xs font-medium">Paste LLM Result</Label>
+            <p className="text-muted-foreground text-xs">
+              Paste the JSON returned by the LLM — it will seed the editor and switch to the Edit
+              tab.
+            </p>
+            <Textarea
+              className="font-mono text-xs"
+              rows={8}
+              placeholder='{ "version": 1, ... }'
+              value={pasteText}
+              onChange={(e) => {
+                setPasteText(e.target.value);
+                setPasteError(null);
+              }}
+            />
+            {pasteError && <p className="text-destructive text-xs">{pasteError}</p>}
+            <Button
+              type="button"
+              disabled={!pasteText.trim() || isApplying}
+              onClick={async () => {
+                const result = safeParseResumeJson(pasteText);
+                if (!result.ok) {
+                  setPasteError(result.error);
+                  return;
+                }
+                await onApplyResult(result.data);
+                setPasteText("");
+                setPasteError(null);
+              }}
+              className="self-start gap-2">
+              {isApplying ? "Applying..." : "Apply & edit"}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { resumeDetailToDocument } from "@/data-access-layer/resume/resume-converters";
 import { resumeDetailQueryOptions } from "@/data-access-layer/resume/resume-query-options";
-import { updateResumeMeta } from "@/data-access-layer/resume/resume.functions";
+import { replaceResumeDoc, updateResumeMeta } from "@/data-access-layer/resume/resume.functions";
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
 import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
 import {
@@ -15,14 +15,20 @@ import {
 import { unwrapUnknownError } from "@/utils/errors";
 import { eq, useLiveQuery } from "@tanstack/react-db";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
+import { z } from "zod";
 import { PromptCopySection } from "./-components/PromptCopySection";
 import { ResumeEditTab } from "./-components/ResumeEditTab";
 import { ResumePreviewTab } from "./-components/ResumePreviewTab";
+
+const tabSchema = z
+  .enum(["edit", "preview", "json", "prompt"])
+  .default("edit")
+  .catch("edit");
 
 export const Route = createFileRoute("/_dashboard/resumes/$resumeId/")({
   component: ResumeWorkbench,
@@ -31,6 +37,8 @@ export const Route = createFileRoute("/_dashboard/resumes/$resumeId/")({
   head: () => ({
     meta: [{ title: "Edit Resume", description: "Resume workbench" }],
   }),
+  validateSearch: (search) =>
+    z.object({ tab: tabSchema }).parse(search),
   ssr: false,
 });
 
@@ -134,6 +142,17 @@ function ResumeWorkbenchInner({
   doc,
   hasTemplateChange,
 }: ResumeWorkbenchInnerProps) {
+  const router = useRouter();
+  const { tab } = Route.useSearch();
+
+  function navigateToTab(value: string) {
+    void router.navigate({
+      to: ".",
+      search: (prev: Record<string, unknown>) => ({ ...prev, tab: value }),
+      replace: true,
+    });
+  }
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       await updateResumeMeta({ data: { id: resumeId, templateId: selectedTemplate } });
@@ -169,7 +188,7 @@ function ResumeWorkbenchInner({
       <TemplatePicker selected={selectedTemplate} onSelect={setSelectedTemplate} />
 
       {/* Tabs + Save */}
-      <Tabs defaultValue="edit" className="w-full">
+      <Tabs value={tab} onValueChange={navigateToTab} className="w-full">
         <div className="flex flex-wrap items-center gap-3">
           <TabsList className="flex-1">
             <TabsTrigger value="edit">Edit</TabsTrigger>
@@ -211,6 +230,7 @@ function ResumeWorkbenchInner({
 }
 
 function PromptTab({ resumeId, doc }: { resumeId: string; doc: ResumeDocumentV1 }) {
+  const router = useRouter();
   const { data: resume } = useLiveQuery((q) =>
     q
       .from({ resume: resumeCollection })
@@ -218,9 +238,35 @@ function PromptTab({ resumeId, doc }: { resumeId: string; doc: ResumeDocumentV1 
       .findOne(),
   );
 
+  const applyMutation = useMutation({
+    mutationFn: async (newDoc: ResumeDocumentV1) => {
+      await replaceResumeDoc({ data: { id: resumeId, doc: newDoc } });
+    },
+    onSuccess() {
+      resumeCollection.utils.refetch();
+      toast.success("Resume updated — switching to editor");
+      void router.navigate({
+        to: ".",
+        search: (prev: Record<string, unknown>) => ({ ...prev, tab: "edit" }),
+        replace: true,
+      });
+    },
+    onError(err: unknown) {
+      toast.error("Failed to apply result", {
+        description: unwrapUnknownError(err).message,
+      });
+    },
+    meta: { invalidates: [["resumes"]] },
+  });
+
   return (
     <div className="mx-auto max-w-3xl">
-      <PromptCopySection doc={doc} jobDescription={resume?.jobDescription ?? ""} />
+      <PromptCopySection
+        doc={doc}
+        jobDescription={resume?.jobDescription ?? ""}
+        onApplyResult={(newDoc) => applyMutation.mutateAsync(newDoc)}
+        isApplying={applyMutation.isPending}
+      />
     </div>
   );
 }
