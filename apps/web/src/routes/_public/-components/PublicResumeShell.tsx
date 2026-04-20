@@ -59,7 +59,7 @@ export function PublicResumeShell() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link to="/resumes" className="gap-2 text-muted-foreground text-xs">
+                <Link to="/resumes" search={{sq:""}} className="gap-2 text-muted-foreground text-xs">
                   <FileJson className="size-4" />
                   <span>JSON → PDF</span>
                 </Link>

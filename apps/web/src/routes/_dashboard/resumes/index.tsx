@@ -8,7 +8,7 @@ import { NewResumeButton } from "./-components/NewResumeButton";
 import { ResumeListPage } from "./-components/ResumeList";
 
 const resumesSearchSchema = z.object({
-  sq: z.string().optional().default(""),
+  sq: z.string().optional().catch(""),
 });
 
 export const Route = createFileRoute("/_dashboard/resumes/")({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_dashboard/resumes/")({
 function RouteComponent() {
   const { sq } = Route.useSearch();
   const navigate = useNavigate();
-  const [keyword, setKeyword] = useState(sq);
+  const [keyword, setKeyword] = useState(sq??"");
 
   const debouncer = useDebouncer(
     (value: string) => {
@@ -43,7 +43,7 @@ function RouteComponent() {
 
   const handleKeywordChange: React.Dispatch<React.SetStateAction<string>> = (action) => {
     setKeyword((prev) => {
-      const next = typeof action === "function" ? action(prev) : action;
+      const next = typeof action === "function" ? action(prev??"") : action;
       debouncer.maybeExecute(next);
       return next;
     });
@@ -63,7 +63,7 @@ function RouteComponent() {
       <SearchBox
         keyword={keyword}
         setKeyword={handleKeywordChange}
-        debouncedValue={sq}
+        debouncedValue={sq??""}
         isDebouncing={debouncer.state.isPending ?? false}
         inputProps={{ placeholder: "Search resumes..." }}
       />
