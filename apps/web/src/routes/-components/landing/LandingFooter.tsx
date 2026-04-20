@@ -1,31 +1,30 @@
 import { AppConfig } from "@/utils/system";
 import { Link } from "@tanstack/react-router";
 
-const FOOTER_LINKS = ["Privacy", "Terms", "Support", "Contact"] as const;
-
 export function LandingFooter() {
-  const currentYear = new Date().getFullYear();
-
   return (
-    <footer className="bg-base-200 py-12">
-      <div className="container">
-        <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-          <Link to="/" className="font-serif text-2xl tracking-tight text-base-content">
-            {AppConfig.wordmark}
-            <span className="text-primary">.</span>
-          </Link>
-
-          <div className="flex gap-8 text-sm text-base-content/50">
-            {FOOTER_LINKS.map((link) => (
-              <a key={link} href="#" className="transition-colors hover:text-base-content">
-                {link}
-              </a>
-            ))}
-          </div>
-
-          <p className="text-sm text-base-content/40">
-            &copy; {currentYear} {AppConfig.name}. All rights reserved.
-          </p>
+    <footer className="mx-auto max-w-360 border-x border-t border-border/50">
+      <div className="flex flex-col items-center justify-between gap-6 px-8 py-12 font-mono text-xs text-muted-foreground md:flex-row md:px-16">
+        <Link to="/" className="transition-colors hover:text-base-content">
+          {AppConfig.wordmark}
+          <span className="text-primary">.</span>
+          <span className="ml-2">— JSON in · LLM in the middle · PDF out</span>
+        </Link>
+        <div className="flex gap-6">
+          <a href="#pipeline" className="transition-colors hover:text-base-content">
+            Pipeline
+          </a>
+          <a href="#features" className="transition-colors hover:text-base-content">
+            Features
+          </a>
+          <a
+            href={AppConfig.links.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-base-content"
+          >
+            GitHub
+          </a>
         </div>
       </div>
     </footer>

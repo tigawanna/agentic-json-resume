@@ -8,11 +8,16 @@ import {
   addTalk,
   batchUpdateSectionOrder,
   createResumeForUser,
+  deleteCertification,
+  deleteContactById,
   deleteEducation,
   deleteExperience,
+  deleteLanguageById,
   deleteProject,
   deleteResumeForUser,
+  deleteSkillGroupById,
   deleteTalk,
+  deleteVolunteerById,
   getResumeDetail,
   listResumesForUser,
   replaceResumeContent,
@@ -27,11 +32,16 @@ import {
   setResumeLinks,
   setResumeSummary,
   setSkillGroups,
+  updateCertification,
+  updateContact,
   updateEducation,
   updateExperience,
+  updateLanguage,
   updateProject,
   updateResumeMetadata,
+  updateSkillGroup,
   updateTalk,
+  updateVolunteer,
 } from "./resume.server";
 
 // ─── List & Detail ─────────────────────────────────────────
@@ -323,6 +333,117 @@ export const updateSkillGroups = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     await setSkillGroups(data.resumeId, data.groups);
+    return { success: true };
+  });
+
+export const editSkillGroup = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator(
+    (input: { id: string; name?: string; skills?: string[]; sortOrder?: number }) => input,
+  )
+  .handler(async ({ data }) => {
+    const { id, ...rest } = data;
+    await updateSkillGroup(id, rest);
+    return { success: true };
+  });
+
+export const removeSkillGroup = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }) => {
+    await deleteSkillGroupById(data.id);
+    return { success: true };
+  });
+
+// ─── Certifications ────────────────────────────────────────
+
+export const editCertification = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator(
+    (input: { id: string; name?: string; issuer?: string; date?: string; url?: string; sortOrder?: number }) => input,
+  )
+  .handler(async ({ data }) => {
+    const { id, ...rest } = data;
+    await updateCertification(id, rest);
+    return { success: true };
+  });
+
+export const removeCertification = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }) => {
+    await deleteCertification(data.id);
+    return { success: true };
+  });
+
+// ─── Volunteers ────────────────────────────────────────────
+
+export const editVolunteer = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator(
+    (input: {
+      id: string;
+      organization?: string;
+      role?: string;
+      startDate?: string;
+      endDate?: string;
+      description?: string;
+      sortOrder?: number;
+    }) => input,
+  )
+  .handler(async ({ data }) => {
+    const { id, ...rest } = data;
+    await updateVolunteer(id, rest);
+    return { success: true };
+  });
+
+export const removeVolunteer = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }) => {
+    await deleteVolunteerById(data.id);
+    return { success: true };
+  });
+
+// ─── Languages ─────────────────────────────────────────────
+
+export const editLanguage = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator(
+    (input: { id: string; name?: string; proficiency?: string; sortOrder?: number }) => input,
+  )
+  .handler(async ({ data }) => {
+    const { id, ...rest } = data;
+    await updateLanguage(id, rest);
+    return { success: true };
+  });
+
+export const removeLanguage = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }) => {
+    await deleteLanguageById(data.id);
+    return { success: true };
+  });
+
+// ─── Contacts (individual) ─────────────────────────────────
+
+export const editContact = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator(
+    (input: { id: string; type?: string; value?: string; label?: string; sortOrder?: number }) => input,
+  )
+  .handler(async ({ data }) => {
+    const { id, ...rest } = data;
+    await updateContact(id, rest);
+    return { success: true };
+  });
+
+export const removeContact = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ data }) => {
+    await deleteContactById(data.id);
     return { success: true };
   });
 

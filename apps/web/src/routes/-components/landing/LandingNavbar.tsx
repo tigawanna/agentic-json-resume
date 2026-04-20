@@ -1,15 +1,14 @@
-import { Button } from "@/components/ui/button";
 import { useTheme } from "@/lib/tanstack/router/use-theme";
 import { AppConfig } from "@/utils/system";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 
 const DashboardLink = lazy(() => import("./LandingDashboardLink"));
 
 const NAV_LINKS = [
-  { label: "Workflow", href: "#features" },
-  { label: "Why JSON", href: "#showcase" },
+  { label: "Pipeline", href: "#pipeline" },
+  { label: "Features", href: "#features" },
 ] as const;
 
 export function LandingNavbar() {
@@ -24,94 +23,119 @@ export function LandingNavbar() {
         document.startViewTransition(() => updateTheme(newTheme));
         return;
       } catch {
-        console.error("view transition not supprted")
+        console.error("view transition not supported");
       }
     }
     updateTheme(newTheme);
   }
 
   return (
-    <nav className="fixed top-0 right-0 left-0 z-50 border-b border-base-100/10 dark:border-base-content/10">
-      <div className="container flex h-16 items-center justify-between">
-        <Link
-          to="/"
-          className="font-serif text-2xl tracking-tight text-base-100 dark:text-base-content">
-          {AppConfig.wordmark}
-          <span className="text-primary">.</span>
+    <header
+      data-test="landing-navbar"
+      className="sticky top-0 z-50 border-b border-border/50 bg-base-100/80 backdrop-blur-md transition-all duration-300"
+    >
+      <div className="mx-auto flex h-12 max-w-360 items-center justify-between border-x border-border/50">
+        {/* Logo */}
+        <Link to="/" className="flex h-full items-center border-r border-border/50 px-6">
+          <span className="font-mono text-xs font-bold uppercase tracking-widest text-base-content">
+            {AppConfig.wordmark}
+            <span className="text-primary">.</span>
+          </span>
         </Link>
 
-        <div className="hidden items-center gap-8 md:flex">
+        {/* Status indicator — desktop */}
+        <div className="hidden flex-1 items-center gap-6 border-r border-border/50 px-6 font-mono text-xs text-muted-foreground md:flex">
+          <div className="flex items-center gap-2">
+            <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+            <span>JSON → LLM → PDF</span>
+          </div>
+        </div>
+
+        {/* Right actions — desktop */}
+        <div className="flex h-full items-center">
+          <button
+            onClick={toggleTheme}
+            className="hidden h-full border-l border-border/50 px-4 font-mono text-xs text-muted-foreground transition-colors hover:text-base-content sm:block"
+            aria-label="Toggle theme"
+          >
+            {theme === "light" ? "[ Dark ]" : "[ Light ]"}
+          </button>
+
           {NAV_LINKS.map((item) => (
             <a
               key={item.label}
               href={item.href}
-              className="text-sm text-base-100/70 transition-colors hover:text-base-100 dark:text-base-content/70 dark:hover:text-base-content">
-              {item.label}
+              className="hidden h-full items-center border-l border-border/50 px-4 font-mono text-xs text-muted-foreground transition-colors hover:text-base-content md:flex"
+            >
+              [ {item.label} ]
             </a>
           ))}
-          <button
-            onClick={toggleTheme}
-            className="rounded-full p-2 text-base-100/70 transition-colors hover:text-base-100 dark:text-base-content/70 dark:hover:text-base-content"
-            aria-label="Toggle theme">
-            {theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
-          </button>
-          <Link to="/auth/signup" search={{ returnTo: "/dashboard" }}>
-            <Button size="sm" variant="ghost" className="rounded-full px-4">
-              Sign up
-            </Button>
-          </Link>
+
           <Suspense
             fallback={
-              <Link to="/auth" search={{ returnTo: pathname }}>
-                <Button size="sm" className="rounded-full px-6">
-                  Get started
-                </Button>
+              <Link
+                to="/auth"
+                search={{ returnTo: pathname }}
+                className="flex h-full items-center bg-primary px-6 font-mono text-xs uppercase tracking-widest text-primary-content transition-opacity hover:opacity-90"
+              >
+                Get Started →
               </Link>
-            }>
+            }
+          >
             <DashboardLink />
           </Suspense>
-        </div>
 
-        <div className="flex items-center gap-2 md:hidden">
-          <button
-            onClick={toggleTheme}
-            className="rounded-full p-2 text-base-100/70 transition-colors hover:text-base-100 dark:text-base-content/70 dark:hover:text-base-content"
-            aria-label="Toggle theme">
-            {theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
-          </button>
+          {/* Mobile toggle */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="text-base-100 dark:text-base-content"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}>
-            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            className="flex h-full items-center border-l border-border/50 px-4 text-base-content md:hidden"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
         </div>
       </div>
 
+      {/* Mobile menu */}
       {mobileOpen && (
-        <div className="space-y-4 border-t border-base-100/10 bg-base-content/80 p-6 backdrop-blur-xl dark:border-base-content/10 dark:bg-base-100/80 md:hidden">
+        <div className="space-y-3 border-t border-border/50 bg-base-100/95 p-6 font-mono text-xs backdrop-blur-xl md:hidden">
+          <button
+            onClick={() => {
+              toggleTheme();
+              setMobileOpen(false);
+            }}
+            className="block text-muted-foreground transition-colors hover:text-base-content"
+          >
+            {theme === "light" ? "[ Dark mode ]" : "[ Light mode ]"}
+          </button>
           {NAV_LINKS.map((item) => (
             <a
               key={item.label}
               href={item.href}
               onClick={() => setMobileOpen(false)}
-              className="block text-base-100/70 transition-colors hover:text-base-100 dark:text-base-content/70 dark:hover:text-base-content">
-              {item.label}
+              className="block text-muted-foreground transition-colors hover:text-base-content"
+            >
+              [ {item.label} ]
             </a>
           ))}
           <Link
             to="/auth/signup"
             search={{ returnTo: "/dashboard" }}
-            onClick={() => setMobileOpen(false)}>
-            <Button variant="outline" className="w-full rounded-full">
-              Sign up
-            </Button>
+            onClick={() => setMobileOpen(false)}
+            className="block text-muted-foreground transition-colors hover:text-base-content"
+          >
+            [ Sign up ]
           </Link>
-          <Link to="/auth" search={{ returnTo: pathname }}>
-            <Button className="w-full rounded-full">Get started</Button>
+          <Link
+            to="/auth"
+            search={{ returnTo: pathname }}
+            onClick={() => setMobileOpen(false)}
+            className="mt-3 block bg-primary px-4 py-2 text-center uppercase tracking-widest text-primary-content"
+          >
+            Get Started →
           </Link>
         </div>
       )}
-    </nav>
+    </header>
   );
 }

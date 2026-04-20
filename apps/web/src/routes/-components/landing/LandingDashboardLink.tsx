@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { useViewer } from "@/data-access-layer/auth/viewer";
 import { Link } from "@tanstack/react-router";
 
@@ -7,18 +6,21 @@ export default function LandingDashboardLink() {
 
   if (viewer?.user) {
     return (
-      <Link to="/dashboard">
-        <Button size="sm" className="rounded-full px-6">
-          Dashboard
-        </Button>
+      <Link
+        to="/dashboard"
+        className="flex h-full items-center bg-primary px-6 font-mono text-xs uppercase tracking-widest text-primary-content transition-opacity hover:opacity-90"
+      >
+        Dashboard →
       </Link>
     );
   }
   return (
-    <Link to="/auth" search={{ returnTo: "/dashboard" }}>
-      <Button size="sm" className="rounded-full px-6">
-        Get Started
-      </Button>
+    <Link
+      to="/auth"
+      search={{ returnTo: "/dashboard" }}
+      className="flex h-full items-center bg-primary px-6 font-mono text-xs uppercase tracking-widest text-primary-content transition-opacity hover:opacity-90"
+    >
+      Get Started →
     </Link>
   );
 }

@@ -564,6 +564,181 @@ export async function setSkillGroups(
   }
 }
 
+export async function updateSkillGroup(
+  groupId: string,
+  input: { name?: string; skills?: string[]; sortOrder?: number },
+): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.sortOrder !== undefined) updates.sortOrder = input.sortOrder;
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(resumeSkillGroup).set(updates).where(eq(resumeSkillGroup.id, groupId));
+  }
+  if (input.skills !== undefined) {
+    await db.delete(resumeSkill).where(eq(resumeSkill.groupId, groupId));
+    if (input.skills.length > 0) {
+      await db.insert(resumeSkill).values(
+        input.skills.map((name, si) => ({ groupId, name, level: null, sortOrder: si })),
+      );
+    }
+  }
+}
+
+export async function deleteSkillGroupById(groupId: string): Promise<void> {
+  await db.delete(resumeSkillGroup).where(eq(resumeSkillGroup.id, groupId));
+}
+
+// ─── Certification CRUD ────────────────────────────────────
+
+export async function addCertification(
+  resumeId: string,
+  input: { name: string; issuer?: string; date?: string; url?: string; sortOrder: number },
+): Promise<string> {
+  const id = crypto.randomUUID();
+  await db.insert(resumeCertification).values({
+    id,
+    resumeId,
+    name: input.name,
+    issuer: input.issuer ?? "",
+    date: input.date ?? "",
+    url: input.url ?? "",
+    sortOrder: input.sortOrder,
+  });
+  return id;
+}
+
+export async function updateCertification(
+  certId: string,
+  input: { name?: string; issuer?: string; date?: string; url?: string; sortOrder?: number },
+): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.issuer !== undefined) updates.issuer = input.issuer;
+  if (input.date !== undefined) updates.date = input.date;
+  if (input.url !== undefined) updates.url = input.url;
+  if (input.sortOrder !== undefined) updates.sortOrder = input.sortOrder;
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(resumeCertification).set(updates).where(eq(resumeCertification.id, certId));
+  }
+}
+
+export async function deleteCertification(certId: string): Promise<void> {
+  await db.delete(resumeCertification).where(eq(resumeCertification.id, certId));
+}
+
+// ─── Volunteer CRUD ────────────────────────────────────────
+
+export async function addVolunteer(
+  resumeId: string,
+  input: {
+    organization: string;
+    role?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+    sortOrder: number;
+  },
+): Promise<string> {
+  const id = crypto.randomUUID();
+  await db.insert(resumeVolunteer).values({
+    id,
+    resumeId,
+    organization: input.organization,
+    role: input.role ?? "",
+    startDate: input.startDate ?? "",
+    endDate: input.endDate ?? "",
+    description: input.description ?? "",
+    sortOrder: input.sortOrder,
+  });
+  return id;
+}
+
+export async function updateVolunteer(
+  volunteerId: string,
+  input: {
+    organization?: string;
+    role?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+    sortOrder?: number;
+  },
+): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  if (input.organization !== undefined) updates.organization = input.organization;
+  if (input.role !== undefined) updates.role = input.role;
+  if (input.startDate !== undefined) updates.startDate = input.startDate;
+  if (input.endDate !== undefined) updates.endDate = input.endDate;
+  if (input.description !== undefined) updates.description = input.description;
+  if (input.sortOrder !== undefined) updates.sortOrder = input.sortOrder;
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(resumeVolunteer).set(updates).where(eq(resumeVolunteer.id, volunteerId));
+  }
+}
+
+export async function deleteVolunteerById(volunteerId: string): Promise<void> {
+  await db.delete(resumeVolunteer).where(eq(resumeVolunteer.id, volunteerId));
+}
+
+// ─── Language CRUD ─────────────────────────────────────────
+
+export async function addLanguage(
+  resumeId: string,
+  input: { name: string; proficiency?: string; sortOrder: number },
+): Promise<string> {
+  const id = crypto.randomUUID();
+  await db.insert(resumeLanguage).values({
+    id,
+    resumeId,
+    name: input.name,
+    proficiency: input.proficiency ?? "",
+    sortOrder: input.sortOrder,
+  });
+  return id;
+}
+
+export async function updateLanguage(
+  languageId: string,
+  input: { name?: string; proficiency?: string; sortOrder?: number },
+): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  if (input.name !== undefined) updates.name = input.name;
+  if (input.proficiency !== undefined) updates.proficiency = input.proficiency;
+  if (input.sortOrder !== undefined) updates.sortOrder = input.sortOrder;
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(resumeLanguage).set(updates).where(eq(resumeLanguage.id, languageId));
+  }
+}
+
+export async function deleteLanguageById(languageId: string): Promise<void> {
+  await db.delete(resumeLanguage).where(eq(resumeLanguage.id, languageId));
+}
+
+// ─── Contact CRUD ──────────────────────────────────────────
+
+export async function updateContact(
+  contactId: string,
+  input: { type?: string; value?: string; label?: string; sortOrder?: number },
+): Promise<void> {
+  const updates: Record<string, unknown> = {};
+  if (input.type !== undefined) updates.type = input.type;
+  if (input.value !== undefined) updates.value = input.value;
+  if (input.label !== undefined) updates.label = input.label;
+  if (input.sortOrder !== undefined) updates.sortOrder = input.sortOrder;
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(resumeContact).set(updates).where(eq(resumeContact.id, contactId));
+  }
+}
+
+export async function deleteContactById(contactId: string): Promise<void> {
+  await db.delete(resumeContact).where(eq(resumeContact.id, contactId));
+}
+
 // ─── Talk CRUD ─────────────────────────────────────────────
 
 export async function addTalk(

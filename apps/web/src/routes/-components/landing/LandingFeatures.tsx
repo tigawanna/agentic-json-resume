@@ -1,78 +1,105 @@
-import { Copy, FileDown, FileJson } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { AppConfig } from "@/utils/system";
-
-interface FeatureItem {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  iconColor: string;
-  iconBg: string;
-}
-
-const FEATURES: FeatureItem[] = [
+const steps = [
   {
-    icon: FileJson,
-    title: "One JSON schema",
+    id: "01",
+    label: "DATA LAYER",
+    title: "Strict JSON Schema",
     description:
-      "Your résumé lives as structured data. The UI and PDF are views on that data—so edits stay consistent.",
-    iconColor: "text-primary",
-    iconBg: "bg-primary/10",
+      "Your résumé lives as structured JSON validated by Zod. The editor and PDF renderer are views on the same data — edits stay consistent across every output.",
+    hoverClass: "group-hover:text-primary",
   },
   {
-    icon: Copy,
-    title: "Use any LLM",
+    id: "02",
+    label: "LOGIC LAYER",
+    title: "Tailor via Any LLM",
     description:
-      "Copy your JSON, add the job description in ChatGPT or another assistant, and paste the updated JSON back. No lock-in to one provider.",
-    iconColor: "text-earth-green-400",
-    iconBg: "bg-earth-green-400/10",
+      "Copy your JSON into ChatGPT or any assistant alongside a job description. Paste the revised JSON back. You keep full control — no vendor lock-in.",
+    hoverClass: "group-hover:text-info",
   },
   {
-    icon: FileDown,
-    title: "PDF from components",
+    id: "03",
+    label: "PRESENTATION",
+    title: "Print-Ready PDF Export",
     description:
-      "React turns the same JSON into on-screen layout and a print-ready PDF—less manual reformatting than fixing a doc.",
-    iconColor: "text-terracotta",
-    iconBg: "bg-terracotta/10",
+      "React components turn the same JSON into on-screen preview and a millimetre-precise PDF. Pick from multiple templates. No manual reformatting.",
+    hoverClass: "group-hover:text-base-content",
   },
 ];
 
-function FeatureCard({ feature, index }: { feature: FeatureItem; index: number }) {
-  const Icon = feature.icon;
-
-  return (
-    <div
-      className="animate-fade-in group relative rounded-2xl border border-border bg-base-200 p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5"
-      style={{ animationDelay: `${index * 150}ms` }}
-    >
-      <div
-        className={`mb-6 inline-flex size-14 items-center justify-center rounded-xl ${feature.iconBg} ${feature.iconColor} transition-transform group-hover:scale-110`}
-      >
-        <Icon className="size-7" />
-      </div>
-      <h3 className="mb-3 font-serif text-2xl text-base-content">{feature.title}</h3>
-      <p className="leading-relaxed text-base-content/60">{feature.description}</p>
-    </div>
-  );
-}
+const terminalLines = [
+  { prefix: "~/resume", text: " > agentic build ./resume.json --target=staff-eng.md" },
+  { status: "ok", text: "Parsing source JSON…" },
+  { status: "ok", text: "Connecting to inference node…" },
+  { status: "info", text: "Pruning irrelevant sections… Removed 4 entries" },
+  { status: "ok", text: "Re-ranking bullets based on job context…" },
+  { status: "ok", text: "Rendering PDF template: classic…" },
+];
 
 export function LandingFeatures() {
   return (
-    <section id="features" className="scroll-mt-20 bg-base-100 py-24">
-      <div className="container">
-        <div className="mb-16 text-center">
-          <h2 className="mb-4 font-serif text-4xl text-base-content md:text-5xl">
-            How <span className="italic text-primary">{AppConfig.name}</span> works
-          </h2>
-          <p className="mx-auto max-w-lg text-lg text-base-content/60">
-            Three steps: store JSON, tailor it with an assistant, export PDF from the same source
-          </p>
+    <section
+      id="pipeline"
+      data-test="landing-pipeline"
+      className="mx-auto max-w-360 border-x border-border/50 scroll-mt-14 pb-24"
+    >
+      <div className="px-8 pt-24 pb-12 md:px-16">
+        <h2 className="text-3xl font-medium tracking-tight text-base-content md:text-4xl">
+          Deployment Pipeline
+        </h2>
+        <p className="mt-4 max-w-[50ch] text-pretty text-muted-foreground">
+          The build process for your professional narrative. No WYSIWYG editors.
+          No misaligned text boxes. Pure structured data compiled to print-ready
+          output.
+        </p>
+      </div>
+
+      <div className="mx-8 overflow-hidden border border-border md:mx-16">
+        {/* 3 steps */}
+        <div className="grid grid-cols-1 divide-y divide-border md:grid-cols-3 md:divide-y-0 md:divide-x">
+          {steps.map((step) => (
+            <div
+              key={step.id}
+              className="group relative p-8 transition-colors hover:bg-neutral/50 lg:p-12"
+            >
+              <div className="absolute top-4 right-4 font-mono text-xs text-base-content/20 transition-colors group-hover:text-base-content/40">
+                +
+              </div>
+              <div
+                className={`mb-10 font-mono text-4xl font-light tabular-nums text-base-content/30 transition-colors ${step.hoverClass}`}
+              >
+                {step.id}.
+              </div>
+              <h3 className="mb-4 text-balance text-xl font-medium tracking-tight text-base-content md:text-2xl">
+                {step.title}
+              </h3>
+              <p className="max-w-[35ch] text-pretty text-sm font-light leading-relaxed text-muted-foreground md:text-base">
+                {step.description}
+              </p>
+            </div>
+          ))}
         </div>
 
-        <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
-          {FEATURES.map((feature, index) => (
-            <FeatureCard key={feature.title} feature={feature} index={index} />
-          ))}
+        {/* Terminal output */}
+        <div className="border-t border-border bg-base-200 p-6 font-mono text-xs leading-loose text-muted-foreground">
+          {terminalLines.map((line, i) =>
+            line.prefix ? (
+              <div key={i}>
+                <span className="text-base-content/50">{line.prefix}</span>
+                {line.text}
+              </div>
+            ) : (
+              <div key={i}>
+                [INFO] {line.text}{" "}
+                {line.status === "ok" && <span className="text-primary">OK</span>}
+              </div>
+            ),
+          )}
+          <div className="mt-4 text-base-content">
+            {">"} Artifact generated:{" "}
+            <span className="cursor-pointer text-primary underline decoration-primary/30 underline-offset-4">
+              out/resume_staff_eng.pdf
+            </span>{" "}
+            (142kb)
+          </div>
         </div>
       </div>
     </section>
