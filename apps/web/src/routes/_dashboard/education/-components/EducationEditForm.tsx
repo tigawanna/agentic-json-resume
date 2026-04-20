@@ -1,4 +1,11 @@
 import { Button } from "@/components/ui/button";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +19,8 @@ import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+
+const DEGREE_OPTIONS = ["Degree", "Diploma", "Certificate"];
 
 const educationEditOpts = formOptions({
   defaultValues: {
@@ -101,12 +110,26 @@ export function EducationEditForm({ education, onSuccess }: EducationEditFormPro
           }}>
           {(field) => (
             <div>
-              <Label className="text-xs">Degree</Label>
-              <Input
+              <Label className="text-xs">Degree / Diploma / Certificate</Label>
+              <Combobox
                 value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="mt-1"
-              />
+                onValueChange={(value) => field.handleChange(value ?? "")}>
+                <ComboboxInput
+                  placeholder="Select or type..."
+                  showTrigger
+                  showClear
+                  disabled={false}
+                />
+                <ComboboxContent>
+                  <ComboboxList>
+                    {DEGREE_OPTIONS.map((option) => (
+                      <ComboboxItem key={option} value={option}>
+                        {option}
+                      </ComboboxItem>
+                    ))}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
             </div>
           )}
         </form.AppField>
