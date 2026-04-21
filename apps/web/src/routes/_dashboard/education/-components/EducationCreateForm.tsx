@@ -1,6 +1,12 @@
 import { ResumePickerField } from "@/components/custom-ui/ResumePickerField";
 import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
@@ -170,5 +176,22 @@ export function EducationCreateForm({ onSuccess }: EducationCreateFormProps) {
         </Button>
       </DialogFooter>
     </form>
+  );
+}
+
+interface EducationCreateFormDilaogProps {
+  open: boolean;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}
+export function EducationCreateFormDilaog({ open, setOpen }: EducationCreateFormDilaogProps) {
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New Education</DialogTitle>
+        </DialogHeader>
+        <EducationCreateForm onSuccess={() => setOpen(false)} />
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,102 +1,108 @@
+import Nprogress from "@/components/navigation/nprogress/Nprogress";
 import { Button } from "@/components/ui/button";
 import {
-  educationCollection,
-  educationCollectionMetaQueryOptions,
-} from "@/data-access-layer/resume/education/education.collection";
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
+import { listEducation } from "@/data-access-layer/resume/education/education.functions";
 import { deleteEducationMutationOptions } from "@/data-access-layer/resume/education/education.mutation-options";
-import { gt, ilike, or, useLiveSuspenseQuery } from "@tanstack/react-db";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, GraduationCap } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Navigate } from "@tanstack/react-router";
+import { GraduationCap, Loader, Plus } from "lucide-react";
 import { useState } from "react";
 import { Route } from "..";
+import { EducationCreateFormDilaog } from "./EducationCreateForm";
 import { EducationListCard } from "./EducationListCard";
 
 export function EducationList() {
-  const { sq } = Route.useSearch();
-  const [cursorStack, setCursorStack] = useState<string[]>([]);
-  const cursor = cursorStack[cursorStack.length - 1] as string | undefined;
-
-  const { data: items } = useLiveSuspenseQuery(
-    (q) => {
-      let query = q.from({ education: educationCollection });
-      if (cursor) {
-        query = query.where(({ education }) => gt(education.id, cursor));
-      }
-      if (sq) {
-        const pattern = `%${sq}%`;
-        query = query.where(({ education }) =>
-          or(
-            ilike(education.school, pattern),
-            ilike(education.degree, pattern),
-            ilike(education.field, pattern),
-            ilike(education.description, pattern),
-          ),
-        );
-      }
-      return query;
-    },
-    [sq, cursor],
-  );
-  console.log("data from live query== ", items);
-  const { data: meta } = useSuspenseQuery(educationCollectionMetaQueryOptions);
-  console.log("meta== ", meta);
+  const { sq, cursor, dir } = Route.useSearch();
+  const [createOpen, setCreateOpen] = useState(false);
+  const { data, isLoading, isRefetching } = useQuery({
+    queryKey: [queryKeyPrefixes.education, "page", cursor, dir ?? "after", sq],
+    queryFn: () => listEducation({ data: { cursor, direction: dir, keyword: sq } }),
+    placeholderData: (prevData) => prevData,
+  });
   const deleteMutation = useMutation(deleteEducationMutationOptions);
 
-  function goNext() {
-    if (meta?.nextCursor) {
-      setCursorStack((prev) => [...prev, meta.nextCursor!]);
-    }
+  if (isLoading) {
+    return (
+      <div className="flex w-full h-full flex-col gap-6" data-test="education-list-page">
+        <Loader className="animate-spin" />
+      </div>
+    );
   }
-
-  function goPrevious() {
-    setCursorStack((prev) => prev.slice(0, -1));
+  if (!data) {
+    return (
+      <div className="flex w-full h-full flex-col gap-6" data-test="education-list-page">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <GraduationCap className="text-muted-foreground size-12" />
+            </EmptyMedia>
+            <EmptyTitle>No Education Entries Yet</EmptyTitle>
+            <EmptyDescription>
+              You haven&apos;t added any education entries yet. Get started by adding your first
+              education entry.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent className="flex-row justify-center gap-2">
+            <Button>Create Education Entry</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                Navigate({
+                  to: ".",
+                  search: (prev) => {
+                    const { sq, cursor, dir, ...rest } = prev;
+                    return rest;
+                  },
+                  replace: true,
+                });
+              }}
+            >
+              Clear filters
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCreateOpen(true)}
+              data-test="add-education-btn"
+            >
+              <Plus className="mr-1 size-4" /> Add
+            </Button>
+          </EmptyContent>
+          <EducationCreateFormDilaog open={createOpen} setOpen={setCreateOpen} />
+        </Empty>
+      </div>
+    );
   }
 
   return (
     <div className="flex w-full h-full flex-col gap-6" data-test="education-list-page">
-      <div className="flex-1" data-test="education-list">
-        {items.length === 0 ? (
-          <div className="flex flex-col h-full items-center justify-center gap-4 py-16">
-            <GraduationCap className="text-muted-foreground size-12" />
-            <p className="text-muted-foreground text-sm">
-              No education entries found. Add education to your resumes first.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
-              <EducationListCard
-                key={item.id}
-                education={item}
-                onDelete={(id) => {
-                  educationCollection.utils.writeDelete(id);
-                  deleteMutation.mutate(id);
-                }}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="flex items-center justify-between border-t pt-4">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={goPrevious}
-          disabled={cursorStack.length === 0}
-          data-test="pagination-prev"
-        >
-          <ChevronLeft className="mr-1 size-4" /> Previous
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={goNext}
-          disabled={!meta?.nextCursor}
-          data-test="pagination-next"
-        >
-          Next <ChevronRight className="ml-1 size-4" />
-        </Button>
-      </div>
+      <Nprogress isAnimating={isRefetching} />
+      {data.items.length === 0 ? (
+        <div className="flex flex-col h-full items-center justify-center gap-4 py-16">
+          <GraduationCap className="text-muted-foreground size-12" />
+          <p className="text-muted-foreground text-sm">
+            No education entries found. Add education to your resumes first.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-test="education-list">
+          {data.items.map((item) => (
+            <EducationListCard
+              key={item.id}
+              education={item}
+              onDelete={(id) => deleteMutation.mutate(id)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

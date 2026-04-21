@@ -2,15 +2,16 @@ import "@tanstack/react-start/server-only";
 
 import { db } from "@/lib/drizzle/client";
 import { resume, resumeEducation } from "@/lib/drizzle/scheam";
-import { and, desc, eq, like, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, like, lt, or } from "drizzle-orm";
 import type { EducationListItemDTO, PaginatedResult } from "./education.types";
 
 const PAGE_SIZE = 1;
 
 export async function listEducationForUserPaginated(
   userId: string,
-  opts?: { keyword?: string; cursor?: string },
+  opts?: { keyword?: string; cursor?: string; direction?: "after" | "before" },
 ): Promise<PaginatedResult<EducationListItemDTO>> {
+  const direction = opts?.direction ?? "after";
   const conditions = [eq(resume.userId, userId)];
 
   if (opts?.keyword) {
@@ -26,7 +27,11 @@ export async function listEducationForUserPaginated(
   }
 
   if (opts?.cursor) {
-    conditions.push(lt(resumeEducation.id, opts.cursor));
+    conditions.push(
+      direction === "before"
+        ? lt(resumeEducation.id, opts.cursor)
+        : gt(resumeEducation.id, opts.cursor),
+    );
   }
 
   const rows = await db
@@ -47,21 +52,35 @@ export async function listEducationForUserPaginated(
     .from(resumeEducation)
     .innerJoin(resume, eq(resumeEducation.resumeId, resume.id))
     .where(and(...conditions))
-    .orderBy(desc(resumeEducation.id))
+    .orderBy(direction === "before" ? desc(resumeEducation.id) : asc(resumeEducation.id))
     .limit(PAGE_SIZE + 1);
 
   const hasMore = rows.length > PAGE_SIZE;
-  const items = (hasMore ? rows.slice(0, PAGE_SIZE) : rows).map((r) => ({
+  // Reverse 'before' results so items are always in ascending id order for display
+  const orderedRows =
+    direction === "before" ? rows.slice(0, PAGE_SIZE).reverse() : rows.slice(0, PAGE_SIZE);
+
+  const items = orderedRows.map((r) => ({
     ...r,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   }));
 
-  return {
-    items,
-    nextCursor: hasMore ? items[items.length - 1].id : undefined,
-    previousCursor: opts?.cursor ?? undefined,
-  };
+  let nextCursor: string | undefined;
+  let previousCursor: string | undefined;
+
+  if (direction === "after") {
+    nextCursor = hasMore ? items[items.length - 1].id : undefined;
+    // There is a previous page only if we arrived via a cursor (not the first page)
+    previousCursor = opts?.cursor !== undefined ? items[0]?.id : undefined;
+  } else {
+    // direction === "before": navigating backwards
+    previousCursor = hasMore ? items[0]?.id : undefined;
+    // Next: navigate forward from the last displayed item
+    nextCursor = items.length > 0 ? items[items.length - 1].id : undefined;
+  }
+
+  return { items, nextCursor, previousCursor };
 }
 
 export async function deleteEducationForUser(educationId: string, userId: string): Promise<void> {

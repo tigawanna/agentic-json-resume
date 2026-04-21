@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { educationCollection } from "@/data-access-layer/resume/education/education.collection";
 import type { EducationListItemDTO } from "@/data-access-layer/resume/education/education.types";
 import { editEducation } from "@/data-access-layer/resume/resume.functions";
 import { useAppForm } from "@/lib/tanstack/form";
@@ -44,12 +43,8 @@ export function EducationEditForm({ education, onSuccess }: EducationEditFormPro
       editEducation({
         data: { id: education.id, ...values },
       }),
-    onSuccess(data, values) {
+    onSuccess() {
       toast.success("Education saved");
-      educationCollection.utils.writeUpdate({
-        ...education,
-        ...values,
-      });
       onSuccess?.();
     },
     onError(err: unknown) {
@@ -84,13 +79,15 @@ export function EducationEditForm({ education, onSuccess }: EducationEditFormPro
         e.stopPropagation();
         form.handleSubmit();
       }}
-      className="flex flex-col gap-3">
+      className="flex flex-col gap-3"
+    >
       <div className="grid gap-3 sm:grid-cols-2">
         <form.AppField
           name="school"
           validators={{
             onChange: ({ value }) => (!value?.trim() ? "School is required" : undefined),
-          }}>
+          }}
+        >
           {(field) => (
             <div>
               <Label className="text-xs">School</Label>
@@ -107,13 +104,15 @@ export function EducationEditForm({ education, onSuccess }: EducationEditFormPro
           name="degree"
           validators={{
             onChange: ({ value }) => (!value?.trim() ? "Degree is required" : undefined),
-          }}>
+          }}
+        >
           {(field) => (
             <div>
               <Label className="text-xs">Degree / Diploma / Certificate</Label>
               <Combobox
                 value={field.state.value}
-                onValueChange={(value) => field.handleChange(value ?? "")}>
+                onValueChange={(value) => field.handleChange(value ?? "")}
+              >
                 <ComboboxInput
                   placeholder="Select or type..."
                   showTrigger
@@ -195,7 +194,8 @@ export function EducationEditForm({ education, onSuccess }: EducationEditFormPro
           type="button"
           variant="outline"
           onClick={() => form.reset()}
-          disabled={mutation.isPending}>
+          disabled={mutation.isPending}
+        >
           Cancel
         </Button>
         <Button type="submit" disabled={mutation.isPending || !form.state.isFormValid}>

@@ -4,11 +4,14 @@ import { deleteEducationForUser, listEducationForUserPaginated } from "./educati
 
 export const listEducation = createServerFn({ method: "GET" })
   .middleware([viewerMiddleware])
-  .inputValidator((input?: { keyword?: string; cursor?: string }) => input)
+  .inputValidator(
+    (input?: { keyword?: string; cursor?: string; direction?: "after" | "before" }) => input,
+  )
   .handler(async ({ context, data }) => {
     return listEducationForUserPaginated(context.viewer.user.id, {
       keyword: data?.keyword,
       cursor: data?.cursor,
+      direction: data?.direction,
     });
   });
 
