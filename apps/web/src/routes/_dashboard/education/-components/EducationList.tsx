@@ -28,7 +28,7 @@ export function EducationList() {
     placeholderData: (prevData) => prevData,
   });
   const deleteMutation = useMutation(deleteEducationMutationOptions);
-
+  const navigate = Route.useNavigate();
   if (isLoading) {
     return (
       <div className="flex w-full h-full flex-col gap-6" data-test="education-list-page">
@@ -36,7 +36,7 @@ export function EducationList() {
       </div>
     );
   }
-  if (!data) {
+  if (!data || data.items.length === 0) {
     return (
       <div className="flex w-full h-full flex-col gap-6" data-test="education-list-page">
         <Empty>
@@ -51,15 +51,19 @@ export function EducationList() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent className="flex-row justify-center gap-2">
-            <Button>Create Education Entry</Button>
+            <Button size="sm" onClick={() => setCreateOpen(true)} data-test="add-education-btn">
+              Create Education Entry
+            </Button>
             <Button
               variant="outline"
               onClick={() => {
-                Navigate({
+                navigate({
                   to: ".",
                   search: (prev) => {
-                    const { sq, cursor, dir, ...rest } = prev;
-                    return rest;
+                    return {
+                      ...prev,
+                      sq: "",
+                    };
                   },
                   replace: true,
                 });
@@ -67,17 +71,9 @@ export function EducationList() {
             >
               Clear filters
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCreateOpen(true)}
-              data-test="add-education-btn"
-            >
-              <Plus className="mr-1 size-4" /> Add
-            </Button>
           </EmptyContent>
-          <EducationCreateFormDilaog open={createOpen} setOpen={setCreateOpen} />
         </Empty>
+        <EducationCreateFormDilaog open={createOpen} setOpen={setCreateOpen} />
       </div>
     );
   }
@@ -85,24 +81,15 @@ export function EducationList() {
   return (
     <div className="flex w-full h-full flex-col gap-6" data-test="education-list-page">
       <Nprogress isAnimating={isRefetching} />
-      {data.items.length === 0 ? (
-        <div className="flex flex-col h-full items-center justify-center gap-4 py-16">
-          <GraduationCap className="text-muted-foreground size-12" />
-          <p className="text-muted-foreground text-sm">
-            No education entries found. Add education to your resumes first.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-test="education-list">
-          {data.items.map((item) => (
-            <EducationListCard
-              key={item.id}
-              education={item}
-              onDelete={(id) => deleteMutation.mutate(id)}
-            />
-          ))}
-        </div>
-      )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-test="education-list">
+        {data.items.map((item) => (
+          <EducationListCard
+            key={item.id}
+            education={item}
+            onDelete={(id) => deleteMutation.mutate(id)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
