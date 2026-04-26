@@ -1,2 +1,2 @@
-icon siurce : https://www.svgrepo.com/svg/530250/order
-
+icon source : https://www.svgrepo.com/svg/530250/order
+favico maker : https://realfavicongenerator.net/
