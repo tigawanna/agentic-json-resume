@@ -16,4 +16,5 @@ console.log("raw === ", raw);
 //   throw new Error(`Invalid environment variables:\n${formattedErrors}`);
 // }
 
-export const clientEnv = import.meta.env.VITE_API_URL;
+export const clientEnv =
+  import.meta.env.VITE_API_URL ?? "https://agentic-json-resume-web.vercel.app/";
