@@ -4,11 +4,11 @@
 //   VITE_API_URL: z.url(),
 // });
 
-// const raw = {
-//   VITE_API_URL: import.meta.env.VITE_API_URL ?? process.env.VITE_API_URL,
-// };
+const raw = {
+  VITE_API_URL: import.meta.env.VITE_API_URL ?? process.env.VITE_API_URL,
+};
 
-// console.log("raw === ", raw);
+console.log("raw === ", raw);
 // const { success, error, data } = envSchema.safeParse(raw);
 
 // if (!success) {
