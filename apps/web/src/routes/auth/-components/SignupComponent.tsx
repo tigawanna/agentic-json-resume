@@ -103,10 +103,10 @@ export function SignupComponent() {
 
           void form.handleSubmit();
         }}
-        className="bg-base-300/20 flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg p-[2%] md:w-[70%] lg:w-[40%]"
+        className="bg-card/40 border-border/50 flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg border p-[2%] shadow-sm md:w-[70%] lg:w-[40%]"
       >
         <div className="flex h-full w-full flex-col items-center justify-center gap-4">
-          <h1 className="text-4xl font-bold">Sign up</h1>
+          <h1 className="text-foreground text-4xl font-bold">Sign up</h1>
 
           <form.AppField
             name="name"
@@ -183,23 +183,23 @@ export function SignupComponent() {
         </form.AppForm>
 
         <div className="flex w-full items-center gap-3">
-          <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-400 to-transparent" />
-          <span className="text-xs font-medium text-gray-500">OR</span>
-          <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-400 to-transparent" />
+          <div className="via-border h-px flex-1 bg-linear-to-r from-transparent to-transparent" />
+          <span className="text-muted-foreground text-xs font-medium">OR</span>
+          <div className="via-border h-px flex-1 bg-linear-to-r from-transparent to-transparent" />
         </div>
 
         <button
           type="button"
           disabled={githubMutation.isPending || mutation.isPending}
           onClick={() => githubMutation.mutate()}
-          className="btn btn-ghost border border-gray-600 w-full gap-2 hover:border-gray-400 hover:bg-gray-900"
+          className="btn bg-primary/20 text-foreground w-full gap-2"
         >
           <Github className="size-5" />
           <span className="font-semibold">Continue with GitHub</span>
         </button>
 
         <div className="flex items-center justify-center gap-1 text-sm">
-          <span className="text-gray-400">Already have an account?</span>
+          <span className="text-muted-foreground">Already have an account?</span>
           <Link
             to="/auth"
             search={{ returnTo: returnTo ?? "/" }}

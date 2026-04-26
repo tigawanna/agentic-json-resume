@@ -86,7 +86,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
 
           void form.handleSubmit();
         }}
-        className="flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg p-[2%] md:w-[70%] lg:w-[40%]"
+        className="border-border/40 bg-card/30 flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg border p-[2%] shadow-sm md:w-[70%] lg:w-[40%]"
       >
         <div className="flex w-full flex-col items-center justify-center gap-4">
           {onBackToSessions && (
@@ -99,7 +99,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
               Back to accounts
             </button>
           )}
-          <h1 className="text-4xl font-bold">Sign in</h1>
+          <h1 className="text-foreground text-4xl font-bold">Sign in</h1>
 
           <form.AppField
             name="email"
@@ -150,16 +150,16 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
         </form.AppForm>
 
         <div className="flex w-full items-center gap-3">
-          <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-400 to-transparent" />
-          <span className="text-xs font-medium text-gray-500">OR</span>
-          <div className="h-px flex-1 bg-linear-to-r from-transparent via-gray-400 to-transparent" />
+          <div className="via-border h-px flex-1 bg-linear-to-r from-transparent to-transparent" />
+          <span className="text-muted-foreground text-xs font-medium">OR</span>
+          <div className="via-border h-px flex-1 bg-linear-to-r from-transparent to-transparent" />
         </div>
 
         <button
           type="button"
           disabled={githubMutation.isPending || mutation.isPending}
           onClick={() => githubMutation.mutate()}
-          className="btn btn-ghost border border-gray-600 w-full gap-2 hover:border-gray-400 hover:bg-gray-900"
+          className="btn bg-primary/20 text-foreground w-full gap-2"
         >
           <Github className="size-5" />
           <span className="font-semibold">Continue with GitHub</span>
@@ -167,7 +167,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
 
         <div className="flex w-full flex-col items-center justify-center gap-4">
           <div className="flex items-center justify-center gap-1 text-sm">
-            <span className="text-gray-400">Don&apos;t have an account?</span>
+            <span className="text-muted-foreground">Don&apos;t have an account?</span>
             <Link
               to="/auth/signup"
               search={{ returnTo }}
@@ -176,30 +176,6 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
               Sign up
             </Link>
           </div>
-          {/* <div className="flex w-full flex-wrap items-center justify-center gap-2">
-            <button
-              type="button"
-              disabled={mutation.isPending}
-              className="btn btn-primary btn-sm"
-              onClick={() => {
-                form.setFieldValue("email", "stranger1@email.com");
-                form.setFieldValue("password", "stranger1@email.com");
-              }}
-            >
-              Login as stranger 1
-            </button>
-            <button
-              type="button"
-              disabled={mutation.isPending}
-              className="btn btn-secondary btn-sm"
-              onClick={() => {
-                form.setFieldValue("email", "stranger2@email.com");
-                form.setFieldValue("password", "stranger2@email.com");
-              }}
-            >
-              Login as stranger 2
-            </button>
-          </div> */}
         </div>
       </form>
     </div>
