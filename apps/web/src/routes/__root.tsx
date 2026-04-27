@@ -10,7 +10,7 @@ import { ThemeProvider } from "@/lib/tanstack/router/theme-provider";
 import { AppConfig } from "@/utils/system";
 import type { QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-
+import { clientEnv } from "@/lib/client-env";
 interface MyRouterContext {
   queryClient: QueryClient;
   viewer?: TViewer;
@@ -44,13 +44,13 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         og: {
           title: AppConfig.name,
           description: AppConfig.description,
-          image: "https://example.com/og.png",
-          url: "https://example.com",
+          image: clientEnv.VITE_API_URL + "/og.png",
+          url: clientEnv.VITE_API_URL,
           type: "website",
         },
         twitter: {
           card: "summary_large_image",
-          image: "https://example.com/og.png",
+          image: clientEnv.VITE_API_URL + "/og.png",
         },
       },
     ],
