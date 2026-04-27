@@ -23,7 +23,7 @@ export const BackgroundRippleEffect = ({
       ref={ref}
       className={cn(
         "absolute inset-0 h-screen w-full",
-        "[--cell-border-color:var(--color-primary)] [--cell-fill-color:color-mix(in_oklch,var(--color-primary)_15%,transparent)] [--cell-shadow-color:var(--color-primary)]",
+        "[--cell-border-color:color-mix(in_oklch,var(--color-primary)_70%,transparent)] [--cell-fill-color:color-mix(in_oklch,var(--color-primary)_35%,transparent)] [--cell-shadow-color:var(--color-primary)]",
         "dark:[--cell-border-color:var(--color-primary)] dark:[--cell-fill-color:color-mix(in_oklch,var(--color-primary)_20%,transparent)] dark:[--cell-shadow-color:var(--color-primary)]",
       )}
     >
@@ -110,7 +110,7 @@ const DivGrid = ({
           <div
             key={idx}
             className={cn(
-              "cell relative border opacity-40 transition-opacity duration-150 will-change-transform hover:opacity-60 dark:shadow-[0px_0px_40px_1px_var(--cell-shadow-color)_inset]",
+              "cell relative border opacity-50 transition-opacity duration-150 will-change-transform hover:opacity-80 shadow-[0px_0px_20px_1px_var(--cell-shadow-color)_inset] dark:opacity-40 dark:hover:opacity-60 dark:shadow-[0px_0px_40px_1px_var(--cell-shadow-color)_inset]",
               clickedCell && "animate-cell-ripple fill-mode-[none]",
               !interactive && "pointer-events-none",
             )}
