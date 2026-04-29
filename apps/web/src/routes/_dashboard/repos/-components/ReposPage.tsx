@@ -64,11 +64,15 @@ import {
   type RepoSearchFilters,
 } from "@/routes/_dashboard/repos/-components/repos-search-query";
 
+const GITHUB_REPOS_QUERY_CACHE_MS = 24 * 60 * 60 * 1000;
+
 function githubReposQueryOptions(filters: RepoSearchFilters) {
   const minStars = filters.minStars ? Number(filters.minStars) : undefined;
 
   return queryOptions({
     queryKey: [queryKeyPrefixes.githubRepos, "search", filters] as const,
+    staleTime: GITHUB_REPOS_QUERY_CACHE_MS,
+    gcTime: GITHUB_REPOS_QUERY_CACHE_MS,
     queryFn: () =>
       searchGithubRepos({
         data: {

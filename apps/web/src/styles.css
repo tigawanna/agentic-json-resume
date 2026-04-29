@@ -280,8 +280,8 @@
   --color-sidebar-foreground: var(--color-base-content);
   --color-sidebar-primary: var(--color-primary);
   --color-sidebar-primary-foreground: var(--color-primary-content);
-  --color-sidebar-accent: var(--color-accent);
-  --color-sidebar-accent-foreground: var(--color-accent-content);
+  --color-sidebar-accent: color-mix(in oklch, var(--color-primary) 40%, transparent);
+  --color-sidebar-accent-foreground: var(--color-sidebar-foreground);
   --color-sidebar-border: color-mix(in oklch, var(--color-base-content) 20%, transparent);
   --color-sidebar-ring: var(--color-neutral);
 }

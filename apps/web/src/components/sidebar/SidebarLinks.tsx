@@ -7,7 +7,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link, useMatchRoute } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { SidebarItem } from "./types";
 
@@ -16,12 +16,28 @@ interface SidebarLinksProps {
   isNested?: boolean;
 }
 
+function normalizeSidebarPath(path: string): string {
+  const base = path.split("?")[0] ?? "";
+  if (base.length > 1 && base.endsWith("/")) return base.slice(0, -1);
+  return base || "/";
+}
+
+function sidebarHrefMatchesPathname(pathname: string, href: string, fuzzy: boolean): boolean {
+  const p = normalizeSidebarPath(pathname);
+  const h = normalizeSidebarPath(href);
+  if (p === h) return true;
+  if (!fuzzy || h === "/") return false;
+  return p.startsWith(`${h}/`);
+}
+
 export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
   const { state } = useSidebar();
-  const matchRoute = useMatchRoute();
+  const pathname = useRouterState({
+    select: (s) => s.location.pathname,
+  });
   const showTooltips = state === "collapsed";
 
-  const routeMatches = (href: string): boolean => Boolean(matchRoute({ to: href, fuzzy: true }));
+  const routeMatches = (href: string): boolean => sidebarHrefMatchesPathname(pathname, href, true);
 
   if (links.length === 0) {
     return null;
