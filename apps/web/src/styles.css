@@ -2,6 +2,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@import "./view-transition/angled-transition.css";
+@import "./view-transition/wipe-transition.css";
+@import "./view-transition/slides-transition.css";
+@import "./view-transition/flip-transition.css";
+@import "./view-transition/vertical-transition.css";
+
 /* DaisyUI */
 /* @plugin "daisyui" {
   themes: light --default, dark --prefersdark;
