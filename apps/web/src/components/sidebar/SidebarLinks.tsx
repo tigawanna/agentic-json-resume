@@ -7,7 +7,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link } from "@tanstack/react-router";
+import { Link, useMatchRoute } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { SidebarItem } from "./types";
 
@@ -18,7 +18,10 @@ interface SidebarLinksProps {
 
 export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
   const { state } = useSidebar();
+  const matchRoute = useMatchRoute();
   const showTooltips = state === "collapsed";
+
+  const routeMatches = (href: string): boolean => Boolean(matchRoute({ to: href, fuzzy: true }));
 
   if (links.length === 0) {
     return null;
@@ -29,13 +32,14 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
   return (
     <Container>
       {links.map((item) => {
-        // Early return for items with sublinks
         if (item.sublinks && item.sublinks.length > 0) {
+          const sectionOpenDefault =
+            item.sublinks.some((sub) => routeMatches(sub.href)) || Boolean(item.isActive);
           return (
             <Collapsible
               key={item.title}
               asChild
-              defaultOpen={item.isActive}
+              defaultOpen={sectionOpenDefault}
               className="group/collapsible"
             >
               <SidebarMenuItem>
@@ -44,7 +48,7 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
                     <Tooltip delayDuration={200}>
                       <CollapsibleTrigger asChild>
                         <TooltipTrigger asChild>
-                          <SidebarMenuButton>
+                          <SidebarMenuButton isActive={sectionOpenDefault}>
                             {item.icon && <item.icon />}
                             <span>{item.title}</span>
                             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -56,7 +60,7 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
                   </TooltipProvider>
                 ) : (
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton>
+                    <SidebarMenuButton isActive={sectionOpenDefault}>
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
                       <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -71,14 +75,15 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
           );
         }
 
-        // Default return for flat items
+        const isActive = routeMatches(item.href);
+
         return (
           <SidebarMenuItem key={item.title}>
             {showTooltips ? (
               <TooltipProvider>
                 <Tooltip delayDuration={200}>
                   <TooltipTrigger asChild>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild isActive={isActive}>
                       <Link to={item.href}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
@@ -89,7 +94,7 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
                 </Tooltip>
               </TooltipProvider>
             ) : (
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton asChild isActive={isActive}>
                 <Link to={item.href}>
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
