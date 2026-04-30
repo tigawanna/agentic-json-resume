@@ -1,10 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { useResumeWorkspace } from "@/components/resume/resume-workspace/ResumeWorkspaceContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updateLinks } from "@/data-access-layer/resume/resume.functions";
-import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
 import { unwrapUnknownError } from "@/utils/errors";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { useMutation } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -21,25 +19,16 @@ interface LinksFormProps {
 }
 
 export function LinksForm({ resumeId }: LinksFormProps) {
-  const { data: resume } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
+  const { resume, updateLinks } = useResumeWorkspace();
 
   const [links, setLinks] = useState<LinkRow[]>(
     resume?.links.map((l) => ({ label: l.label, url: l.url, icon: l.icon ?? undefined })) ?? [],
   );
 
   const mutation = useMutation({
-    mutationFn: async () => updateLinks({ data: { resumeId, links } }),
+    mutationFn: async () => updateLinks(links),
     onSuccess() {
       toast.success("Links saved");
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        links: links.map((l, i) => ({ ...l, id: "", resumeId, icon: l.icon ?? "", sortOrder: i })),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to save links", {

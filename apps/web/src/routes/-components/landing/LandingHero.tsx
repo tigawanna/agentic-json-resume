@@ -58,6 +58,7 @@ export function LandingHero() {
             </Link>
             <Link
               to="/workbench"
+              search={{ tab: "edit" }}
               className="border border-border px-6 py-3 font-mono text-base-content transition-colors hover:bg-neutral"
             >
               Try the Editor

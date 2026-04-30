@@ -1,11 +1,7 @@
-import { updateResumeMeta } from "@/data-access-layer/resume/resume.functions";
-import {
-  resumeCollection,
-  resumesCollection,
-} from "@/data-access-layer/resume/resumes-query-collection";
+import { useResumeWorkspace } from "@/components/resume/resume-workspace/ResumeWorkspaceContext";
+import { TEMPLATE_IDS } from "@/features/resume/resume-schema";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -27,37 +23,13 @@ const formOpts = formOptions({
 });
 
 export function MetadataForm({ resumeId }: MetadataFormProps) {
-  const { data: resume } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
+  const { resume, updateMetadata } = useResumeWorkspace();
 
   const mutation = useMutation({
     mutationFn: async (values: typeof formOpts.defaultValues) =>
-      updateResumeMeta({ data: { id: resumeId, ...values } }),
-    async onSuccess() {
+      updateMetadata({ ...values, templateId: z.enum(TEMPLATE_IDS).parse(values.templateId) }),
+    onSuccess() {
       toast.success("Resume updated");
-      const updates = {
-        id: resumeId,
-        name: form.state.values.name,
-        fullName: form.state.values.fullName,
-        headline: form.state.values.headline,
-        description: form.state.values.description,
-        jobDescription: form.state.values.jobDescription,
-        templateId: form.state.values.templateId,
-      };
-      resumeCollection.utils.writeUpdate(updates);
-      resumesCollection.utils.writeUpdate({
-        id: resumeId,
-        name: updates.name,
-        fullName: updates.fullName,
-        headline: updates.headline,
-        description: updates.description,
-        templateId: updates.templateId,
-        updatedAt: new Date().toISOString(),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to update resume", {

@@ -1,12 +1,10 @@
 import { PickFromExistingDialog } from "@/components/PickFromExistingDialog";
+import { useResumeWorkspace } from "@/components/resume/resume-workspace/ResumeWorkspaceContext";
 import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { searchSkills, updateSkillGroups } from "@/data-access-layer/resume/resume.functions";
-import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
 import { unwrapUnknownError } from "@/utils/errors";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { useMutation } from "@tanstack/react-query";
 import { Library, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
@@ -22,12 +20,8 @@ interface SkillGroupDraft {
 }
 
 export function SkillsForm({ resumeId }: SkillsFormProps) {
-  const { data: resume } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
+  const { resume, updateSkillGroups, searches } = useResumeWorkspace();
+  const searchSkills = searches?.skills;
 
   const [groups, setGroups] = useState<SkillGroupDraft[]>(
     resume?.skillGroups.map((g) => ({
@@ -38,25 +32,9 @@ export function SkillsForm({ resumeId }: SkillsFormProps) {
   const [pickOpen, setPickOpen] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: async () => updateSkillGroups({ data: { resumeId, groups } }),
+    mutationFn: async () => updateSkillGroups(groups),
     onSuccess() {
       toast.success("Skills saved");
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        skillGroups: groups.map((g, gi) => ({
-          id: "",
-          resumeId,
-          name: g.name,
-          sortOrder: gi,
-          skills: g.items.map((s, si) => ({
-            id: "",
-            groupId: "",
-            name: s,
-            level: null,
-            sortOrder: si,
-          })),
-        })),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to save skills", {
@@ -151,48 +129,52 @@ export function SkillsForm({ resumeId }: SkillsFormProps) {
         <Button type="button" variant="outline" size="sm" onClick={addGroup}>
           <Plus className="mr-1 size-3" /> Add Group
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
-          <Library className="mr-1 size-3" /> Pick from Existing
-        </Button>
+        {searchSkills && (
+          <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
+            <Library className="mr-1 size-3" /> Pick from Existing
+          </Button>
+        )}
         <Button size="sm" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
           Save Skills
         </Button>
       </div>
 
-      <PickFromExistingDialog
-        open={pickOpen}
-        onOpenChange={setPickOpen}
-        title="Pick from Existing Skills"
-        description="Search skills from your other resumes."
-        multi
-        getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "skills", q]}
-        getSearchQueryFn={(q) => () => searchSkills({ data: { query: q } })}
-        mapToItems={(data) =>
-          data.map((s: { id: string; name: string; groupName?: string }) => ({
-            id: s.id,
-            primary: s.name,
-            secondary: s.groupName,
-          }))
-        }
-        onPick={(items) => {
-          if (groups.length === 0) {
-            setGroups([{ name: "Skills", items: items.map((i) => i.primary) }]);
-          } else {
-            const lastIdx = groups.length - 1;
-            setGroups((prev) =>
-              prev.map((g, i) =>
-                i === lastIdx
-                  ? {
-                      ...g,
-                      items: [...g.items, ...items.map((it) => it.primary)],
-                    }
-                  : g,
-              ),
-            );
+      {searchSkills && (
+        <PickFromExistingDialog
+          open={pickOpen}
+          onOpenChange={setPickOpen}
+          title="Pick from Existing Skills"
+          description="Search skills from your other resumes."
+          multi
+          getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "skills", q]}
+          getSearchQueryFn={(q) => () => searchSkills(q)}
+          mapToItems={(data) =>
+            data.map((s) => ({
+              id: s.id,
+              primary: s.name,
+              secondary: s.groupName,
+            }))
           }
-          toast.success(`Added ${items.length} skill(s)`);
-        }}
-      />
+          onPick={(items) => {
+            if (groups.length === 0) {
+              setGroups([{ name: "Skills", items: items.map((i) => i.primary) }]);
+            } else {
+              const lastIdx = groups.length - 1;
+              setGroups((prev) =>
+                prev.map((g, i) =>
+                  i === lastIdx
+                    ? {
+                        ...g,
+                        items: [...g.items, ...items.map((it) => it.primary)],
+                      }
+                    : g,
+                ),
+              );
+            }
+            toast.success(`Added ${items.length} skill(s)`);
+          }}
+        />
+      )}
     </div>
   );
 }

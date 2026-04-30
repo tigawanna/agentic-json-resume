@@ -1,21 +1,14 @@
 import { PickFromExistingDialog } from "@/components/PickFromExistingDialog";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
+import { useResumeWorkspace } from "@/components/resume/resume-workspace/ResumeWorkspaceContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  createTalk,
-  editTalk,
-  removeTalk,
-  searchTalks,
-} from "@/data-access-layer/resume/resume.functions";
+import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
-import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { ExternalLink, Library, Pencil, Plus, Trash2, X } from "lucide-react";
@@ -46,12 +39,8 @@ interface TalksSectionProps {
 }
 
 export function TalksSection({ resumeId }: TalksSectionProps) {
-  const { data: resume } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
+  const { resume, searches } = useResumeWorkspace();
+  const searchTalks = searches?.talks;
 
   const [pickOpen, setPickOpen] = useState(false);
 
@@ -67,29 +56,33 @@ export function TalksSection({ resumeId }: TalksSectionProps) {
           existingCount={resume.talks.length}
           allTalks={resume.talks}
         />
-        <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
-          <Library className="mr-1 size-3" /> Pick from Existing
-        </Button>
+        {searchTalks && (
+          <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
+            <Library className="mr-1 size-3" /> Pick from Existing
+          </Button>
+        )}
       </div>
 
-      <PickFromExistingDialog
-        open={pickOpen}
-        onOpenChange={setPickOpen}
-        title="Pick from Existing Talks"
-        description="Search across all your resumes to copy a talk entry."
-        getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "talks", q]}
-        getSearchQueryFn={(q) => () => searchTalks({ data: { query: q } })}
-        mapToItems={(data) =>
-          data.map((talk: { id: string; title: string; event: string; date: string }) => ({
-            id: talk.id,
-            primary: talk.title,
-            secondary: `${talk.event}${talk.date ? ` · ${talk.date}` : ""}`,
-          }))
-        }
-        onPick={(items) => {
-          toast.info(`Selected ${items.length} talk(s) — add them via the form`);
-        }}
-      />
+      {searchTalks && (
+        <PickFromExistingDialog
+          open={pickOpen}
+          onOpenChange={setPickOpen}
+          title="Pick from Existing Talks"
+          description="Search across all your resumes to copy a talk entry."
+          getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "talks", q]}
+          getSearchQueryFn={(q) => () => searchTalks(q)}
+          mapToItems={(data) =>
+            data.map((talk) => ({
+              id: talk.id,
+              primary: talk.title,
+              secondary: `${talk.event}${talk.date ? ` · ${talk.date}` : ""}`,
+            }))
+          }
+          onPick={(items) => {
+            toast.info(`Selected ${items.length} talk(s) — add them via the form`);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -103,6 +96,7 @@ interface TalkCardProps {
 }
 
 function TalkCard({ talk, resumeId, allTalks }: TalkCardProps) {
+  const { updateTalk, deleteTalk } = useResumeWorkspace();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(talk.title);
   const [event, setEvent] = useState(talk.event);
@@ -113,13 +107,9 @@ function TalkCard({ talk, resumeId, allTalks }: TalkCardProps) {
   );
 
   const deleteMutation = useMutation({
-    mutationFn: async () => removeTalk({ data: { id: talk.id } }),
+    mutationFn: async () => deleteTalk(talk.id),
     onSuccess() {
       toast.success("Talk removed");
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        talks: allTalks.filter((t) => t.id !== talk.id),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to remove talk", {
@@ -130,21 +120,10 @@ function TalkCard({ talk, resumeId, allTalks }: TalkCardProps) {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async () =>
-      editTalk({
-        data: { id: talk.id, title, event, date, description, links },
-      }),
+    mutationFn: async () => updateTalk(talk.id, { title, event, date, description, links }),
     onSuccess() {
       toast.success("Talk saved");
       setEditing(false);
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        talks: allTalks.map((t) =>
-          t.id === talk.id
-            ? { ...t, title, event, date, description, links: JSON.stringify(links) }
-            : t,
-        ),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to save talk", {
@@ -311,39 +290,20 @@ function AddTalkForm({
   existingCount: number;
   allTalks: ResumeDetailDTO["talks"];
 }) {
+  const { createTalk } = useResumeWorkspace();
   const [open, setOpen] = useState(false);
 
   const mutation = useMutation({
     mutationFn: async (values: typeof addTalkFormOpts.defaultValues) =>
       createTalk({
-        data: {
-          resumeId,
-          title: values.title,
-          event: values.event,
-          date: values.date,
-          description: values.description,
-          sortOrder: existingCount,
-        },
+        title: values.title,
+        event: values.event,
+        date: values.date,
+        description: values.description,
       }),
-    onSuccess(data, values) {
+    onSuccess() {
       toast.success("Talk added");
       setOpen(false);
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        talks: [
-          ...allTalks,
-          {
-            id: data.id,
-            resumeId,
-            title: values.title,
-            event: values.event || "",
-            date: values.date || "",
-            description: values.description || "",
-            links: "[]",
-            sortOrder: existingCount,
-          },
-        ],
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to add talk", {

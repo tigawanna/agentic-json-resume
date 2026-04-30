@@ -1,21 +1,14 @@
 import { PickFromExistingDialog } from "@/components/PickFromExistingDialog";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
+import { useResumeWorkspace } from "@/components/resume/resume-workspace/ResumeWorkspaceContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  createEducation,
-  editEducation,
-  removeEducation,
-  searchEducation,
-} from "@/data-access-layer/resume/resume.functions";
+import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
-import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { Library, Pencil, Plus, Trash2 } from "lucide-react";
@@ -28,12 +21,8 @@ interface EducationSectionProps {
 }
 
 export function EducationSection({ resumeId }: EducationSectionProps) {
-  const { data: resume } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
+  const { resume, searches } = useResumeWorkspace();
+  const searchEducation = searches?.education;
 
   const [pickOpen, setPickOpen] = useState(false);
 
@@ -56,29 +45,33 @@ export function EducationSection({ resumeId }: EducationSectionProps) {
           existingCount={resume.education.length}
           allEducation={resume.education}
         />
-        <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
-          <Library className="mr-1 size-3" /> Pick from Existing
-        </Button>
+        {searchEducation && (
+          <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
+            <Library className="mr-1 size-3" /> Pick from Existing
+          </Button>
+        )}
       </div>
 
-      <PickFromExistingDialog
-        open={pickOpen}
-        onOpenChange={setPickOpen}
-        title="Pick from Existing Education"
-        description="Search across all your resumes to copy an education entry."
-        getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "education", q]}
-        getSearchQueryFn={(q) => () => searchEducation({ data: { query: q } })}
-        mapToItems={(data) =>
-          data.map((edu: { id: string; school: string; degree: string; field: string }) => ({
-            id: edu.id,
-            primary: `${edu.degree} in ${edu.field}`,
-            secondary: edu.school,
-          }))
-        }
-        onPick={(items) => {
-          toast.info(`Selected ${items.length} education(s) — add them via the form`);
-        }}
-      />
+      {searchEducation && (
+        <PickFromExistingDialog
+          open={pickOpen}
+          onOpenChange={setPickOpen}
+          title="Pick from Existing Education"
+          description="Search across all your resumes to copy an education entry."
+          getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "education", q]}
+          getSearchQueryFn={(q) => () => searchEducation(q)}
+          mapToItems={(data) =>
+            data.map((edu) => ({
+              id: edu.id,
+              primary: `${edu.degree} in ${edu.field}`,
+              secondary: edu.school,
+            }))
+          }
+          onPick={(items) => {
+            toast.info(`Selected ${items.length} education(s) — add them via the form`);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -94,6 +87,7 @@ function EducationCard({
   resumeId: string;
   allEducation: ResumeDetailDTO["education"];
 }) {
+  const { updateEducation, deleteEducation } = useResumeWorkspace();
   const [editing, setEditing] = useState(false);
   const [school, setSchool] = useState(education.school);
   const [degree, setDegree] = useState(education.degree);
@@ -103,13 +97,9 @@ function EducationCard({
   const [description, setDescription] = useState(education.description);
 
   const deleteMutation = useMutation({
-    mutationFn: async () => removeEducation({ data: { id: education.id } }),
+    mutationFn: async () => deleteEducation(education.id),
     onSuccess() {
       toast.success("Education removed");
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        education: allEducation.filter((e) => e.id !== education.id),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to remove education", {
@@ -121,20 +111,10 @@ function EducationCard({
 
   const saveMutation = useMutation({
     mutationFn: async () =>
-      editEducation({
-        data: { id: education.id, school, degree, field, startDate, endDate, description },
-      }),
+      updateEducation(education.id, { school, degree, field, startDate, endDate, description }),
     onSuccess() {
       toast.success("Education saved");
       setEditing(false);
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        education: allEducation.map((e) =>
-          e.id === education.id
-            ? { ...e, school, degree, field, startDate, endDate, description }
-            : e,
-        ),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to save education", {
@@ -261,34 +241,14 @@ function AddEducationForm({
   existingCount: number;
   allEducation: ResumeDetailDTO["education"];
 }) {
+  const { createEducation } = useResumeWorkspace();
   const [open, setOpen] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: async (values: typeof addEduOpts.defaultValues) =>
-      createEducation({
-        data: { resumeId, ...values, sortOrder: existingCount },
-      }),
-    onSuccess(data, values) {
+    mutationFn: async (values: typeof addEduOpts.defaultValues) => createEducation(values),
+    onSuccess() {
       toast.success("Education added");
       setOpen(false);
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        education: [
-          ...allEducation,
-          {
-            id: data.id,
-            resumeId,
-            school: values.school,
-            degree: values.degree,
-            field: values.field || "",
-            startDate: values.startDate || "",
-            endDate: values.endDate || "",
-            description: values.description || "",
-            sortOrder: existingCount,
-            bullets: [],
-          },
-        ],
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to add education", {

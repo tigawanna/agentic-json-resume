@@ -1,22 +1,15 @@
 import { PickFromExistingDialog } from "@/components/PickFromExistingDialog";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
+import { useResumeWorkspace } from "@/components/resume/resume-workspace/ResumeWorkspaceContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  createProject,
-  editProject,
-  removeProject,
-  searchProjects,
-} from "@/data-access-layer/resume/resume.functions";
+import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
-import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { Library, Pencil, Plus, Trash2, X } from "lucide-react";
@@ -29,12 +22,8 @@ interface ProjectSectionProps {
 }
 
 export function ProjectSection({ resumeId }: ProjectSectionProps) {
-  const { data: resume } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
+  const { resume, searches } = useResumeWorkspace();
+  const searchProjects = searches?.projects;
 
   const [pickOpen, setPickOpen] = useState(false);
 
@@ -57,29 +46,33 @@ export function ProjectSection({ resumeId }: ProjectSectionProps) {
           existingCount={resume.projects.length}
           allProjects={resume.projects}
         />
-        <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
-          <Library className="mr-1 size-3" /> Pick from Existing
-        </Button>
+        {searchProjects && (
+          <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
+            <Library className="mr-1 size-3" /> Pick from Existing
+          </Button>
+        )}
       </div>
 
-      <PickFromExistingDialog
-        open={pickOpen}
-        onOpenChange={setPickOpen}
-        title="Pick from Existing Projects"
-        description="Search across all your resumes to copy a project."
-        getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "projects", q]}
-        getSearchQueryFn={(q) => () => searchProjects({ data: { query: q } })}
-        mapToItems={(data) =>
-          data.map((p: { id: string; name: string; description: string }) => ({
-            id: p.id,
-            primary: p.name,
-            secondary: p.description,
-          }))
-        }
-        onPick={(items) => {
-          toast.info(`Selected ${items.length} project(s) — add them via the form`);
-        }}
-      />
+      {searchProjects && (
+        <PickFromExistingDialog
+          open={pickOpen}
+          onOpenChange={setPickOpen}
+          title="Pick from Existing Projects"
+          description="Search across all your resumes to copy a project."
+          getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "projects", q]}
+          getSearchQueryFn={(q) => () => searchProjects(q)}
+          mapToItems={(data) =>
+            data.map((p) => ({
+              id: p.id,
+              primary: p.name,
+              secondary: p.description,
+            }))
+          }
+          onPick={(items) => {
+            toast.info(`Selected ${items.length} project(s) — add them via the form`);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -95,6 +88,7 @@ function ProjectCard({
   resumeId: string;
   allProjects: ResumeDetailDTO["projects"];
 }) {
+  const { updateProject, deleteProject } = useResumeWorkspace();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(project.name);
   const [url, setUrl] = useState(project.url);
@@ -110,13 +104,9 @@ function ProjectCard({
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async () => removeProject({ data: { id: project.id } }),
+    mutationFn: async () => deleteProject(project.id),
     onSuccess() {
       toast.success("Project removed");
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        projects: allProjects.filter((p) => p.id !== project.id),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to remove project", {
@@ -128,27 +118,10 @@ function ProjectCard({
 
   const saveMutation = useMutation({
     mutationFn: async () =>
-      editProject({
-        data: {
-          id: project.id,
-          name,
-          url,
-          homepageUrl,
-          description,
-          tech: techTags,
-        },
-      }),
+      updateProject(project.id, { name, url, homepageUrl, description, tech: techTags }),
     onSuccess() {
       toast.success("Project saved");
       setEditing(false);
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        projects: allProjects.map((p) =>
-          p.id === project.id
-            ? { ...p, name, url, homepageUrl, description, tech: JSON.stringify(techTags) }
-            : p,
-        ),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to save project", {
@@ -294,41 +267,22 @@ function AddProjectForm({
   existingCount: number;
   allProjects: ResumeDetailDTO["projects"];
 }) {
+  const { createProject } = useResumeWorkspace();
   const [open, setOpen] = useState(false);
   const [techTags, setTechTags] = useState<string[]>([]);
 
   const mutation = useMutation({
     mutationFn: async (values: typeof addProjectOpts.defaultValues) =>
       createProject({
-        data: {
-          resumeId,
-          name: values.name,
-          url: values.url || undefined,
-          homepageUrl: values.homepageUrl || undefined,
-          description: values.description,
-          tech: techTags,
-          sortOrder: existingCount,
-        },
+        name: values.name,
+        url: values.url,
+        homepageUrl: values.homepageUrl,
+        description: values.description,
+        tech: techTags,
       }),
-    onSuccess(data, values) {
+    onSuccess() {
       toast.success("Project added");
       setOpen(false);
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        projects: [
-          ...allProjects,
-          {
-            id: data.id,
-            resumeId,
-            name: values.name,
-            url: values.url || "",
-            homepageUrl: values.homepageUrl || "",
-            description: values.description,
-            tech: JSON.stringify(techTags),
-            sortOrder: existingCount,
-          },
-        ],
-      });
       setTechTags([]);
     },
     onError(err: unknown) {

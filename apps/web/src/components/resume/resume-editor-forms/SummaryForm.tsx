@@ -1,8 +1,6 @@
-import { updateSummary } from "@/data-access-layer/resume/resume.functions";
-import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
+import { useResumeWorkspace } from "@/components/resume/resume-workspace/ResumeWorkspaceContext";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -16,22 +14,12 @@ const formOpts = formOptions({
 });
 
 export function SummaryForm({ resumeId }: SummaryFormProps) {
-  const { data: resume } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
+  const { resume, updateSummary } = useResumeWorkspace();
 
   const mutation = useMutation({
-    mutationFn: async (values: { text: string }) =>
-      updateSummary({ data: { resumeId, text: values.text } }),
+    mutationFn: async (values: { text: string }) => updateSummary(values.text),
     onSuccess() {
       toast.success("Summary saved");
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        summaries: [{ id: "", resumeId, text: form.state.values.text, sortOrder: 0 }],
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to save summary", {

@@ -1,9 +1,5 @@
+import { useResumeWorkspace } from "@/components/resume/resume-workspace/ResumeWorkspaceContext";
 import { resumeDetailToDocument } from "@/data-access-layer/resume/resume-converters";
-import { replaceResumeDoc, updateResumeMeta } from "@/data-access-layer/resume/resume.functions";
-import {
-  resumeCollection,
-  resumesCollection,
-} from "@/data-access-layer/resume/resumes-query-collection";
 import {
   resumeDocumentV1Schema,
   safeParseResumeJson,
@@ -11,7 +7,6 @@ import {
 } from "@/features/resume/resume-schema";
 import { useDebouncedValue } from "@/hooks/use-debouncer";
 import { unwrapUnknownError } from "@/utils/errors";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { useMutation } from "@tanstack/react-query";
 import type { JsonValue } from "@visual-json/core";
 import { DiffView, JsonEditor } from "@visual-json/react";
@@ -28,12 +23,7 @@ interface ResumeJsonTabProps {
 }
 
 export function ResumeJsonTab({ resumeId }: ResumeJsonTabProps) {
-  const { data: resume } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
+  const { resume, replaceDocument } = useResumeWorkspace();
 
   const doc = resume ? resumeDetailToDocument(resume) : null;
   const [jsonValue, setJsonValue] = useState<JsonValue>({} as JsonValue);
@@ -94,25 +84,10 @@ export function ResumeJsonTab({ resumeId }: ResumeJsonTabProps) {
 
   const saveMutation = useMutation({
     mutationFn: async (docToSave: ResumeDocumentV1) => {
-      const promises: Promise<unknown>[] = [];
-
-      promises.push(replaceResumeDoc({ data: { id: resumeId, doc: docToSave } }));
-
-      // If template changed, persist that too
-      if (resume && docToSave.meta.templateId !== resume.templateId) {
-        promises.push(
-          updateResumeMeta({
-            data: { id: resumeId, templateId: docToSave.meta.templateId },
-          }),
-        );
-      }
-
-      await Promise.all(promises);
+      await replaceDocument(docToSave);
     },
     onSuccess() {
       setPendingDoc(null);
-      void resumeCollection.utils.refetch();
-      void resumesCollection.utils.refetch();
       toast.success("JSON saved");
     },
     onError(err: unknown) {

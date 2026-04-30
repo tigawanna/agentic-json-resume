@@ -1,22 +1,13 @@
 import { PickFromExistingDialog } from "@/components/PickFromExistingDialog";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
+import { useResumeWorkspace } from "@/components/resume/resume-workspace/ResumeWorkspaceContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  createExperience,
-  editExperience,
-  removeExperience,
-  searchExperienceBullets,
-  searchExperiences,
-  updateExperienceBullets,
-} from "@/data-access-layer/resume/resume.functions";
+import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
-import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
-import { eq, useLiveSuspenseQuery } from "@tanstack/react-db";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { Library, Pencil, Plus, Trash2, X } from "lucide-react";
@@ -29,12 +20,8 @@ interface ExperienceSectionProps {
 }
 
 export function ExperienceSection({ resumeId }: ExperienceSectionProps) {
-  const { data: resume } = useLiveSuspenseQuery((q) =>
-    q
-      .from({ resume: resumeCollection })
-      .where(({ resume }) => eq(resume.id, resumeId))
-      .findOne(),
-  );
+  const { resume, searches } = useResumeWorkspace();
+  const searchExperiences = searches?.experiences;
 
   const [pickOpen, setPickOpen] = useState(false);
 
@@ -57,37 +44,33 @@ export function ExperienceSection({ resumeId }: ExperienceSectionProps) {
           existingCount={resume.experiences.length}
           allExperiences={resume.experiences}
         />
-        <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
-          <Library className="mr-1 size-3" /> Pick from Existing
-        </Button>
+        {searchExperiences && (
+          <Button variant="outline" size="sm" onClick={() => setPickOpen(true)}>
+            <Library className="mr-1 size-3" /> Pick from Existing
+          </Button>
+        )}
       </div>
 
-      <PickFromExistingDialog
-        open={pickOpen}
-        onOpenChange={setPickOpen}
-        title="Pick from Existing Experiences"
-        description="Search across all your resumes to copy an experience entry."
-        getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "experiences", q]}
-        getSearchQueryFn={(q) => () => searchExperiences({ data: { query: q } })}
-        mapToItems={(data) =>
-          data.map(
-            (exp: {
-              id: string;
-              company: string;
-              role: string;
-              startDate: string;
-              endDate: string;
-            }) => ({
+      {searchExperiences && (
+        <PickFromExistingDialog
+          open={pickOpen}
+          onOpenChange={setPickOpen}
+          title="Pick from Existing Experiences"
+          description="Search across all your resumes to copy an experience entry."
+          getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "experiences", q]}
+          getSearchQueryFn={(q) => () => searchExperiences(q)}
+          mapToItems={(data) =>
+            data.map((exp) => ({
               id: exp.id,
               primary: `${exp.role} at ${exp.company}`,
               secondary: `${exp.startDate} – ${exp.endDate}`,
-            }),
-          )
-        }
-        onPick={(items) => {
-          toast.info(`Selected ${items.length} experience(s) — add them via the form`);
-        }}
-      />
+            }))
+          }
+          onPick={(items) => {
+            toast.info(`Selected ${items.length} experience(s) — add them via the form`);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -101,6 +84,9 @@ interface ExperienceCardProps {
 }
 
 function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCardProps) {
+  const { deleteExperience, updateExperience, updateExperienceBullets, searches } =
+    useResumeWorkspace();
+  const searchExperienceBullets = searches?.experienceBullets;
   const [editing, setEditing] = useState(false);
   const [role, setRole] = useState(experience.role);
   const [company, setCompany] = useState(experience.company);
@@ -111,13 +97,9 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
   const [bulletPickOpen, setBulletPickOpen] = useState(false);
 
   const deleteMutation = useMutation({
-    mutationFn: async () => removeExperience({ data: { id: experience.id } }),
+    mutationFn: async () => deleteExperience(experience.id),
     onSuccess() {
       toast.success("Experience removed");
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        experiences: allExperiences.filter((e) => e.id !== experience.id),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to remove experience", {
@@ -129,18 +111,10 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
 
   const saveMutation = useMutation({
     mutationFn: async () =>
-      editExperience({
-        data: { id: experience.id, role, company, startDate, endDate, location },
-      }),
+      updateExperience(experience.id, { role, company, startDate, endDate, location }),
     onSuccess() {
       toast.success("Experience saved");
       setEditing(false);
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        experiences: allExperiences.map((e) =>
-          e.id === experience.id ? { ...e, role, company, startDate, endDate, location } : e,
-        ),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to save experience", {
@@ -151,26 +125,9 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
   });
 
   const bulletMutation = useMutation({
-    mutationFn: async () =>
-      updateExperienceBullets({ data: { experienceId: experience.id, bullets } }),
+    mutationFn: async () => updateExperienceBullets(experience.id, bullets),
     onSuccess() {
       toast.success("Bullets saved");
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        experiences: allExperiences.map((e) =>
-          e.id === experience.id
-            ? {
-                ...e,
-                bullets: bullets.map((text, i) => ({
-                  id: "",
-                  experienceId: experience.id,
-                  text,
-                  sortOrder: i,
-                })),
-              }
-            : e,
-        ),
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to save bullets", {
@@ -244,14 +201,16 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
               <Button type="button" variant="outline" size="sm" onClick={addBullet}>
                 <Plus className="mr-1 size-3" /> Add Bullet
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setBulletPickOpen(true)}
-              >
-                <Library className="mr-1 size-3" /> Pick Bullets
-              </Button>
+              {searchExperienceBullets && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setBulletPickOpen(true)}
+                >
+                  <Library className="mr-1 size-3" /> Pick Bullets
+                </Button>
+              )}
               <Button
                 size="sm"
                 onClick={() => bulletMutation.mutate()}
@@ -262,25 +221,32 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
             </div>
           </div>
 
-          <PickFromExistingDialog
-            open={bulletPickOpen}
-            onOpenChange={setBulletPickOpen}
-            title="Pick Experience Bullets"
-            description="Search bullet points across all your experiences."
-            multi
-            getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "experience-bullets", q]}
-            getSearchQueryFn={(q) => () => searchExperienceBullets({ data: { query: q } })}
-            mapToItems={(data) =>
-              data.map((b: { id: string; text: string }) => ({
-                id: b.id,
-                primary: b.text,
-              }))
-            }
-            onPick={(items) => {
-              setBullets((prev) => [...prev, ...items.map((i) => i.primary)]);
-              toast.success(`Added ${items.length} bullet(s)`);
-            }}
-          />
+          {searchExperienceBullets && (
+            <PickFromExistingDialog
+              open={bulletPickOpen}
+              onOpenChange={setBulletPickOpen}
+              title="Pick Experience Bullets"
+              description="Search bullet points across all your experiences."
+              multi
+              getSearchQueryKey={(q) => [
+                queryKeyPrefixes.resumes,
+                "search",
+                "experience-bullets",
+                q,
+              ]}
+              getSearchQueryFn={(q) => () => searchExperienceBullets(q)}
+              mapToItems={(data) =>
+                data.map((b) => ({
+                  id: b.id,
+                  primary: b.text,
+                }))
+              }
+              onPick={(items) => {
+                setBullets((prev) => [...prev, ...items.map((i) => i.primary)]);
+                toast.success(`Added ${items.length} bullet(s)`);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
     );
@@ -344,14 +310,16 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
             <Button type="button" variant="outline" size="sm" onClick={addBullet}>
               <Plus className="mr-1 size-3" /> Add Bullet
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setBulletPickOpen(true)}
-            >
-              <Library className="mr-1 size-3" /> Pick Bullets
-            </Button>
+            {searchExperienceBullets && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setBulletPickOpen(true)}
+              >
+                <Library className="mr-1 size-3" /> Pick Bullets
+              </Button>
+            )}
           </div>
         </div>
 
@@ -375,25 +343,27 @@ function ExperienceCard({ resumeId, experience, allExperiences }: ExperienceCard
           </Button>
         </div>
 
-        <PickFromExistingDialog
-          open={bulletPickOpen}
-          onOpenChange={setBulletPickOpen}
-          title="Pick Experience Bullets"
-          description="Search bullet points across all your experiences."
-          multi
-          getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "experience-bullets", q]}
-          getSearchQueryFn={(q) => () => searchExperienceBullets({ data: { query: q } })}
-          mapToItems={(data) =>
-            data.map((b: { id: string; text: string }) => ({
-              id: b.id,
-              primary: b.text,
-            }))
-          }
-          onPick={(items) => {
-            setBullets((prev) => [...prev, ...items.map((i) => i.primary)]);
-            toast.success(`Added ${items.length} bullet(s)`);
-          }}
-        />
+        {searchExperienceBullets && (
+          <PickFromExistingDialog
+            open={bulletPickOpen}
+            onOpenChange={setBulletPickOpen}
+            title="Pick Experience Bullets"
+            description="Search bullet points across all your experiences."
+            multi
+            getSearchQueryKey={(q) => [queryKeyPrefixes.resumes, "search", "experience-bullets", q]}
+            getSearchQueryFn={(q) => () => searchExperienceBullets(q)}
+            mapToItems={(data) =>
+              data.map((b) => ({
+                id: b.id,
+                primary: b.text,
+              }))
+            }
+            onPick={(items) => {
+              setBullets((prev) => [...prev, ...items.map((i) => i.primary)]);
+              toast.success(`Added ${items.length} bullet(s)`);
+            }}
+          />
+        )}
       </CardContent>
     </Card>
   );
@@ -420,33 +390,14 @@ function AddExperienceForm({
   existingCount: number;
   allExperiences: ResumeDetailDTO["experiences"];
 }) {
+  const { createExperience } = useResumeWorkspace();
   const [open, setOpen] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: async (values: typeof addExpOpts.defaultValues) =>
-      createExperience({
-        data: { resumeId, ...values, sortOrder: existingCount, bullets: [] },
-      }),
-    onSuccess(data, values) {
+    mutationFn: async (values: typeof addExpOpts.defaultValues) => createExperience(values),
+    onSuccess() {
       toast.success("Experience added");
       setOpen(false);
-      resumeCollection.utils.writeUpdate({
-        id: resumeId,
-        experiences: [
-          ...allExperiences,
-          {
-            id: data.id,
-            resumeId,
-            company: values.company,
-            role: values.role,
-            startDate: values.startDate,
-            endDate: values.endDate,
-            location: values.location || "",
-            sortOrder: existingCount,
-            bullets: [],
-          },
-        ],
-      });
     },
     onError(err: unknown) {
       toast.error("Failed to add experience", {
