@@ -31,7 +31,7 @@ export function ResumeEditPanel({ resumeId }: ResumeEditPanelProps) {
         <AccordionItem value="contacts">
           <AccordionTrigger>Contacts</AccordionTrigger>
           <AccordionContent>
-            <ContactsForm resumeId={resumeId} />
+            <ContactsForm />
           </AccordionContent>
         </AccordionItem>
 

@@ -8,17 +8,13 @@ import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-interface ContactsFormProps {
-  resumeId: string;
-}
-
 interface ContactRow {
   type: string;
   value: string;
   label: string;
 }
 
-export function ContactsForm({ resumeId }: ContactsFormProps) {
+export function ContactsForm() {
   const { resume, updateContacts } = useResumeWorkspace();
 
   const [contacts, setContacts] = useState<ContactRow[]>(
