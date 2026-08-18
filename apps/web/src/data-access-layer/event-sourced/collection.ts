@@ -1,0 +1,363 @@
+import { BasicIndex } from "@tanstack/db";
+import { createBrowserEventSourcedDB } from "event-sourced-collection/browser";
+import type { CollectionDef, EventSourcedDB } from "event-sourced-collection";
+
+import type {
+  AppSettings,
+  Resume,
+  ResumeAiChat,
+  ResumeAiConversation,
+  ResumeAiMessage,
+  ResumeCertification,
+  ResumeCertificationItem,
+  ResumeContact,
+  ResumeContactItem,
+  ResumeEducation,
+  ResumeEducationBullet,
+  ResumeEducationItem,
+  ResumeExperience,
+  ResumeExperienceBullet,
+  ResumeExperienceItem,
+  ResumeLanguage,
+  ResumeLanguageItem,
+  ResumeLink,
+  ResumeLinkItem,
+  ResumeProject,
+  ResumeProjectItem,
+  ResumeSection,
+  ResumeSkill,
+  ResumeSkillGroup,
+  ResumeSkillGroupItem,
+  ResumeSummary,
+  ResumeSummaryItem,
+  ResumeTalk,
+  ResumeTalkItem,
+  ResumeVolunteer,
+  ResumeVolunteerItem,
+  SavedProject,
+} from "./schemas";
+
+/**
+ * Collection registry keys match Drizzle table camelCase names 1:1
+ * (plus `settings` for local sync prefs). Auth tables are not mirrored.
+ */
+export type AppCollectionDefs = {
+  resume: CollectionDef<Resume, string>;
+  resumeSection: CollectionDef<ResumeSection, string>;
+
+  resumeExperience: CollectionDef<ResumeExperience, string>;
+  resumeExperienceItem: CollectionDef<ResumeExperienceItem, string>;
+  resumeExperienceBullet: CollectionDef<ResumeExperienceBullet, string>;
+
+  resumeEducation: CollectionDef<ResumeEducation, string>;
+  resumeEducationItem: CollectionDef<ResumeEducationItem, string>;
+  resumeEducationBullet: CollectionDef<ResumeEducationBullet, string>;
+
+  resumeSkillGroup: CollectionDef<ResumeSkillGroup, string>;
+  resumeSkillGroupItem: CollectionDef<ResumeSkillGroupItem, string>;
+  resumeSkill: CollectionDef<ResumeSkill, string>;
+
+  resumeContact: CollectionDef<ResumeContact, string>;
+  resumeContactItem: CollectionDef<ResumeContactItem, string>;
+
+  resumeProject: CollectionDef<ResumeProject, string>;
+  resumeProjectItem: CollectionDef<ResumeProjectItem, string>;
+
+  resumeSummary: CollectionDef<ResumeSummary, string>;
+  resumeSummaryItem: CollectionDef<ResumeSummaryItem, string>;
+
+  resumeLink: CollectionDef<ResumeLink, string>;
+  resumeLinkItem: CollectionDef<ResumeLinkItem, string>;
+
+  resumeLanguage: CollectionDef<ResumeLanguage, string>;
+  resumeLanguageItem: CollectionDef<ResumeLanguageItem, string>;
+
+  resumeCertification: CollectionDef<ResumeCertification, string>;
+  resumeCertificationItem: CollectionDef<ResumeCertificationItem, string>;
+
+  resumeVolunteer: CollectionDef<ResumeVolunteer, string>;
+  resumeVolunteerItem: CollectionDef<ResumeVolunteerItem, string>;
+
+  resumeTalk: CollectionDef<ResumeTalk, string>;
+  resumeTalkItem: CollectionDef<ResumeTalkItem, string>;
+
+  resumeAiChat: CollectionDef<ResumeAiChat, string>;
+  resumeAiConversation: CollectionDef<ResumeAiConversation, string>;
+  resumeAiMessage: CollectionDef<ResumeAiMessage, string>;
+
+  savedProject: CollectionDef<SavedProject, string>;
+  settings: CollectionDef<AppSettings, string>;
+};
+
+export type AppDb = EventSourcedDB<AppCollectionDefs>;
+
+const byId = <T extends { id: string }>(name = "by-id") => ({
+  select: (row: T) => row.id,
+  indexType: BasicIndex,
+  name,
+});
+
+const byUserId = <T extends { userId?: string | null }>(name = "by-user") => ({
+  select: (row: T) => row.userId,
+  indexType: BasicIndex,
+  name,
+});
+
+const byResumeId = <T extends { resumeId: string }>(name = "by-resume") => ({
+  select: (row: T) => row.resumeId,
+  indexType: BasicIndex,
+  name,
+});
+
+/**
+ * Local-first event-sourced DB.
+ * Sync is off until a real `/api/sync` (or handlers) exists — mutations still
+ * queue in the built-in `outbox`. Call `await ensureDb()` once at app mount.
+ */
+const { ensureDb, db, close } = createBrowserEventSourcedDB<AppCollectionDefs>({
+  databaseName: "agentic-json-resume.sqlite",
+  debug: import.meta.env.DEV,
+  schemaVersion: 1,
+  eventSchemaVersion: 1,
+  syncEnabled: false,
+
+  collections: {
+    resume: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<Resume>(),
+        byUserId<Resume>(),
+        { select: (r) => r.updatedAt, indexType: BasicIndex, name: "by-updated" },
+      ],
+    },
+    resumeSection: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeSection>(),
+        byResumeId<ResumeSection>(),
+        { select: (r) => r.key, indexType: BasicIndex, name: "by-key" },
+      ],
+    },
+
+    resumeExperience: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeExperience>(), byUserId<ResumeExperience>()],
+    },
+    resumeExperienceItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeExperienceItem>(),
+        byResumeId<ResumeExperienceItem>(),
+        { select: (r) => r.experienceId, indexType: BasicIndex, name: "by-experience" },
+      ],
+    },
+    resumeExperienceBullet: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeExperienceBullet>(),
+        { select: (r) => r.experienceId, indexType: BasicIndex, name: "by-experience" },
+      ],
+    },
+
+    resumeEducation: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeEducation>(), byUserId<ResumeEducation>()],
+    },
+    resumeEducationItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeEducationItem>(),
+        byResumeId<ResumeEducationItem>(),
+        { select: (r) => r.educationId, indexType: BasicIndex, name: "by-education" },
+      ],
+    },
+    resumeEducationBullet: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeEducationBullet>(),
+        { select: (r) => r.educationId, indexType: BasicIndex, name: "by-education" },
+      ],
+    },
+
+    resumeSkillGroup: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeSkillGroup>(), byUserId<ResumeSkillGroup>()],
+    },
+    resumeSkillGroupItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeSkillGroupItem>(),
+        byResumeId<ResumeSkillGroupItem>(),
+        { select: (r) => r.groupId, indexType: BasicIndex, name: "by-group" },
+      ],
+    },
+    resumeSkill: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeSkill>(),
+        { select: (r) => r.groupId, indexType: BasicIndex, name: "by-group" },
+      ],
+    },
+
+    resumeContact: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeContact>(), byUserId<ResumeContact>()],
+    },
+    resumeContactItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeContactItem>(),
+        byResumeId<ResumeContactItem>(),
+        { select: (r) => r.contactId, indexType: BasicIndex, name: "by-contact" },
+      ],
+    },
+
+    resumeProject: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeProject>(), byUserId<ResumeProject>()],
+    },
+    resumeProjectItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeProjectItem>(),
+        byResumeId<ResumeProjectItem>(),
+        { select: (r) => r.projectId, indexType: BasicIndex, name: "by-project" },
+      ],
+    },
+
+    resumeSummary: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeSummary>(), byUserId<ResumeSummary>()],
+    },
+    resumeSummaryItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeSummaryItem>(),
+        byResumeId<ResumeSummaryItem>(),
+        { select: (r) => r.summaryId, indexType: BasicIndex, name: "by-summary" },
+      ],
+    },
+
+    resumeLink: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeLink>(), byUserId<ResumeLink>()],
+    },
+    resumeLinkItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeLinkItem>(),
+        byResumeId<ResumeLinkItem>(),
+        { select: (r) => r.linkId, indexType: BasicIndex, name: "by-link" },
+      ],
+    },
+
+    resumeLanguage: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeLanguage>(), byUserId<ResumeLanguage>()],
+    },
+    resumeLanguageItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeLanguageItem>(),
+        byResumeId<ResumeLanguageItem>(),
+        { select: (r) => r.languageId, indexType: BasicIndex, name: "by-language" },
+      ],
+    },
+
+    resumeCertification: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeCertification>(), byUserId<ResumeCertification>()],
+    },
+    resumeCertificationItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeCertificationItem>(),
+        byResumeId<ResumeCertificationItem>(),
+        { select: (r) => r.certificationId, indexType: BasicIndex, name: "by-certification" },
+      ],
+    },
+
+    resumeVolunteer: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeVolunteer>(), byUserId<ResumeVolunteer>()],
+    },
+    resumeVolunteerItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeVolunteerItem>(),
+        byResumeId<ResumeVolunteerItem>(),
+        { select: (r) => r.volunteerId, indexType: BasicIndex, name: "by-volunteer" },
+      ],
+    },
+
+    resumeTalk: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeTalk>(), byUserId<ResumeTalk>()],
+    },
+    resumeTalkItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeTalkItem>(),
+        byResumeId<ResumeTalkItem>(),
+        { select: (r) => r.talkId, indexType: BasicIndex, name: "by-talk" },
+      ],
+    },
+
+    resumeAiChat: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeAiChat>(), byUserId<ResumeAiChat>(), byResumeId<ResumeAiChat>()],
+    },
+    resumeAiConversation: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeAiConversation>(),
+        byUserId<ResumeAiConversation>(),
+        byResumeId<ResumeAiConversation>(),
+        { select: (r) => r.updatedAt, indexType: BasicIndex, name: "by-updated" },
+      ],
+    },
+    resumeAiMessage: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeAiMessage>(),
+        { select: (r) => r.conversationId, indexType: BasicIndex, name: "by-conversation" },
+        { select: (r) => r.messageId, indexType: BasicIndex, name: "by-message-id" },
+        { select: (r) => r.position, indexType: BasicIndex, name: "by-position" },
+      ],
+    },
+
+    savedProject: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<SavedProject>(),
+        byUserId<SavedProject>(),
+        { select: (r) => r.updatedAt, indexType: BasicIndex, name: "by-updated" },
+      ],
+    },
+
+    settings: {
+      getKey: (row) => row.id,
+    },
+  },
+
+  modules: async () => {
+    const { createCollection } = await import("@tanstack/db");
+    const {
+      BrowserCollectionCoordinator,
+      createBrowserWASQLitePersistence,
+      openBrowserWASQLiteOPFSDatabase,
+      persistedCollectionOptions,
+    } = await import("@tanstack/browser-db-sqlite-persistence");
+
+    return {
+      createCollection,
+      BrowserCollectionCoordinator,
+      createBrowserWASQLitePersistence,
+      openBrowserWASQLiteOPFSDatabase,
+      persistedCollectionOptions,
+    };
+  },
+});
+
+export { close, db, ensureDb };
+export * from "./schemas";
