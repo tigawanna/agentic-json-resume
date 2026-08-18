@@ -31,6 +31,7 @@ import type {
   ResumeVolunteer,
   ResumeVolunteerItem,
 } from "./schemas";
+import { itemsInResumeOrder } from "./resume-item-order";
 
 export type EventSourcedResumeSnapshots = {
   resume: Resume | undefined;
@@ -81,16 +82,13 @@ function joinSorted<TItem extends { resumeId: string; sortOrder: number }, TRow>
   items: TItem[],
   rowsById: Map<string, TRow>,
   entityId: (item: TItem) => string,
+  order?: string[],
 ) {
-  return items
-    .filter((item) => item.resumeId === resumeId)
-    .slice()
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .flatMap((item) => {
-      const row = rowsById.get(entityId(item));
-      if (!row) return [];
-      return [{ item, row }];
-    });
+  return itemsInResumeOrder(resumeId, items, order, entityId).flatMap((item, index) => {
+    const row = rowsById.get(entityId(item));
+    if (!row) return [];
+    return [{ item, row, sortOrder: index }];
+  });
 }
 
 export function assembleResumeDetail(
@@ -129,13 +127,13 @@ export function assembleResumeDetail(
     snapshots.contactItems,
     byId(snapshots.contacts),
     (item) => item.contactId,
-  ).map(({ item, row }) => ({
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     type: row.type,
     value: row.value,
     label: row.label,
-    sortOrder: item.sortOrder,
+    sortOrder,
   }));
 
   const links = joinSorted(
@@ -143,13 +141,13 @@ export function assembleResumeDetail(
     snapshots.linkItems,
     byId(snapshots.links),
     (item) => item.linkId,
-  ).map(({ item, row }) => ({
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     label: row.label,
     url: row.url,
     icon: row.icon ?? null,
-    sortOrder: item.sortOrder,
+    sortOrder,
   }));
 
   const summaries = joinSorted(
@@ -157,11 +155,11 @@ export function assembleResumeDetail(
     snapshots.summaryItems,
     byId(snapshots.summaries),
     (item) => item.summaryId,
-  ).map(({ item, row }) => ({
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     text: row.text,
-    sortOrder: item.sortOrder,
+    sortOrder,
   }));
 
   const notes = joinSorted(
@@ -169,12 +167,12 @@ export function assembleResumeDetail(
     snapshots.noteItems,
     byId(snapshots.notes),
     (item) => item.noteId,
-  ).map(({ item, row }) => ({
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     label: row.label,
     text: row.text,
-    sortOrder: item.sortOrder,
+    sortOrder,
   }));
 
   const experiences = joinSorted(
@@ -182,7 +180,8 @@ export function assembleResumeDetail(
     snapshots.experienceItems,
     byId(snapshots.experiences),
     (item) => item.experienceId,
-  ).map(({ item, row }) => ({
+    resume.experienceOrder,
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     company: row.company,
@@ -190,7 +189,7 @@ export function assembleResumeDetail(
     startDate: row.startDate,
     endDate: row.endDate,
     location: row.location,
-    sortOrder: item.sortOrder,
+    sortOrder,
     bullets: snapshots.experienceBullets
       .filter((bullet) => bullet.experienceId === row.id)
       .slice()
@@ -208,7 +207,8 @@ export function assembleResumeDetail(
     snapshots.educationItems,
     byId(snapshots.education),
     (item) => item.educationId,
-  ).map(({ item, row }) => ({
+    resume.educationOrder,
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     school: row.school,
@@ -217,7 +217,7 @@ export function assembleResumeDetail(
     startDate: row.startDate,
     endDate: row.endDate,
     description: row.description,
-    sortOrder: item.sortOrder,
+    sortOrder,
     bullets: snapshots.educationBullets
       .filter((bullet) => bullet.educationId === row.id)
       .slice()
@@ -235,7 +235,8 @@ export function assembleResumeDetail(
     snapshots.projectItems,
     byId(snapshots.projects),
     (item) => item.projectId,
-  ).map(({ item, row }) => ({
+    resume.projectOrder,
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     name: row.name,
@@ -243,7 +244,7 @@ export function assembleResumeDetail(
     homepageUrl: row.homepageUrl,
     description: row.description,
     tech: row.tech,
-    sortOrder: item.sortOrder,
+    sortOrder,
   }));
 
   const skillGroups = joinSorted(
@@ -251,11 +252,11 @@ export function assembleResumeDetail(
     snapshots.skillGroupItems,
     byId(snapshots.skillGroups),
     (item) => item.groupId,
-  ).map(({ item, row }) => ({
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     name: row.name,
-    sortOrder: item.sortOrder,
+    sortOrder,
     skills: snapshots.skills
       .filter((skill) => skill.groupId === row.id)
       .slice()
@@ -274,7 +275,8 @@ export function assembleResumeDetail(
     snapshots.talkItems,
     byId(snapshots.talks),
     (item) => item.talkId,
-  ).map(({ item, row }) => ({
+    resume.talkOrder,
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     title: row.title,
@@ -282,7 +284,7 @@ export function assembleResumeDetail(
     date: row.date,
     description: row.description,
     links: row.links,
-    sortOrder: item.sortOrder,
+    sortOrder,
   }));
 
   const certifications = joinSorted(
@@ -290,14 +292,14 @@ export function assembleResumeDetail(
     snapshots.certificationItems,
     byId(snapshots.certifications),
     (item) => item.certificationId,
-  ).map(({ item, row }) => ({
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     name: row.name,
     issuer: row.issuer,
     date: row.date,
     url: row.url,
-    sortOrder: item.sortOrder,
+    sortOrder,
   }));
 
   const volunteers = joinSorted(
@@ -305,7 +307,7 @@ export function assembleResumeDetail(
     snapshots.volunteerItems,
     byId(snapshots.volunteers),
     (item) => item.volunteerId,
-  ).map(({ item, row }) => ({
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     organization: row.organization,
@@ -313,7 +315,7 @@ export function assembleResumeDetail(
     startDate: row.startDate,
     endDate: row.endDate,
     description: row.description,
-    sortOrder: item.sortOrder,
+    sortOrder,
   }));
 
   const languages = joinSorted(
@@ -321,12 +323,12 @@ export function assembleResumeDetail(
     snapshots.languageItems,
     byId(snapshots.languages),
     (item) => item.languageId,
-  ).map(({ item, row }) => ({
+  ).map(({ row, sortOrder }) => ({
     id: row.id,
     resumeId,
     name: row.name,
     proficiency: row.proficiency,
-    sortOrder: item.sortOrder,
+    sortOrder,
   }));
 
   return {

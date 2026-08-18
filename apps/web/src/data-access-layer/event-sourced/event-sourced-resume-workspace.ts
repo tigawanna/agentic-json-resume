@@ -15,6 +15,12 @@ import type {
 import type { AppDb } from "./collection";
 import type { EventSourcedResumeSnapshots } from "./assemble-resume-detail";
 import {
+  appendResumeItemOrder,
+  junctionEntityIds,
+  removeResumeItemOrder,
+  reorderResumeItems,
+} from "./resume-item-order";
+import {
   joinSearchable,
   libraryRowBase,
   newId,
@@ -46,35 +52,6 @@ function junctionFields(resumeId: string, sortOrder: number) {
     createdAt: ts,
     updatedAt: ts,
   };
-}
-
-function swapSortOrder(
-  collection: {
-    update: (
-      id: string,
-      updater: (draft: { sortOrder: number; updatedAt: number }) => void,
-    ) => void;
-  },
-  items: Array<
-    { id: string; resumeId: string; sortOrder: number } & Record<string, string | number>
-  >,
-  resumeId: string,
-  entityKey: string,
-  idA: string,
-  idB: string,
-) {
-  const a = items.find((item) => item.resumeId === resumeId && item[entityKey] === idA);
-  const b = items.find((item) => item.resumeId === resumeId && item[entityKey] === idB);
-  if (!a || !b) return;
-  const aOrder = a.sortOrder;
-  collection.update(a.id, (draft) => {
-    draft.sortOrder = b.sortOrder;
-    draft.updatedAt = nowMs();
-  });
-  collection.update(b.id, (draft) => {
-    draft.sortOrder = aOrder;
-    draft.updatedAt = nowMs();
-  });
 }
 
 export function createEventSourcedResumeWorkspace(
@@ -273,6 +250,13 @@ export function createEventSourcedResumeWorkspace(
         ...junctionFields(resumeId, sortOrder),
         experienceId: base.id,
       });
+      appendResumeItemOrder(
+        db,
+        resumeId,
+        "experienceOrder",
+        base.id,
+        junctionEntityIds(snapshots.experienceItems, resumeId, "experienceId"),
+      );
       return { id: base.id };
     },
     async updateExperience(id: string, values: ExperienceDraft) {
@@ -292,15 +276,18 @@ export function createEventSourcedResumeWorkspace(
           db.collections.resumeExperienceItem.delete(item.id);
         }
       }
+      removeResumeItemOrder(db, resumeId, "experienceOrder", id);
     },
     async reorderExperience(idA: string, idB: string) {
-      swapSortOrder(
-        db.collections.resumeExperienceItem,
-        snapshots.experienceItems,
+      reorderResumeItems(
+        db,
         resumeId,
-        "experienceId",
+        "experienceOrder",
         idA,
         idB,
+        snapshots.experienceItems,
+        "experienceId",
+        db.collections.resumeExperienceItem,
       );
     },
     async updateExperienceBullets(experienceId: string, bullets: string[]) {
@@ -339,6 +326,13 @@ export function createEventSourcedResumeWorkspace(
         ...junctionFields(resumeId, sortOrder),
         educationId: base.id,
       });
+      appendResumeItemOrder(
+        db,
+        resumeId,
+        "educationOrder",
+        base.id,
+        junctionEntityIds(snapshots.educationItems, resumeId, "educationId"),
+      );
       return { id: base.id };
     },
     async updateEducation(id: string, values: EducationDraft) {
@@ -359,15 +353,18 @@ export function createEventSourcedResumeWorkspace(
           db.collections.resumeEducationItem.delete(item.id);
         }
       }
+      removeResumeItemOrder(db, resumeId, "educationOrder", id);
     },
     async reorderEducation(idA: string, idB: string) {
-      swapSortOrder(
-        db.collections.resumeEducationItem,
-        snapshots.educationItems,
+      reorderResumeItems(
+        db,
         resumeId,
-        "educationId",
+        "educationOrder",
         idA,
         idB,
+        snapshots.educationItems,
+        "educationId",
+        db.collections.resumeEducationItem,
       );
     },
     async createProject(values: ProjectDraft) {
@@ -387,6 +384,13 @@ export function createEventSourcedResumeWorkspace(
         ...junctionFields(resumeId, sortOrder),
         projectId: base.id,
       });
+      appendResumeItemOrder(
+        db,
+        resumeId,
+        "projectOrder",
+        base.id,
+        junctionEntityIds(snapshots.projectItems, resumeId, "projectId"),
+      );
       return { id: base.id };
     },
     async updateProject(id: string, values: ProjectDraft) {
@@ -406,15 +410,18 @@ export function createEventSourcedResumeWorkspace(
           db.collections.resumeProjectItem.delete(item.id);
         }
       }
+      removeResumeItemOrder(db, resumeId, "projectOrder", id);
     },
     async reorderProject(idA: string, idB: string) {
-      swapSortOrder(
-        db.collections.resumeProjectItem,
-        snapshots.projectItems,
+      reorderResumeItems(
+        db,
         resumeId,
-        "projectId",
+        "projectOrder",
         idA,
         idB,
+        snapshots.projectItems,
+        "projectId",
+        db.collections.resumeProjectItem,
       );
     },
     async createTalk(values: TalkDraft) {
@@ -434,6 +441,13 @@ export function createEventSourcedResumeWorkspace(
         ...junctionFields(resumeId, sortOrder),
         talkId: base.id,
       });
+      appendResumeItemOrder(
+        db,
+        resumeId,
+        "talkOrder",
+        base.id,
+        junctionEntityIds(snapshots.talkItems, resumeId, "talkId"),
+      );
       return { id: base.id };
     },
     async updateTalk(id: string, values: TalkDraft) {
@@ -453,15 +467,18 @@ export function createEventSourcedResumeWorkspace(
           db.collections.resumeTalkItem.delete(item.id);
         }
       }
+      removeResumeItemOrder(db, resumeId, "talkOrder", id);
     },
     async reorderTalk(idA: string, idB: string) {
-      swapSortOrder(
-        db.collections.resumeTalkItem,
-        snapshots.talkItems,
+      reorderResumeItems(
+        db,
         resumeId,
-        "talkId",
+        "talkOrder",
         idA,
         idB,
+        snapshots.talkItems,
+        "talkId",
+        db.collections.resumeTalkItem,
       );
     },
     async replaceDocument(doc: ResumeDocumentV1) {
@@ -472,6 +489,10 @@ export function createEventSourcedResumeWorkspace(
         draft.fullName = data.resume.fullName;
         draft.headline = data.resume.headline;
         draft.templateId = data.resume.templateId;
+        draft.experienceOrder = data.experiences.map((experience) => experience.id);
+        draft.educationOrder = data.education.map((education) => education.id);
+        draft.projectOrder = data.projects.map((project) => project.id);
+        draft.talkOrder = data.talks.map((talk) => talk.id);
         draft.searchableText = joinSearchable(
           draft.name,
           data.resume.fullName,

@@ -5,6 +5,7 @@ import {
 import type { AppDb } from "@/data-access-layer/event-sourced/collection";
 import { createEventSourcedResumeWorkspace } from "@/data-access-layer/event-sourced/event-sourced-resume-workspace";
 import { snapshotEventSourcedResume } from "@/data-access-layer/event-sourced/snapshot-resume";
+import { emptyResumeItemOrder } from "@/data-access-layer/event-sourced/resume-item-order";
 import { resumeDetailToDocument } from "@/data-access-layer/resume/resume-converters";
 import type { ResumeDocumentV1 } from "@/features/resume/resume-schema";
 import type {
@@ -223,6 +224,10 @@ export function cloneLocalResume(
     description,
     jobDescription,
     templateId: asTemplateId(detail.templateId),
+    experienceOrder: detail.experiences.map((experience) => experience.id),
+    educationOrder: detail.education.map((education) => education.id),
+    projectOrder: detail.projects.map((project) => project.id),
+    talkOrder: detail.talks.map((talk) => talk.id),
     searchableText: joinSearchable(name, detail.fullName, detail.headline, description),
     embedding: null,
     embeddingModel: null,
@@ -270,6 +275,7 @@ export async function createLocalResumeFromDocument(
     description: input.description ?? "",
     jobDescription: input.jobDescription ?? "",
     templateId: asTemplateId(input.document.meta.templateId),
+    ...emptyResumeItemOrder,
     searchableText: joinSearchable(
       input.name,
       input.document.header.fullName,

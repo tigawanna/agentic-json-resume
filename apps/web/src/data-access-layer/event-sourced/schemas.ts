@@ -43,6 +43,10 @@ export const resumeSchema = z.object({
   description: z.string(),
   jobDescription: z.string(),
   templateId: z.string(),
+  experienceOrder: z.array(z.string()).optional(),
+  educationOrder: z.array(z.string()).optional(),
+  projectOrder: z.array(z.string()).optional(),
+  talkOrder: z.array(z.string()).optional(),
   ...embeddableSchema.shape,
   ...timestampsSchema.shape,
 });
