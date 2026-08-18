@@ -45,6 +45,11 @@ export function resumeDetailToDocument(detail: ResumeDetailDTO): ResumeDocumentV
       enabled: sectionEnabled("summary"),
       text: detail.summaries.sort((a, b) => a.sortOrder - b.sortOrder)[0]?.text ?? "",
     },
+    notes: {
+      enabled: sectionEnabled("notes"),
+      label: detail.notes.sort((a, b) => a.sortOrder - b.sortOrder)[0]?.label || "Notes",
+      text: detail.notes.sort((a, b) => a.sortOrder - b.sortOrder)[0]?.text ?? "",
+    },
     experience: {
       enabled: sectionEnabled("experience"),
       items: detail.experiences
@@ -162,6 +167,8 @@ export function documentToInsertData(resumeId: string, userId: string, doc: Resu
         return doc.talks.enabled;
       case "skills":
         return doc.skills.enabled;
+      case "notes":
+        return doc.notes.enabled;
       default:
         return true;
     }
@@ -393,6 +400,26 @@ export function documentToInsertData(resumeId: string, userId: string, doc: Resu
   });
   const talkItems = talks.map((t) => ({ resumeId, talkId: t.id, sortOrder: t.sortOrder }));
 
+  const notes: {
+    id: string;
+    userId: string;
+    label: string;
+    text: string;
+    sortOrder: number;
+  }[] =
+    doc.notes.enabled && doc.notes.text.trim()
+      ? [
+          {
+            id: crypto.randomUUID(),
+            userId,
+            label: doc.notes.label.trim() || "Notes",
+            text: doc.notes.text,
+            sortOrder: 0,
+          },
+        ]
+      : [];
+  const noteItems = notes.map((n) => ({ resumeId, noteId: n.id, sortOrder: n.sortOrder }));
+
   return {
     resume: {
       id: resumeId,
@@ -420,5 +447,7 @@ export function documentToInsertData(resumeId: string, userId: string, doc: Resu
     skills,
     talks,
     talkItems,
+    notes,
+    noteItems,
   };
 }

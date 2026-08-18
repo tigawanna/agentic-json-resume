@@ -15,6 +15,13 @@
       "when": 1778956503528,
       "tag": "0001_jittery_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787052685123,
+      "tag": "0002_majestic_tempest",
+      "breakpoints": true
     }
   ]
 }

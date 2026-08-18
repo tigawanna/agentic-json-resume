@@ -18,24 +18,16 @@ import { formOptions } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
 import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
-import { serializeTalkLinks, talkLinksSearchable } from "../-utils/talk-links";
-import { TalkLinksFields } from "./TalkLinksFields";
 
 const createOpts = formOptions({
-  defaultValues: {
-    title: "",
-    event: "",
-    date: "",
-    description: "",
-    links: [] as Array<{ label: string; url: string }>,
-  },
+  defaultValues: { label: "Notes", text: "" },
 });
 
-interface TalkCreateFormProps {
+interface NoteCreateFormProps {
   onSuccess?: () => void;
 }
 
-export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
+export function NoteCreateForm({ onSuccess }: NoteCreateFormProps) {
   const db = useEventSourcedDb();
   const { viewer } = useViewer();
   const [pending, setPending] = useState(false);
@@ -46,27 +38,18 @@ export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
       setPending(true);
       try {
         const base = libraryRowBase(viewer.user?.id);
-        const linksJson = serializeTalkLinks(value.links);
-        const searchableText = joinSearchable(
-          value.title,
-          value.event,
-          value.date,
-          value.description,
-          talkLinksSearchable(value.links),
-        );
-        db.collections.resumeTalk.insert({
+        const label = value.label.trim() || "Notes";
+        const searchableText = joinSearchable(label, value.text);
+        db.collections.resumeNote.insert({
           ...base,
-          title: value.title,
-          event: value.event,
-          date: value.date,
-          description: value.description,
-          links: linksJson,
+          label,
+          text: value.text,
           searchableText,
         });
-        toast.success("Talk created");
+        toast.success("Note created");
         onSuccess?.();
       } catch (err: unknown) {
-        toast.error("Failed to create talk", {
+        toast.error("Failed to create note", {
           description: unwrapUnknownError(err).message,
         });
       } finally {
@@ -84,73 +67,40 @@ export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
       }}
       className="flex flex-col gap-3"
     >
-      <form.AppField
-        name="title"
-        validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Title is required" : undefined),
-        }}
-      >
+      <form.AppField name="label">
         {(field) => (
           <div>
-            <Label className="text-xs">Title</Label>
+            <Label className="text-xs">Heading</Label>
             <Input
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               className="mt-1"
+              placeholder="Notes, Cover letter, …"
             />
           </div>
         )}
       </form.AppField>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <form.AppField name="event">
-          {(field) => (
-            <div>
-              <Label className="text-xs">Event</Label>
-              <Input
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          )}
-        </form.AppField>
-        <form.AppField name="date">
-          {(field) => (
-            <div>
-              <Label className="text-xs">Date</Label>
-              <Input
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          )}
-        </form.AppField>
-      </div>
-      <form.AppField name="description">
+      <form.AppField
+        name="text"
+        validators={{
+          onChange: ({ value }) => (!value?.trim() ? "Note text is required" : undefined),
+        }}
+      >
         {(field) => (
           <div>
-            <Label className="text-xs">Description</Label>
+            <Label className="text-xs">Body</Label>
             <Textarea
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1 min-h-24"
+              className="mt-1 min-h-32"
+              placeholder="Condensed cover letter or addendum printed at the bottom of the résumé."
             />
           </div>
-        )}
-      </form.AppField>
-      <form.AppField name="links">
-        {(field) => (
-          <TalkLinksFields
-            links={field.state.value}
-            onChange={field.handleChange}
-            disabled={pending}
-          />
         )}
       </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
-          const hasRequired = Boolean(values.title.trim());
+          const hasRequired = Boolean(values.text.trim());
           return (
             <DialogFooter>
               <Button
@@ -172,19 +122,19 @@ export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
   );
 }
 
-interface TalkCreateFormDialogProps {
+interface NoteCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export function TalkCreateFormDialog({ open, setOpen }: TalkCreateFormDialogProps) {
+export function NoteCreateFormDialog({ open, setOpen }: NoteCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New Talk</DialogTitle>
+          <DialogTitle>New Note</DialogTitle>
         </DialogHeader>
-        <TalkCreateForm onSuccess={() => setOpen(false)} />
+        <NoteCreateForm onSuccess={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );

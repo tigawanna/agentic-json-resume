@@ -52,6 +52,16 @@ function Summary({ doc }: { doc: ResumeDocumentV1 }) {
   );
 }
 
+function Notes({ doc, headingStyle }: { doc: ResumeDocumentV1; headingStyle?: typeof base.h2 }) {
+  if (!doc.notes.enabled || !doc.notes.text.trim()) return null;
+  return (
+    <View>
+      <Text style={headingStyle ?? base.h2}>{doc.notes.label.trim() || "Notes"}</Text>
+      <Text style={base.body}>{doc.notes.text}</Text>
+    </View>
+  );
+}
+
 function Experience({ doc, accentColor }: { doc: ResumeDocumentV1; accentColor?: string }) {
   if (!doc.experience.enabled) return null;
   return (
@@ -210,6 +220,7 @@ function ClassicPdf({ doc }: { doc: ResumeDocumentV1 }) {
     projects: <Projects doc={doc} />,
     talks: <Talks doc={doc} />,
     skills: <SkillsFlat doc={doc} />,
+    notes: <Notes doc={doc} />,
   };
 
   return (
@@ -240,6 +251,7 @@ function SidebarPdf({ doc }: { doc: ResumeDocumentV1 }) {
     projects: <Projects doc={doc} />,
     talks: <Talks doc={doc} />,
     skills: <SkillsGrouped doc={doc} />,
+    notes: null,
   };
 
   return (
@@ -270,6 +282,7 @@ function SidebarPdf({ doc }: { doc: ResumeDocumentV1 }) {
             })}
         </View>
       </View>
+      <Notes doc={doc} />
     </Page>
   );
 }
@@ -351,6 +364,7 @@ function AccentPdf({ doc }: { doc: ResumeDocumentV1 }) {
     ) : null,
     talks: <Talks doc={doc} />,
     skills: <SkillsComma doc={doc} />,
+    notes: <Notes doc={doc} headingStyle={accentStyles.h2} />,
   };
 
   return (
@@ -496,6 +510,8 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
             ))}
           </View>
         );
+      case "notes":
+        return <Notes doc={doc} headingStyle={modernStyles.h2} />;
       default:
         return null;
     }
@@ -531,6 +547,7 @@ function ModernPdf({ doc }: { doc: ResumeDocumentV1 }) {
             })}
         </View>
       </View>
+      <Notes doc={doc} headingStyle={modernStyles.h2} />
     </Page>
   );
 }

@@ -18,6 +18,8 @@ import {
   resumeLanguageItem,
   resumeLink,
   resumeLinkItem,
+  resumeNote,
+  resumeNoteItem,
   resumeProject,
   resumeProjectItem,
   resumeSection,
@@ -340,6 +342,19 @@ export async function getResumeDetail(
     .where(eq(resumeSummaryItem.resumeId, resumeId))
     .orderBy(asc(resumeSummaryItem.sortOrder));
 
+  const notes = await db
+    .select({
+      id: resumeNote.id,
+      resumeId: resumeNoteItem.resumeId,
+      label: resumeNote.label,
+      text: resumeNote.text,
+      sortOrder: resumeNoteItem.sortOrder,
+    })
+    .from(resumeNoteItem)
+    .innerJoin(resumeNote, eq(resumeNoteItem.noteId, resumeNote.id))
+    .where(eq(resumeNoteItem.resumeId, resumeId))
+    .orderBy(asc(resumeNoteItem.sortOrder));
+
   const experienceRows = await db
     .select({
       id: resumeExperience.id,
@@ -525,6 +540,7 @@ export async function getResumeDetail(
     contacts,
     links,
     summaries,
+    notes,
     experiences,
     education,
     projects,
@@ -750,6 +766,35 @@ async function reuseExistingImportBlocks(
     (item) => item.summaryId,
   );
 
+  const noteIdReplacements = new Map<string, string>();
+  const notes: ResumeInsertData["notes"] = [];
+  for (const row of data.notes) {
+    const [existing] = await db
+      .select({ id: resumeNote.id })
+      .from(resumeNote)
+      .where(
+        and(
+          eq(resumeNote.userId, userId),
+          eq(resumeNote.label, row.label),
+          eq(resumeNote.text, row.text),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      noteIdReplacements.set(row.id, existing.id);
+    } else {
+      notes.push(row);
+    }
+  }
+  const noteItems = uniqueBy(
+    data.noteItems.map((item) => ({
+      ...item,
+      noteId: noteIdReplacements.get(item.noteId) ?? item.noteId,
+    })),
+    (item) => item.noteId,
+  );
+
   const experienceIdReplacements = new Map<string, string>();
   const experiences: ResumeInsertData["experiences"] = [];
   for (const row of data.experiences) {
@@ -911,6 +956,8 @@ async function reuseExistingImportBlocks(
     skills,
     talks,
     talkItems,
+    notes,
+    noteItems,
   };
 }
 
@@ -1001,6 +1048,12 @@ export async function createResumeForUser(
   }
   if (data.talkItems.length > 0) {
     await db.insert(resumeTalkItem).values(data.talkItems);
+  }
+  if (data.notes.length > 0) {
+    await db.insert(resumeNote).values(data.notes);
+  }
+  if (data.noteItems.length > 0) {
+    await db.insert(resumeNoteItem).values(data.noteItems);
   }
 
   return resumeId;
@@ -1261,6 +1314,36 @@ export async function updateSummaryItem(
 
 export async function deleteSummaryById(summaryId: string): Promise<void> {
   await db.delete(resumeSummary).where(eq(resumeSummary.id, summaryId));
+}
+
+export async function setResumeNotes(
+  resumeId: string,
+  userId: string,
+  input: { label: string; text: string },
+): Promise<void> {
+  await db.delete(resumeNoteItem).where(eq(resumeNoteItem.resumeId, resumeId));
+  if (input.text.trim()) {
+    const id = crypto.randomUUID();
+    await db.insert(resumeNote).values({
+      id,
+      userId,
+      label: input.label.trim() || "Notes",
+      text: input.text,
+      sortOrder: 0,
+    });
+    await db.insert(resumeNoteItem).values({ resumeId, noteId: id, sortOrder: 0 });
+  }
+  const [notesSection] = await db
+    .select({ id: resumeSection.id })
+    .from(resumeSection)
+    .where(and(eq(resumeSection.resumeId, resumeId), eq(resumeSection.key, "notes")))
+    .limit(1);
+  if (notesSection) {
+    await db
+      .update(resumeSection)
+      .set({ enabled: Boolean(input.text.trim()) })
+      .where(eq(resumeSection.id, notesSection.id));
+  }
 }
 
 // ─── Experience CRUD ───────────────────────────────────────
@@ -1979,6 +2062,7 @@ export async function replaceResumeContent(
   await db.delete(resumeContactItem).where(eq(resumeContactItem.resumeId, resumeId));
   await db.delete(resumeLinkItem).where(eq(resumeLinkItem.resumeId, resumeId));
   await db.delete(resumeSummaryItem).where(eq(resumeSummaryItem.resumeId, resumeId));
+  await db.delete(resumeNoteItem).where(eq(resumeNoteItem.resumeId, resumeId));
   await db.delete(resumeExperienceItem).where(eq(resumeExperienceItem.resumeId, resumeId));
   await db.delete(resumeEducationItem).where(eq(resumeEducationItem.resumeId, resumeId));
   await db.delete(resumeProjectItem).where(eq(resumeProjectItem.resumeId, resumeId));
@@ -2013,6 +2097,8 @@ export async function replaceResumeContent(
   if (data.skills.length > 0) await db.insert(resumeSkill).values(data.skills);
   if (data.talks.length > 0) await db.insert(resumeTalk).values(data.talks);
   if (data.talkItems.length > 0) await db.insert(resumeTalkItem).values(data.talkItems);
+  if (data.notes.length > 0) await db.insert(resumeNote).values(data.notes);
+  if (data.noteItems.length > 0) await db.insert(resumeNoteItem).values(data.noteItems);
 }
 
 // ─── Search existing items across all user's resumes ───────

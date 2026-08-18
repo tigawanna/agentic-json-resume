@@ -67,6 +67,23 @@ export function createLocalResumeWorkspace(resume: ResumeDetailDTO): ResumeWorks
         draft.summaries = text.trim() ? [{ id: makeId(), resumeId: id, text, sortOrder: 0 }] : [];
       });
     },
+    async updateNotes(values: { label: string; text: string }) {
+      await applyUpdate(id, (draft) => {
+        draft.notes = values.text.trim()
+          ? [
+              {
+                id: makeId(),
+                resumeId: id,
+                label: values.label.trim() || "Notes",
+                text: values.text,
+                sortOrder: 0,
+              },
+            ]
+          : [];
+        const section = draft.sections.find((s) => s.key === "notes");
+        if (section) section.enabled = Boolean(values.text.trim());
+      });
+    },
     async updateSkillGroups(groups: SkillGroupDraft[]) {
       await applyUpdate(id, (draft) => {
         draft.skillGroups = groups.map((group, groupIndex) => {

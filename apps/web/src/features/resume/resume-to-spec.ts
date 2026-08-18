@@ -178,6 +178,13 @@ function buildSkillsBadges(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
   return c;
 }
 
+function buildNotesChildren(ctx: SpecCtx, doc: ResumeDocumentV1): string[] {
+  const c: string[] = [];
+  if (!doc.notes.enabled || !doc.notes.text.trim()) return c;
+  pushText(ctx, c, doc.notes.text);
+  return c;
+}
+
 function wrapInCard(ctx: SpecCtx, title: string, children: string[]): string {
   const cardId = nid(ctx);
   ctx.elements[cardId] = el(
@@ -224,13 +231,17 @@ function buildSection(
       if (skillsStyle === "flat") return buildSkillsFlat(ctx, doc);
       if (skillsStyle === "badges") return buildSkillsBadges(ctx, doc);
       return buildSkillsGrouped(ctx, doc);
+    case "notes":
+      return buildNotesChildren(ctx, doc);
     default:
       return [];
   }
 }
 
-function sectionTitle(key: SectionKey): string {
-  return key === "header" ? "Profile" : key.charAt(0).toUpperCase() + key.slice(1);
+function sectionTitle(key: SectionKey, doc: ResumeDocumentV1): string {
+  if (key === "header") return "Profile";
+  if (key === "notes") return doc.notes.label.trim() || "Notes";
+  return key.charAt(0).toUpperCase() + key.slice(1);
 }
 
 function buildClassicSpec(doc: ResumeDocumentV1): Spec {
@@ -241,7 +252,7 @@ function buildClassicSpec(doc: ResumeDocumentV1): Spec {
     const children = buildSection(ctx, doc, key, "flat", true);
     if (children.length === 0) continue;
     if (key !== "header") pushSeparator(ctx, rootChildren);
-    const cardId = wrapInCard(ctx, sectionTitle(key), children);
+    const cardId = wrapInCard(ctx, sectionTitle(key, doc), children);
     rootChildren.push(cardId);
   }
 
@@ -259,22 +270,28 @@ function buildSidebarSpec(doc: ResumeDocumentV1): Spec {
   for (const key of doc.sectionOrder.filter((k) => mainSections.includes(k))) {
     const children = buildSection(ctx, doc, key, "grouped", false);
     if (children.length === 0) continue;
-    mainChildren.push(wrapInCard(ctx, sectionTitle(key), children));
+    mainChildren.push(wrapInCard(ctx, sectionTitle(key, doc), children));
   }
 
   const sideChildren: string[] = [];
   for (const key of doc.sectionOrder.filter((k) => sidebarSections.includes(k))) {
     const children = buildSection(ctx, doc, key, "grouped", false);
     if (children.length === 0) continue;
-    sideChildren.push(wrapInCard(ctx, sectionTitle(key), children));
+    sideChildren.push(wrapInCard(ctx, sectionTitle(key, doc), children));
   }
 
   const mainCol = wrapInStack(ctx, "vertical", "md", mainChildren);
   const sideCol = wrapInStack(ctx, "vertical", "md", sideChildren);
 
-  const rootId = nid(ctx);
-  ctx.elements[rootId] = el(rootId, "Grid", { columns: 2, gap: "lg" }, [mainCol, sideCol]);
+  const gridId = nid(ctx);
+  ctx.elements[gridId] = el(gridId, "Grid", { columns: 2, gap: "lg" }, [mainCol, sideCol]);
 
+  const notesChildren = buildNotesChildren(ctx, doc);
+  if (notesChildren.length === 0) {
+    return { root: gridId, elements: ctx.elements };
+  }
+  const notesCard = wrapInCard(ctx, sectionTitle("notes", doc), notesChildren);
+  const rootId = wrapInStack(ctx, "vertical", "md", [gridId, notesCard]);
   return { root: rootId, elements: ctx.elements };
 }
 
@@ -286,7 +303,7 @@ function buildAccentSpec(doc: ResumeDocumentV1): Spec {
     const children = buildSection(ctx, doc, key, "flat", false);
     if (children.length === 0) continue;
     pushSeparator(ctx, rootChildren);
-    const cardId = wrapInCard(ctx, sectionTitle(key), children);
+    const cardId = wrapInCard(ctx, sectionTitle(key, doc), children);
     rootChildren.push(cardId);
   }
 
@@ -304,22 +321,28 @@ function buildModernSpec(doc: ResumeDocumentV1): Spec {
   for (const key of doc.sectionOrder.filter((k) => leftSections.includes(k))) {
     const children = buildSection(ctx, doc, key, "badges", false);
     if (children.length === 0) continue;
-    leftChildren.push(wrapInCard(ctx, sectionTitle(key), children));
+    leftChildren.push(wrapInCard(ctx, sectionTitle(key, doc), children));
   }
 
   const rightChildren: string[] = [];
   for (const key of doc.sectionOrder.filter((k) => rightSections.includes(k))) {
     const children = buildSection(ctx, doc, key, "badges", false);
     if (children.length === 0) continue;
-    rightChildren.push(wrapInCard(ctx, sectionTitle(key), children));
+    rightChildren.push(wrapInCard(ctx, sectionTitle(key, doc), children));
   }
 
   const leftCol = wrapInStack(ctx, "vertical", "md", leftChildren);
   const rightCol = wrapInStack(ctx, "vertical", "md", rightChildren);
 
-  const rootId = nid(ctx);
-  ctx.elements[rootId] = el(rootId, "Grid", { columns: 2, gap: "lg" }, [leftCol, rightCol]);
+  const gridId = nid(ctx);
+  ctx.elements[gridId] = el(gridId, "Grid", { columns: 2, gap: "lg" }, [leftCol, rightCol]);
 
+  const notesChildren = buildNotesChildren(ctx, doc);
+  if (notesChildren.length === 0) {
+    return { root: gridId, elements: ctx.elements };
+  }
+  const notesCard = wrapInCard(ctx, sectionTitle("notes", doc), notesChildren);
+  const rootId = wrapInStack(ctx, "vertical", "md", [gridId, notesCard]);
   return { root: rootId, elements: ctx.elements };
 }
 

@@ -22,6 +22,8 @@ import type {
   ResumeLanguageItem,
   ResumeLink,
   ResumeLinkItem,
+  ResumeNote,
+  ResumeNoteItem,
   ResumeProject,
   ResumeProjectItem,
   ResumeSection,
@@ -65,6 +67,9 @@ export type AppCollectionDefs = {
 
   resumeSummary: CollectionDef<ResumeSummary, string>;
   resumeSummaryItem: CollectionDef<ResumeSummaryItem, string>;
+
+  resumeNote: CollectionDef<ResumeNote, string>;
+  resumeNoteItem: CollectionDef<ResumeNoteItem, string>;
 
   resumeLink: CollectionDef<ResumeLink, string>;
   resumeLinkItem: CollectionDef<ResumeLinkItem, string>;
@@ -235,6 +240,19 @@ const { ensureDb, db, close } = createBrowserEventSourcedDB<AppCollectionDefs>({
         byId<ResumeSummaryItem>(),
         byResumeId<ResumeSummaryItem>(),
         { select: (r) => r.summaryId, indexType: BasicIndex, name: "by-summary" },
+      ],
+    },
+
+    resumeNote: {
+      getKey: (row) => row.id,
+      indexes: [byId<ResumeNote>(), byUserId<ResumeNote>()],
+    },
+    resumeNoteItem: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<ResumeNoteItem>(),
+        byResumeId<ResumeNoteItem>(),
+        { select: (r) => r.noteId, indexType: BasicIndex, name: "by-note" },
       ],
     },
 

@@ -12,6 +12,7 @@ import {
 } from "./resume-experience";
 import { resumeLanguage, resumeLanguageItem } from "./resume-language";
 import { resumeLink, resumeLinkItem } from "./resume-link";
+import { resumeNote, resumeNoteItem } from "./resume-note";
 import { resumeProject, resumeProjectItem } from "./resume-project";
 import { resumeSkill, resumeSkillGroup, resumeSkillGroupItem } from "./resume-skill";
 import { resumeSummary, resumeSummaryItem } from "./resume-summary";
@@ -24,6 +25,7 @@ export const resumeRelations = relations(resume, ({ one, many }) => ({
   contacts: many(resumeContactItem),
   links: many(resumeLinkItem),
   summaries: many(resumeSummaryItem),
+  notes: many(resumeNoteItem),
   experiences: many(resumeExperienceItem),
   education: many(resumeEducationItem),
   projects: many(resumeProjectItem),
@@ -91,6 +93,19 @@ export const resumeSummaryItemRelations = relations(resumeSummaryItem, ({ one })
   summary: one(resumeSummary, {
     fields: [resumeSummaryItem.summaryId],
     references: [resumeSummary.id],
+  }),
+}));
+
+export const resumeNoteRelations = relations(resumeNote, ({ one, many }) => ({
+  user: one(user, { fields: [resumeNote.userId], references: [user.id] }),
+  resumes: many(resumeNoteItem),
+}));
+
+export const resumeNoteItemRelations = relations(resumeNoteItem, ({ one }) => ({
+  resume: one(resume, { fields: [resumeNoteItem.resumeId], references: [resume.id] }),
+  note: one(resumeNote, {
+    fields: [resumeNoteItem.noteId],
+    references: [resumeNote.id],
   }),
 }));
 

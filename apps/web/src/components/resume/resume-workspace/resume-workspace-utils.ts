@@ -69,6 +69,7 @@ export function resumeDocumentToDetail({
       skills: data.skills.filter((skill) => skill.groupId === group.id),
     })),
     talks: data.talks.map(({ userId: _userId, ...talk }) => ({ ...talk, resumeId: id })),
+    notes: data.notes.map(({ userId: _userId, ...note }) => ({ ...note, resumeId: id })),
     certifications: [],
     volunteers: [],
     languages: [],

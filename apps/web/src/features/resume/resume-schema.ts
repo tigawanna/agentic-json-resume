@@ -18,6 +18,7 @@ export const SECTION_KEYS = [
   "projects",
   "talks",
   "skills",
+  "notes",
 ] as const;
 
 export type SectionKey = (typeof SECTION_KEYS)[number];
@@ -105,6 +106,13 @@ const skillsBlock = z.object({
   ),
 });
 
+const notesBlock = z.object({
+  enabled: z.boolean(),
+  /** Printed heading, e.g. "Notes" or "Cover letter" */
+  label: z.string(),
+  text: z.string(),
+});
+
 export const resumeDocumentV1Schema = z.object({
   version: z.literal(1),
   meta: z.object({
@@ -118,6 +126,7 @@ export const resumeDocumentV1Schema = z.object({
   projects: projectsBlock,
   talks: talksBlock,
   skills: skillsBlock,
+  notes: notesBlock,
 });
 
 export type ResumeDocumentV1 = z.infer<typeof resumeDocumentV1Schema>;
@@ -147,6 +156,12 @@ const defaultTalksBlock = (): z.infer<typeof talksBlock> => ({
   items: [],
 });
 
+const defaultNotesBlock = (): z.infer<typeof notesBlock> => ({
+  enabled: false,
+  label: "Notes",
+  text: "",
+});
+
 export function migrateResumeDocumentV1(parsed: unknown): unknown {
   const withTemplate = migrateTemplateId(parsed);
   if (typeof withTemplate !== "object" || withTemplate === null) {
@@ -156,6 +171,19 @@ export function migrateResumeDocumentV1(parsed: unknown): unknown {
   const out: Record<string, unknown> = { ...o };
   if (!("talks" in out) || typeof out.talks !== "object" || out.talks === null) {
     out.talks = defaultTalksBlock();
+  }
+  if (!("notes" in out) || typeof out.notes !== "object" || out.notes === null) {
+    out.notes = defaultNotesBlock();
+  } else {
+    const notes = out.notes as Record<string, unknown>;
+    out.notes = {
+      enabled:
+        typeof notes.enabled === "boolean"
+          ? notes.enabled
+          : Boolean(String(notes.text ?? "").trim()),
+      label: typeof notes.label === "string" && notes.label.trim() ? notes.label : "Notes",
+      text: typeof notes.text === "string" ? notes.text : "",
+    };
   }
   if (Array.isArray(out.sectionOrder)) {
     const order = out.sectionOrder as unknown[];
@@ -364,6 +392,11 @@ export function createDefaultResume(): ResumeDocumentV1 {
           items: ["Git", "Code Review", "Remote Collaboration", "Agile/Scrum"],
         },
       ],
+    },
+    notes: {
+      enabled: false,
+      label: "Notes",
+      text: "",
     },
   };
 }

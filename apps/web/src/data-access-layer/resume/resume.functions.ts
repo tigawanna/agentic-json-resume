@@ -52,6 +52,7 @@ import {
   setExperienceBullets,
   setResumeContacts,
   setResumeLinks,
+  setResumeNotes,
   setResumeSummary,
   setSkillGroups,
   updateCertification,
@@ -273,6 +274,18 @@ export const removeSummaryItem = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertSummaryBelongsToUser(data.id, context.viewer.user.id);
     await deleteSummaryById(data.id);
+    return { success: true };
+  });
+
+export const updateNotes = createServerFn({ method: "POST" })
+  .middleware([viewerMiddleware])
+  .inputValidator((input: { resumeId: string; label: string; text: string }) => input)
+  .handler(async ({ context, data }) => {
+    await assertResumeBelongsToUser(data.resumeId, context.viewer.user.id);
+    await setResumeNotes(data.resumeId, context.viewer.user.id, {
+      label: data.label,
+      text: data.text,
+    });
     return { success: true };
   });
 

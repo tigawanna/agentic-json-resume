@@ -48,6 +48,14 @@ export interface ResumeSummaryRow {
   sortOrder: number;
 }
 
+export interface ResumeNoteRow {
+  id: string;
+  resumeId: string;
+  label: string;
+  text: string;
+  sortOrder: number;
+}
+
 export interface ResumeExperienceRow {
   id: string;
   resumeId: string;
@@ -167,6 +175,7 @@ export interface ResumeDetailDTO {
   contacts: ResumeContactRow[];
   links: ResumeLinkRow[];
   summaries: ResumeSummaryRow[];
+  notes: ResumeNoteRow[];
   experiences: (ResumeExperienceRow & { bullets: ResumeExperienceBulletRow[] })[];
   education: (ResumeEducationRow & { bullets: ResumeEducationBulletRow[] })[];
   projects: ResumeProjectRow[];

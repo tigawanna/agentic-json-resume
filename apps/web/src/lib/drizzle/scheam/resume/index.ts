@@ -6,6 +6,7 @@ export * from "./resume-education";
 export * from "./resume-experience";
 export * from "./resume-language";
 export * from "./resume-link";
+export * from "./resume-note";
 export * from "./resume-project";
 export * from "./resume-relations";
 export * from "./resume-skill";

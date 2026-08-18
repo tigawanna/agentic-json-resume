@@ -14,6 +14,7 @@ import {
   Link as LinkIcon,
   Loader,
   Mic,
+  Notebook,
   StickyNote,
   Wrench,
 } from "lucide-react";
@@ -89,6 +90,12 @@ const libraryLinks = [
     icon: StickyNote,
     countKey: "resumeSummary" as const,
   },
+  {
+    title: "Notes",
+    href: "/event-sourced/notes",
+    icon: Notebook,
+    countKey: "resumeNote" as const,
+  },
 ];
 
 function RouteComponent() {
@@ -135,6 +142,9 @@ function RouteComponent() {
   const { data: summaryTotals } = useLiveQuery((q) =>
     q.from({ row: db.collections.resumeSummary }).select(({ row }) => ({ total: count(row.id) })),
   );
+  const { data: noteTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeNote }).select(({ row }) => ({ total: count(row.id) })),
+  );
 
   const counts = {
     resume: resumeTotals?.[0]?.total ?? 0,
@@ -149,6 +159,7 @@ function RouteComponent() {
     resumeContact: contactTotals?.[0]?.total ?? 0,
     resumeLink: linkTotals?.[0]?.total ?? 0,
     resumeSummary: summaryTotals?.[0]?.total ?? 0,
+    resumeNote: noteTotals?.[0]?.total ?? 0,
   };
 
   if (resumesLoading) {

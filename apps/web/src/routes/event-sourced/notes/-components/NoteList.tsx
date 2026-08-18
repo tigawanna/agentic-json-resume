@@ -3,10 +3,11 @@ import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
-import type { ResumeTalk } from "@/data-access-layer/event-sourced/schemas";
+import type { ResumeNote } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
+import { unwrapUnknownError } from "@/utils/errors";
 import { count, useLiveQuery } from "@tanstack/react-db";
-import { Mic, Plus } from "lucide-react";
+import { Notebook, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
@@ -17,84 +18,44 @@ import {
 } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
-import { unwrapUnknownError } from "@/utils/errors";
-import { parseTalkLinks } from "../-utils/talk-links";
 import { Route } from "..";
-import { TalkCreateForm, TalkCreateFormDialog } from "./TalkCreateForm";
-import { TalkEditForm } from "./TalkEditForm";
+import { NoteCreateForm, NoteCreateFormDialog } from "./NoteCreateForm";
+import { NoteEditForm } from "./NoteEditForm";
 
-const ROUTE_ID = "/event-sourced/talks/" as const;
+const ROUTE_ID = "/event-sourced/notes/" as const;
 
-const columns: ResponsiveColumn<ResumeTalk>[] = [
+const columns: ResponsiveColumn<ResumeNote>[] = [
   {
-    id: "title",
-    header: "Title",
-    cell: (row) => row.title || "—",
+    id: "label",
+    header: "Heading",
+    cell: (row) => <span className="font-medium">{row.label || "Notes"}</span>,
   },
   {
-    id: "event",
-    header: "Event",
-    cell: (row) => row.event || "—",
-  },
-  {
-    id: "date",
-    header: "Date",
-    cell: (row) => row.date || "—",
-  },
-  {
-    id: "description",
-    header: "Description",
+    id: "text",
+    header: "Body",
     cell: (row) => (
       <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-        {row.description || "—"}
+        {row.text || "—"}
       </span>
     ),
-    hideOnMobile: true,
-  },
-  {
-    id: "links",
-    header: "Links",
-    cell: (row) => {
-      const links = parseTalkLinks(row.links);
-      if (links.length === 0) return "—";
-      return (
-        <div className="flex max-w-xs flex-wrap gap-x-2 gap-y-1">
-          {links.map((link) => (
-            <a
-              key={`${link.label}-${link.url}`}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-      );
-    },
-    className: "whitespace-normal",
   },
 ];
 
-export function TalkList() {
+export function NoteList() {
   const db = useEventSourcedDb();
   const { page = 1, q = "" } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
-  const [editing, setEditing] = useState<ResumeTalk | null>(null);
+  const [editing, setEditing] = useState<ResumeNote | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
-      const base = query.from({ row: db.collections.resumeTalk });
+      const base = query.from({ row: db.collections.resumeNote });
       const filtered = keyword
-        ? base.where(({ row }) =>
-            orIlike(keyword, row.title, row.event, row.date, row.description, row.searchableText),
-          )
+        ? base.where(({ row }) => orIlike(keyword, row.label, row.text, row.searchableText))
         : base;
       return filtered
         .orderBy(({ row }) => row.updatedAt, "desc")
@@ -106,11 +67,9 @@ export function TalkList() {
 
   const { data: totals } = useLiveQuery(
     (query) => {
-      const base = query.from({ row: db.collections.resumeTalk });
+      const base = query.from({ row: db.collections.resumeNote });
       const filtered = keyword
-        ? base.where(({ row }) =>
-            orIlike(keyword, row.title, row.event, row.date, row.description, row.searchableText),
-          )
+        ? base.where(({ row }) => orIlike(keyword, row.label, row.text, row.searchableText))
         : base;
       return filtered.select(({ row }) => ({ total: count(row.id) }));
     },
@@ -123,8 +82,8 @@ export function TalkList() {
 
   function handleDelete(id: string) {
     try {
-      db.collections.resumeTalk.delete(id);
-      toast.success("Talk deleted");
+      db.collections.resumeNote.delete(id);
+      toast.success("Note deleted");
     } catch (err: unknown) {
       toast.error("Failed to delete", { description: unwrapUnknownError(err).message });
     }
@@ -135,7 +94,7 @@ export function TalkList() {
       variant="outline"
       size="sm"
       onClick={() => setCreateOpen(true)}
-      data-test="add-talks-btn"
+      data-test="add-notes-btn"
     >
       <Plus className="mr-1 size-4" /> Add
     </Button>
@@ -145,11 +104,11 @@ export function TalkList() {
     return (
       <EventSourcedListScaffold
         routeID={ROUTE_ID}
-        title="Talks"
-        description="Talks and presentations in your local library."
-        searchPlaceholder="Search talks…"
+        title="Notes"
+        description="Footer copy — condensed cover letters and addenda — in your local library."
+        searchPlaceholder="Search notes…"
         actions={actions}
-        dataTest="talks-list-page"
+        dataTest="notes-list-page"
       >
         <RouterPendingComponent />
       </EventSourcedListScaffold>
@@ -160,24 +119,24 @@ export function TalkList() {
     return (
       <EventSourcedListScaffold
         routeID={ROUTE_ID}
-        title="Talks"
-        description="Talks and presentations in your local library."
-        searchPlaceholder="Search talks…"
+        title="Notes"
+        description="Footer copy — condensed cover letters and addenda — in your local library."
+        searchPlaceholder="Search notes…"
         totalPages={0}
         actions={actions}
-        dataTest="talks-list-page"
+        dataTest="notes-list-page"
       >
         <LibraryEmpty
-          icon={Mic}
-          title="No Talks Yet"
-          description="You haven't added any talks yet. Create your first entry to get started."
-          actionLabel="Create Talk"
+          icon={Notebook}
+          title="No Notes Yet"
+          description="You haven't added any footer notes yet. Use this for a condensed cover letter or other copy that sits at the bottom of the résumé."
+          actionLabel="Create Note"
           onAction={() => setCreateOpen(true)}
           hasSearch={hasSearch}
           onClearSearch={clearSearch}
-          dataTest="talks-empty"
+          dataTest="notes-empty"
         />
-        <TalkCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
+        <NoteCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
       </EventSourcedListScaffold>
     );
   }
@@ -185,39 +144,38 @@ export function TalkList() {
   return (
     <EventSourcedListScaffold
       routeID={ROUTE_ID}
-      title="Talks"
-      description="Talks and presentations in your local library."
-      searchPlaceholder="Search talks…"
+      title="Notes"
+      description="Footer copy — condensed cover letters and addenda — in your local library."
+      searchPlaceholder="Search notes…"
       totalPages={totalPages}
       actions={actions}
-      dataTest="talks-list-page"
+      dataTest="notes-list-page"
     >
       <ResponsiveEntityTable
         rows={items}
         columns={columns}
-        mobileTitle={(row) => row.title}
-        mobileSubtitle={(row) => row.event || undefined}
-        dataTest="talks-table"
+        mobileTitle={(row) => row.label || "Notes"}
+        dataTest="notes-table"
         actions={(row) => (
           <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
         )}
       />
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>New Talk</DialogTitle>
+            <DialogTitle>New Note</DialogTitle>
           </DialogHeader>
-          <TalkCreateForm onSuccess={() => setCreateOpen(false)} />
+          <NoteCreateForm onSuccess={() => setCreateOpen(false)} />
         </DialogContent>
       </Dialog>
 
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Talk</DialogTitle>
+            <DialogTitle>Edit Note</DialogTitle>
           </DialogHeader>
-          {editing ? <TalkEditForm item={editing} onSuccess={() => setEditing(null)} /> : null}
+          {editing ? <NoteEditForm item={editing} onSuccess={() => setEditing(null)} /> : null}
         </DialogContent>
       </Dialog>
     </EventSourcedListScaffold>

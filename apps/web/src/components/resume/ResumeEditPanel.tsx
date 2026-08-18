@@ -5,6 +5,7 @@ import { LinksForm } from "@/components/resume/resume-editor-forms/LinksForm";
 import { MetadataForm } from "@/components/resume/resume-editor-forms/MetadataForm";
 import { ProjectSection } from "@/components/resume/resume-editor-forms/ProjectSection";
 import { SkillsForm } from "@/components/resume/resume-editor-forms/SkillsForm";
+import { NotesForm } from "@/components/resume/resume-editor-forms/NotesForm";
 import { SummaryForm } from "@/components/resume/resume-editor-forms/SummaryForm";
 import { TalksSection } from "@/components/resume/resume-editor-forms/TalksSection";
 import {
@@ -81,6 +82,13 @@ export function ResumeEditPanel({ resumeId }: ResumeEditPanelProps) {
           <AccordionTrigger>Talks</AccordionTrigger>
           <AccordionContent>
             <TalksSection resumeId={resumeId} />
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="notes">
+          <AccordionTrigger>Notes / cover letter</AccordionTrigger>
+          <AccordionContent>
+            <NotesForm resumeId={resumeId} />
           </AccordionContent>
         </AccordionItem>
       </Accordion>

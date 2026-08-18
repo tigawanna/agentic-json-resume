@@ -12,9 +12,17 @@ import { formOptions } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
 import { joinSearchable, touchUpdatedAt } from "../../-utils/row-helpers";
+import { parseTalkLinks, serializeTalkLinks, talkLinksSearchable } from "../-utils/talk-links";
+import { TalkLinksFields } from "./TalkLinksFields";
 
 const editOpts = formOptions({
-  defaultValues: { title: "", event: "", date: "", description: "" },
+  defaultValues: {
+    title: "",
+    event: "",
+    date: "",
+    description: "",
+    links: [] as Array<{ label: string; url: string }>,
+  },
 });
 
 interface TalkEditFormProps {
@@ -33,6 +41,7 @@ export function TalkEditForm({ item, onSuccess }: TalkEditFormProps) {
       event: item.event ?? "",
       date: item.date ?? "",
       description: item.description ?? "",
+      links: parseTalkLinks(item.links),
     },
     onSubmit: async ({ value }) => {
       setPending(true);
@@ -42,11 +51,13 @@ export function TalkEditForm({ item, onSuccess }: TalkEditFormProps) {
           draft.event = value.event;
           draft.date = value.date;
           draft.description = value.description;
+          draft.links = serializeTalkLinks(value.links);
           draft.searchableText = joinSearchable(
             value.title,
             value.event,
             value.date,
             value.description,
+            talkLinksSearchable(value.links),
           );
           draft.updatedAt = touchUpdatedAt();
         });
@@ -124,6 +135,15 @@ export function TalkEditForm({ item, onSuccess }: TalkEditFormProps) {
               className="mt-1 min-h-24"
             />
           </div>
+        )}
+      </form.AppField>
+      <form.AppField name="links">
+        {(field) => (
+          <TalkLinksFields
+            links={field.state.value}
+            onChange={field.handleChange}
+            disabled={pending}
+          />
         )}
       </form.AppField>
       <form.Subscribe selector={(s) => s.values}>

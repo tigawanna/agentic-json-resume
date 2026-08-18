@@ -90,6 +90,7 @@ export interface ResumeWorkspaceAdapter {
   updateContacts(contacts: ContactDraft[]): Promise<void>;
   updateLinks(links: LinkDraft[]): Promise<void>;
   updateSummary(text: string): Promise<void>;
+  updateNotes(values: { label: string; text: string }): Promise<void>;
   updateSkillGroups(groups: SkillGroupDraft[]): Promise<void>;
   createExperience(values: ExperienceDraft): Promise<{ id: string }>;
   updateExperience(id: string, values: ExperienceDraft): Promise<void>;

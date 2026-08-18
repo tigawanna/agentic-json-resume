@@ -229,6 +229,28 @@ export const resumeSummaryItemSchema = z.object({
 });
 export type ResumeSummaryItem = z.infer<typeof resumeSummaryItemSchema>;
 
+// --- notes (footer copy: cover letter, addendum, …) ---
+
+export const resumeNoteSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  text: z.string(),
+  sortOrder: z.number(),
+  userId: z.string().nullable().optional(),
+  ...embeddableSchema.shape,
+  ...timestampsSchema.shape,
+});
+export type ResumeNote = z.infer<typeof resumeNoteSchema>;
+
+export const resumeNoteItemSchema = z.object({
+  id: z.string(),
+  resumeId: z.string(),
+  noteId: z.string(),
+  sortOrder: z.number(),
+  ...timestampsSchema.shape,
+});
+export type ResumeNoteItem = z.infer<typeof resumeNoteItemSchema>;
+
 // --- link ---
 
 export const resumeLinkSchema = z.object({

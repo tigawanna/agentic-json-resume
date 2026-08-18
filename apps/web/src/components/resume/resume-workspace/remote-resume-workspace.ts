@@ -26,6 +26,7 @@ import {
   updateLinks,
   updateResumeMeta,
   updateSkillGroups,
+  updateNotes,
   updateSummary,
 } from "@/data-access-layer/resume/resume.functions";
 import { reorderExperienceFn } from "@/data-access-layer/resume/experiences/experience.functions";
@@ -110,6 +111,24 @@ export function createRemoteResumeWorkspace(resume: ResumeDetailDTO): ResumeWork
       await updateSummary({ data: { resumeId: resume.id, text } });
       writeResumeUpdate(resume.id, {
         summaries: [{ id: "", resumeId: resume.id, text, sortOrder: 0 }],
+      });
+    },
+    async updateNotes(values: { label: string; text: string }) {
+      await updateNotes({
+        data: { resumeId: resume.id, label: values.label, text: values.text },
+      });
+      writeResumeUpdate(resume.id, {
+        notes: values.text.trim()
+          ? [
+              {
+                id: "",
+                resumeId: resume.id,
+                label: values.label.trim() || "Notes",
+                text: values.text,
+                sortOrder: 0,
+              },
+            ]
+          : [],
       });
     },
     async updateSkillGroups(groups: SkillGroupDraft[]) {
