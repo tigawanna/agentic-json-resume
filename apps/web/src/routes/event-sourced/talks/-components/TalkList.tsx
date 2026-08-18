@@ -1,0 +1,199 @@
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
+import { usePageSearchQuery } from "@/components/search/use-page-search-query";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import type { ResumeTalk } from "@/data-access-layer/event-sourced/schemas";
+import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
+import { count, useLiveQuery } from "@tanstack/react-db";
+import { Mic, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { LibraryEmpty } from "../../-components/LibraryEmpty";
+import {
+  ResponsiveEntityTable,
+  type ResponsiveColumn,
+} from "../../-components/ResponsiveEntityTable";
+import { RowActionButtons } from "../../-components/RowActionButtons";
+import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import { unwrapUnknownError } from "@/utils/errors";
+import { Route } from "..";
+import { TalkCreateForm, TalkCreateFormDialog } from "./TalkCreateForm";
+import { TalkEditForm } from "./TalkEditForm";
+
+const ROUTE_ID = "/event-sourced/talks/" as const;
+
+const columns: ResponsiveColumn<ResumeTalk>[] = [
+  {
+    id: "title",
+    header: "Title",
+    cell: (row) => row.title || "—",
+  },
+  {
+    id: "event",
+    header: "Event",
+    cell: (row) => row.event || "—",
+  },
+  {
+    id: "date",
+    header: "Date",
+    cell: (row) => row.date || "—",
+  },
+  {
+    id: "description",
+    header: "Description",
+    cell: (row) => (
+      <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
+        {row.description || "—"}
+      </span>
+    ),
+    hideOnMobile: true,
+  },
+];
+
+export function TalkList() {
+  const db = useEventSourcedDb();
+  const { page = 1, q = "" } = Route.useSearch();
+  const { clearSearch } = usePageSearchQuery(ROUTE_ID);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<ResumeTalk | null>(null);
+
+  const keyword = q.trim();
+  const offset = listOffset(page);
+
+  const { data: items, isLoading } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeTalk });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(keyword, row.title, row.event, row.date, row.description, row.searchableText),
+          )
+        : base;
+      return filtered
+        .orderBy(({ row }) => row.updatedAt, "desc")
+        .limit(ADMIN_LIST_PER_PAGE)
+        .offset(offset);
+    },
+    [keyword, offset],
+  );
+
+  const { data: totals } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeTalk });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(keyword, row.title, row.event, row.date, row.description, row.searchableText),
+          )
+        : base;
+      return filtered.select(({ row }) => ({ total: count(row.id) }));
+    },
+    [keyword],
+  );
+
+  const totalItems = totals?.[0]?.total ?? 0;
+  const totalPages = totalPagesFromCount(totalItems);
+  const hasSearch = keyword.length > 0;
+
+  function handleDelete(id: string) {
+    try {
+      db.collections.resumeTalk.delete(id);
+      toast.success("Talk deleted");
+    } catch (err: unknown) {
+      toast.error("Failed to delete", { description: unwrapUnknownError(err).message });
+    }
+  }
+
+  const actions = (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setCreateOpen(true)}
+      data-test="add-talks-btn"
+    >
+      <Plus className="mr-1 size-4" /> Add
+    </Button>
+  );
+
+  if (isLoading) {
+    return (
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Talks"
+        description="Talks and presentations in your local library."
+        searchPlaceholder="Search talks…"
+        actions={actions}
+        dataTest="talks-list-page"
+      >
+        <RouterPendingComponent />
+      </EventSourcedListScaffold>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Talks"
+        description="Talks and presentations in your local library."
+        searchPlaceholder="Search talks…"
+        totalPages={0}
+        actions={actions}
+        dataTest="talks-list-page"
+      >
+        <LibraryEmpty
+          icon={Mic}
+          title="No Talks Yet"
+          description="You haven't added any talks yet. Create your first entry to get started."
+          actionLabel="Create Talk"
+          onAction={() => setCreateOpen(true)}
+          hasSearch={hasSearch}
+          onClearSearch={clearSearch}
+          dataTest="talks-empty"
+        />
+        <TalkCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
+      </EventSourcedListScaffold>
+    );
+  }
+
+  return (
+    <EventSourcedListScaffold
+      routeID={ROUTE_ID}
+      title="Talks"
+      description="Talks and presentations in your local library."
+      searchPlaceholder="Search talks…"
+      totalPages={totalPages}
+      actions={actions}
+      dataTest="talks-list-page"
+    >
+      <ResponsiveEntityTable
+        rows={items}
+        columns={columns}
+        mobileTitle={(row) => row.title}
+        mobileSubtitle={(row) => row.event || undefined}
+        dataTest="talks-table"
+        actions={(row) => (
+          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
+        )}
+      />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Talk</DialogTitle>
+          </DialogHeader>
+          <TalkCreateForm onSuccess={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Talk</DialogTitle>
+          </DialogHeader>
+          {editing ? <TalkEditForm item={editing} onSuccess={() => setEditing(null)} /> : null}
+        </DialogContent>
+      </Dialog>
+    </EventSourcedListScaffold>
+  );
+}

@@ -177,17 +177,49 @@ const totalPages = data?.pagination.totalPages ?? 0;
 - Prefer `useQuery` + pending early return when the list can show a pending shell inside the scaffold.
 - `useSuspenseQuery` is fine when the route already has a `pendingComponent` and you only need empty vs loaded.
 
-### TanStack DB (client-filtered / client-paginated)
+### TanStack DB (live query)
+
+Drive search and paging in the query builder so results stay incrementally maintained:
 
 ```tsx
 const q = search.q ?? ""; // committed URL value — feed the live query
-const { data: rows } = useLiveSuspenseQuery(/* where ilike … q … */, [q, sortBy, …]);
-const { items, pagination } = paginateItems(rows, page, ADMIN_LIST_PER_PAGE);
+const keyword = q.trim();
+const offset = (page - 1) * ADMIN_LIST_PER_PAGE;
+
+const { data: items } = useLiveQuery(
+  (query) => {
+    const base = query.from({ row: collection });
+    const filtered = keyword
+      ? base.where(({ row }) =>
+          or(ilike(row.name, `%${keyword}%`), ilike(row.searchableText, `%${keyword}%`)),
+        )
+      : base;
+    return filtered
+      .orderBy(({ row }) => row.updatedAt, "desc")
+      .limit(ADMIN_LIST_PER_PAGE)
+      .offset(offset);
+  },
+  [keyword, offset],
+);
+
+const { data: totals } = useLiveQuery(
+  (query) => {
+    const base = query.from({ row: collection });
+    const filtered = keyword
+      ? base.where(({ row }) =>
+          or(ilike(row.name, `%${keyword}%`), ilike(row.searchableText, `%${keyword}%`)),
+        )
+      : base;
+    return filtered.select(({ row }) => ({ total: count(row.id) }));
+  },
+  [keyword],
+);
 ```
 
 - Drive the live query from the **committed** URL `q` (`search.q`), not the local input value. Local typing is for the `SearchBox` only; debounce happens in `usePageSearchQuery`.
+- Do **not** `Array.filter` / `Array.slice` the live-query result — that throws away IVM.
+- Empty state: matching `count` is `0` (not just the current page slice).
 - Keep filters + sort controls in the scaffold; patch non-`q` params with `navigate({ search: (prev) => ({ …prev, … }) })` or a small helper.
-- Empty state: `rows.length === 0` (not just the current page slice).
 
 ---
 

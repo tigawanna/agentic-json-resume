@@ -23,6 +23,18 @@ import { Route as AuthGithubRouteImport } from './routes/auth/github'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as PublicPreviewRouteImport } from './routes/_public/preview'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
+import { Route as EventSourcedVolunteersIndexRouteImport } from './routes/event-sourced/volunteers/index'
+import { Route as EventSourcedTalksIndexRouteImport } from './routes/event-sourced/talks/index'
+import { Route as EventSourcedSummariesIndexRouteImport } from './routes/event-sourced/summaries/index'
+import { Route as EventSourcedSkillGroupsIndexRouteImport } from './routes/event-sourced/skill-groups/index'
+import { Route as EventSourcedResumesIndexRouteImport } from './routes/event-sourced/resumes/index'
+import { Route as EventSourcedResumeProjectsIndexRouteImport } from './routes/event-sourced/resume-projects/index'
+import { Route as EventSourcedLinksIndexRouteImport } from './routes/event-sourced/links/index'
+import { Route as EventSourcedLanguagesIndexRouteImport } from './routes/event-sourced/languages/index'
+import { Route as EventSourcedExperiencesIndexRouteImport } from './routes/event-sourced/experiences/index'
+import { Route as EventSourcedEducationIndexRouteImport } from './routes/event-sourced/education/index'
+import { Route as EventSourcedContactsIndexRouteImport } from './routes/event-sourced/contacts/index'
+import { Route as EventSourcedCertificationsIndexRouteImport } from './routes/event-sourced/certifications/index'
 import { Route as DashboardVolunteersIndexRouteImport } from './routes/_dashboard/volunteers/index'
 import { Route as DashboardTalksIndexRouteImport } from './routes/_dashboard/talks/index'
 import { Route as DashboardSummariesIndexRouteImport } from './routes/_dashboard/summaries/index'
@@ -116,6 +128,76 @@ const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const EventSourcedVolunteersIndexRoute =
+  EventSourcedVolunteersIndexRouteImport.update({
+    id: '/volunteers/',
+    path: '/volunteers/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
+const EventSourcedTalksIndexRoute = EventSourcedTalksIndexRouteImport.update({
+  id: '/talks/',
+  path: '/talks/',
+  getParentRoute: () => EventSourcedLayoutRoute,
+} as any)
+const EventSourcedSummariesIndexRoute =
+  EventSourcedSummariesIndexRouteImport.update({
+    id: '/summaries/',
+    path: '/summaries/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
+const EventSourcedSkillGroupsIndexRoute =
+  EventSourcedSkillGroupsIndexRouteImport.update({
+    id: '/skill-groups/',
+    path: '/skill-groups/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
+const EventSourcedResumesIndexRoute =
+  EventSourcedResumesIndexRouteImport.update({
+    id: '/resumes/',
+    path: '/resumes/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
+const EventSourcedResumeProjectsIndexRoute =
+  EventSourcedResumeProjectsIndexRouteImport.update({
+    id: '/resume-projects/',
+    path: '/resume-projects/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
+const EventSourcedLinksIndexRoute = EventSourcedLinksIndexRouteImport.update({
+  id: '/links/',
+  path: '/links/',
+  getParentRoute: () => EventSourcedLayoutRoute,
+} as any)
+const EventSourcedLanguagesIndexRoute =
+  EventSourcedLanguagesIndexRouteImport.update({
+    id: '/languages/',
+    path: '/languages/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
+const EventSourcedExperiencesIndexRoute =
+  EventSourcedExperiencesIndexRouteImport.update({
+    id: '/experiences/',
+    path: '/experiences/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
+const EventSourcedEducationIndexRoute =
+  EventSourcedEducationIndexRouteImport.update({
+    id: '/education/',
+    path: '/education/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
+const EventSourcedContactsIndexRoute =
+  EventSourcedContactsIndexRouteImport.update({
+    id: '/contacts/',
+    path: '/contacts/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
+const EventSourcedCertificationsIndexRoute =
+  EventSourcedCertificationsIndexRouteImport.update({
+    id: '/certifications/',
+    path: '/certifications/',
+    getParentRoute: () => EventSourcedLayoutRoute,
+  } as any)
 const DashboardVolunteersIndexRoute =
   DashboardVolunteersIndexRouteImport.update({
     id: '/volunteers/',
@@ -278,6 +360,18 @@ export interface FileRoutesByFullPath {
   '/summaries/': typeof DashboardSummariesIndexRoute
   '/talks/': typeof DashboardTalksIndexRoute
   '/volunteers/': typeof DashboardVolunteersIndexRoute
+  '/event-sourced/certifications/': typeof EventSourcedCertificationsIndexRoute
+  '/event-sourced/contacts/': typeof EventSourcedContactsIndexRoute
+  '/event-sourced/education/': typeof EventSourcedEducationIndexRoute
+  '/event-sourced/experiences/': typeof EventSourcedExperiencesIndexRoute
+  '/event-sourced/languages/': typeof EventSourcedLanguagesIndexRoute
+  '/event-sourced/links/': typeof EventSourcedLinksIndexRoute
+  '/event-sourced/resume-projects/': typeof EventSourcedResumeProjectsIndexRoute
+  '/event-sourced/resumes/': typeof EventSourcedResumesIndexRoute
+  '/event-sourced/skill-groups/': typeof EventSourcedSkillGroupsIndexRoute
+  '/event-sourced/summaries/': typeof EventSourcedSummariesIndexRoute
+  '/event-sourced/talks/': typeof EventSourcedTalksIndexRoute
+  '/event-sourced/volunteers/': typeof EventSourcedVolunteersIndexRoute
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
@@ -314,6 +408,18 @@ export interface FileRoutesByTo {
   '/summaries': typeof DashboardSummariesIndexRoute
   '/talks': typeof DashboardTalksIndexRoute
   '/volunteers': typeof DashboardVolunteersIndexRoute
+  '/event-sourced/certifications': typeof EventSourcedCertificationsIndexRoute
+  '/event-sourced/contacts': typeof EventSourcedContactsIndexRoute
+  '/event-sourced/education': typeof EventSourcedEducationIndexRoute
+  '/event-sourced/experiences': typeof EventSourcedExperiencesIndexRoute
+  '/event-sourced/languages': typeof EventSourcedLanguagesIndexRoute
+  '/event-sourced/links': typeof EventSourcedLinksIndexRoute
+  '/event-sourced/resume-projects': typeof EventSourcedResumeProjectsIndexRoute
+  '/event-sourced/resumes': typeof EventSourcedResumesIndexRoute
+  '/event-sourced/skill-groups': typeof EventSourcedSkillGroupsIndexRoute
+  '/event-sourced/summaries': typeof EventSourcedSummariesIndexRoute
+  '/event-sourced/talks': typeof EventSourcedTalksIndexRoute
+  '/event-sourced/volunteers': typeof EventSourcedVolunteersIndexRoute
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/resumes/$resumeId': typeof DashboardResumesResumeIdIndexRoute
@@ -355,6 +461,18 @@ export interface FileRoutesById {
   '/_dashboard/summaries/': typeof DashboardSummariesIndexRoute
   '/_dashboard/talks/': typeof DashboardTalksIndexRoute
   '/_dashboard/volunteers/': typeof DashboardVolunteersIndexRoute
+  '/event-sourced/certifications/': typeof EventSourcedCertificationsIndexRoute
+  '/event-sourced/contacts/': typeof EventSourcedContactsIndexRoute
+  '/event-sourced/education/': typeof EventSourcedEducationIndexRoute
+  '/event-sourced/experiences/': typeof EventSourcedExperiencesIndexRoute
+  '/event-sourced/languages/': typeof EventSourcedLanguagesIndexRoute
+  '/event-sourced/links/': typeof EventSourcedLinksIndexRoute
+  '/event-sourced/resume-projects/': typeof EventSourcedResumeProjectsIndexRoute
+  '/event-sourced/resumes/': typeof EventSourcedResumesIndexRoute
+  '/event-sourced/skill-groups/': typeof EventSourcedSkillGroupsIndexRoute
+  '/event-sourced/summaries/': typeof EventSourcedSummariesIndexRoute
+  '/event-sourced/talks/': typeof EventSourcedTalksIndexRoute
+  '/event-sourced/volunteers/': typeof EventSourcedVolunteersIndexRoute
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/_dashboard/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
@@ -395,6 +513,18 @@ export interface FileRouteTypes {
     | '/summaries/'
     | '/talks/'
     | '/volunteers/'
+    | '/event-sourced/certifications/'
+    | '/event-sourced/contacts/'
+    | '/event-sourced/education/'
+    | '/event-sourced/experiences/'
+    | '/event-sourced/languages/'
+    | '/event-sourced/links/'
+    | '/event-sourced/resume-projects/'
+    | '/event-sourced/resumes/'
+    | '/event-sourced/skill-groups/'
+    | '/event-sourced/summaries/'
+    | '/event-sourced/talks/'
+    | '/event-sourced/volunteers/'
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/resumes/$resumeId/'
@@ -431,6 +561,18 @@ export interface FileRouteTypes {
     | '/summaries'
     | '/talks'
     | '/volunteers'
+    | '/event-sourced/certifications'
+    | '/event-sourced/contacts'
+    | '/event-sourced/education'
+    | '/event-sourced/experiences'
+    | '/event-sourced/languages'
+    | '/event-sourced/links'
+    | '/event-sourced/resume-projects'
+    | '/event-sourced/resumes'
+    | '/event-sourced/skill-groups'
+    | '/event-sourced/summaries'
+    | '/event-sourced/talks'
+    | '/event-sourced/volunteers'
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/resumes/$resumeId'
@@ -471,6 +613,18 @@ export interface FileRouteTypes {
     | '/_dashboard/summaries/'
     | '/_dashboard/talks/'
     | '/_dashboard/volunteers/'
+    | '/event-sourced/certifications/'
+    | '/event-sourced/contacts/'
+    | '/event-sourced/education/'
+    | '/event-sourced/experiences/'
+    | '/event-sourced/languages/'
+    | '/event-sourced/links/'
+    | '/event-sourced/resume-projects/'
+    | '/event-sourced/resumes/'
+    | '/event-sourced/skill-groups/'
+    | '/event-sourced/summaries/'
+    | '/event-sourced/talks/'
+    | '/event-sourced/volunteers/'
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/_dashboard/resumes/$resumeId/'
@@ -592,6 +746,90 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardDashboardRouteImport
       parentRoute: typeof DashboardLayoutRoute
+    }
+    '/event-sourced/volunteers/': {
+      id: '/event-sourced/volunteers/'
+      path: '/volunteers'
+      fullPath: '/event-sourced/volunteers/'
+      preLoaderRoute: typeof EventSourcedVolunteersIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/talks/': {
+      id: '/event-sourced/talks/'
+      path: '/talks'
+      fullPath: '/event-sourced/talks/'
+      preLoaderRoute: typeof EventSourcedTalksIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/summaries/': {
+      id: '/event-sourced/summaries/'
+      path: '/summaries'
+      fullPath: '/event-sourced/summaries/'
+      preLoaderRoute: typeof EventSourcedSummariesIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/skill-groups/': {
+      id: '/event-sourced/skill-groups/'
+      path: '/skill-groups'
+      fullPath: '/event-sourced/skill-groups/'
+      preLoaderRoute: typeof EventSourcedSkillGroupsIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/resumes/': {
+      id: '/event-sourced/resumes/'
+      path: '/resumes'
+      fullPath: '/event-sourced/resumes/'
+      preLoaderRoute: typeof EventSourcedResumesIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/resume-projects/': {
+      id: '/event-sourced/resume-projects/'
+      path: '/resume-projects'
+      fullPath: '/event-sourced/resume-projects/'
+      preLoaderRoute: typeof EventSourcedResumeProjectsIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/links/': {
+      id: '/event-sourced/links/'
+      path: '/links'
+      fullPath: '/event-sourced/links/'
+      preLoaderRoute: typeof EventSourcedLinksIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/languages/': {
+      id: '/event-sourced/languages/'
+      path: '/languages'
+      fullPath: '/event-sourced/languages/'
+      preLoaderRoute: typeof EventSourcedLanguagesIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/experiences/': {
+      id: '/event-sourced/experiences/'
+      path: '/experiences'
+      fullPath: '/event-sourced/experiences/'
+      preLoaderRoute: typeof EventSourcedExperiencesIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/education/': {
+      id: '/event-sourced/education/'
+      path: '/education'
+      fullPath: '/event-sourced/education/'
+      preLoaderRoute: typeof EventSourcedEducationIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/contacts/': {
+      id: '/event-sourced/contacts/'
+      path: '/contacts'
+      fullPath: '/event-sourced/contacts/'
+      preLoaderRoute: typeof EventSourcedContactsIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
+    }
+    '/event-sourced/certifications/': {
+      id: '/event-sourced/certifications/'
+      path: '/certifications'
+      fullPath: '/event-sourced/certifications/'
+      preLoaderRoute: typeof EventSourcedCertificationsIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
     }
     '/_dashboard/volunteers/': {
       id: '/_dashboard/volunteers/'
@@ -840,10 +1078,34 @@ const AuthLayoutRouteWithChildren = AuthLayoutRoute._addFileChildren(
 
 interface EventSourcedLayoutRouteChildren {
   EventSourcedIndexRoute: typeof EventSourcedIndexRoute
+  EventSourcedCertificationsIndexRoute: typeof EventSourcedCertificationsIndexRoute
+  EventSourcedContactsIndexRoute: typeof EventSourcedContactsIndexRoute
+  EventSourcedEducationIndexRoute: typeof EventSourcedEducationIndexRoute
+  EventSourcedExperiencesIndexRoute: typeof EventSourcedExperiencesIndexRoute
+  EventSourcedLanguagesIndexRoute: typeof EventSourcedLanguagesIndexRoute
+  EventSourcedLinksIndexRoute: typeof EventSourcedLinksIndexRoute
+  EventSourcedResumeProjectsIndexRoute: typeof EventSourcedResumeProjectsIndexRoute
+  EventSourcedResumesIndexRoute: typeof EventSourcedResumesIndexRoute
+  EventSourcedSkillGroupsIndexRoute: typeof EventSourcedSkillGroupsIndexRoute
+  EventSourcedSummariesIndexRoute: typeof EventSourcedSummariesIndexRoute
+  EventSourcedTalksIndexRoute: typeof EventSourcedTalksIndexRoute
+  EventSourcedVolunteersIndexRoute: typeof EventSourcedVolunteersIndexRoute
 }
 
 const EventSourcedLayoutRouteChildren: EventSourcedLayoutRouteChildren = {
   EventSourcedIndexRoute: EventSourcedIndexRoute,
+  EventSourcedCertificationsIndexRoute: EventSourcedCertificationsIndexRoute,
+  EventSourcedContactsIndexRoute: EventSourcedContactsIndexRoute,
+  EventSourcedEducationIndexRoute: EventSourcedEducationIndexRoute,
+  EventSourcedExperiencesIndexRoute: EventSourcedExperiencesIndexRoute,
+  EventSourcedLanguagesIndexRoute: EventSourcedLanguagesIndexRoute,
+  EventSourcedLinksIndexRoute: EventSourcedLinksIndexRoute,
+  EventSourcedResumeProjectsIndexRoute: EventSourcedResumeProjectsIndexRoute,
+  EventSourcedResumesIndexRoute: EventSourcedResumesIndexRoute,
+  EventSourcedSkillGroupsIndexRoute: EventSourcedSkillGroupsIndexRoute,
+  EventSourcedSummariesIndexRoute: EventSourcedSummariesIndexRoute,
+  EventSourcedTalksIndexRoute: EventSourcedTalksIndexRoute,
+  EventSourcedVolunteersIndexRoute: EventSourcedVolunteersIndexRoute,
 }
 
 const EventSourcedLayoutRouteWithChildren =

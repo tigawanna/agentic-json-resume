@@ -1,3 +1,4 @@
+import type { FileRoutesById } from "@/routeTree.gen";
 import type { RegisteredRouter } from "@tanstack/react-router";
 
 // Export the registered router type for use in type utilities
@@ -24,3 +25,5 @@ export type SearchParamValue<
 // type AdminUsersSearchKeys = SearchParamKeysForRoute<"/dashboard/admin/users/">;
 // type AdminUsersSearchParams = SearchParamsForRoute<"/dashboard/admin/users/">;
 // type SearchFieldValue = SearchParamValue<"/dashboard/admin/users/", "searchField">;
+
+export type TRouteID = keyof FileRoutesById;
