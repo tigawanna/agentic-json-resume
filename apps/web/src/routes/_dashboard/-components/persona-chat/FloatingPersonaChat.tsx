@@ -495,7 +495,7 @@ function PersonaMessage({ message }: { message: UIMessage }) {
           {message.parts.map((part, index) => {
             if (part.type === "text") {
               return (
-                <div key={index} className="break-words whitespace-pre-wrap leading-6">
+                <div key={index} className="wrap-break-word whitespace-pre-wrap leading-6">
                   {part.content}
                 </div>
               );

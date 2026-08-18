@@ -19,16 +19,26 @@ interface SkillGroupDraft {
   items: string[];
 }
 
+function skillGroupsToDraft(
+  skillGroups: { name: string; skills: { name: string }[] }[],
+): SkillGroupDraft[] {
+  return skillGroups.map((g) => ({
+    name: g.name,
+    items: g.skills.map((s) => s.name),
+  }));
+}
+
+function skillGroupDraftsEqual(a: SkillGroupDraft[], b: SkillGroupDraft[]) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
 export function SkillsForm({ resumeId }: SkillsFormProps) {
   const { resume, updateSkillGroups, searches } = useResumeWorkspace();
   const searchSkills = searches?.skills;
 
-  const [groups, setGroups] = useState<SkillGroupDraft[]>(
-    resume?.skillGroups.map((g) => ({
-      name: g.name,
-      items: g.skills.map((s) => s.name),
-    })) ?? [],
-  );
+  const savedGroups = resume ? skillGroupsToDraft(resume.skillGroups) : [];
+  const [groups, setGroups] = useState<SkillGroupDraft[]>(savedGroups);
+  const isDirty = !skillGroupDraftsEqual(groups, savedGroups);
   const [pickOpen, setPickOpen] = useState(false);
 
   const mutation = useMutation({
@@ -134,7 +144,11 @@ export function SkillsForm({ resumeId }: SkillsFormProps) {
             <Library className="mr-1 size-3" /> Pick from Existing
           </Button>
         )}
-        <Button size="sm" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+        <Button
+          size="sm"
+          onClick={() => mutation.mutate()}
+          disabled={!isDirty || mutation.isPending}
+        >
           Save Skills
         </Button>
       </div>
