@@ -1,32 +1,31 @@
 import { useViewer } from "@/data-access-layer/auth/viewer";
 import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
-import { useAiSettings } from "@/hooks/use-ai-settings";
-import {
-  fetchServerSentEvents,
-  indexedDBPersistence,
-  useChat,
-  type UIMessage,
-} from "@tanstack/ai-react";
+import { fetchServerSentEvents, useChat, type UIMessage } from "@tanstack/ai-react";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { eventSourcedResumeAiClientTools } from "./client-tools";
+import { createEventSourcedChatPersistence } from "./event-sourced-chat-persistence";
 import type { EventSourcedResumeAiContext } from "./local-resume-tools";
+import { useEventSourcedAiSettings } from "./use-event-sourced-ai-settings";
 import { isLocalMode } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/resume-ai-types";
 import {
   getMessageText,
   getSessionChars,
 } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/resume-ai-message-utils";
 
-const persistence = indexedDBPersistence({
-  databaseName: "event-sourced-resume-ai",
-  keyPrefix: "event-sourced-resume-ai:",
-});
-
 export function useEventSourcedResumeAiChat(resumeId: string, jobDescription: string) {
   const [input, setInput] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
-  const { settings, saveSettings, clearSettings } = useAiSettings();
+  const {
+    settings,
+    saveSettings,
+    clearSettings,
+    systemPrompt,
+    saveSystemPrompt,
+    resetSystemPrompt,
+    isCustomSystemPrompt,
+  } = useEventSourcedAiSettings();
   const db = useEventSourcedDb();
   const { viewer } = useViewer();
   const router = useRouter();
@@ -34,6 +33,17 @@ export function useEventSourcedResumeAiChat(resumeId: string, jobDescription: st
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const isReady = isLocalMode || !!settings;
   const userId = viewer.user?.id ?? "";
+  const dbRef = useRef(db);
+  const userIdRef = useRef(userId);
+  dbRef.current = db;
+  userIdRef.current = userId;
+  const persistenceRef = useRef(
+    createEventSourcedChatPersistence({
+      getDb: () => dbRef.current,
+      getUserId: () => userIdRef.current,
+      resumeId,
+    }),
+  );
 
   const context: EventSourcedResumeAiContext = {
     db,
@@ -51,12 +61,13 @@ export function useEventSourcedResumeAiChat(resumeId: string, jobDescription: st
   const chat = useChat({
     threadId: `event-sourced-resume-ai:${resumeId}`,
     connection: fetchServerSentEvents("/api/ai/event-sourced-resume-tailor"),
-    persistence,
+    persistence: persistenceRef.current,
     tools: eventSourcedResumeAiClientTools,
     context,
     forwardedProps: {
       resumeId,
       jobDescription,
+      systemPrompt,
       apiKey: settings?.apiKey,
       model: settings?.model,
     },
@@ -138,6 +149,10 @@ export function useEventSourcedResumeAiChat(resumeId: string, jobDescription: st
     sessionGenerating,
     settings,
     settingsOpen,
+    systemPrompt,
+    saveSystemPrompt,
+    resetSystemPrompt,
+    isCustomSystemPrompt,
     setInput,
     setSettingsOpen,
     status,

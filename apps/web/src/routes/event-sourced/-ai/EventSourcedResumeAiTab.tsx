@@ -1,6 +1,7 @@
 import { ResumeAiConversationCard } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/ResumeAiConversationCard";
 import { ResumeAiPromptsCard } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/ResumeAiPromptsCard";
 import { ResumeAiProviderSettings } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/ResumeAiProviderSettings";
+import { EventSourcedSystemPromptCard } from "./EventSourcedSystemPromptCard";
 import { useEventSourcedResumeAiChat } from "./use-event-sourced-resume-ai";
 
 export function EventSourcedResumeAiTab({
@@ -23,6 +24,13 @@ export function EventSourcedResumeAiTab({
         onOpenChange={chat.setSettingsOpen}
         saveSettings={chat.saveSettings}
         settings={chat.settings}
+      />
+
+      <EventSourcedSystemPromptCard
+        isCustom={chat.isCustomSystemPrompt}
+        systemPrompt={chat.systemPrompt}
+        onReset={chat.resetSystemPrompt}
+        onSave={chat.saveSystemPrompt}
       />
 
       <ResumeAiPromptsCard

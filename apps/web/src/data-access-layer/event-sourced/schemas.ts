@@ -26,6 +26,9 @@ export const appSettingsSchema = z.object({
   theme: z.enum(["light", "dark"]),
   language: z.string(),
   syncEnabled: z.boolean(),
+  aiModel: z.string().optional(),
+  aiApiKey: z.string().optional(),
+  aiSystemPrompt: z.string().optional(),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 

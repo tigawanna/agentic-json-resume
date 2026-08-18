@@ -2,12 +2,14 @@ import { chatParamsFromRequestBody, toServerSentEventsResponse } from "@tanstack
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { streamEventSourcedResumeAgentChat } from "@/routes/event-sourced/-ai/stream-resume-chat.server";
+import { EVENT_SOURCED_SYSTEM_PROMPT_MAX_CHARS } from "@/routes/event-sourced/-ai/system-prompt";
 import { auth } from "@/lib/auth";
 import { serverEnv } from "@/lib/server-env";
 
 const forwardedSchema = z.object({
   resumeId: z.string().trim().min(1),
   jobDescription: z.string().optional(),
+  systemPrompt: z.string().max(EVENT_SOURCED_SYSTEM_PROMPT_MAX_CHARS).optional(),
   apiKey: z.string().trim().optional(),
   model: z.string().trim().optional(),
 });
@@ -62,6 +64,7 @@ export const Route = createFileRoute("/api/ai/event-sourced-resume-tailor")({
           const stream = await streamEventSourcedResumeAgentChat({
             resumeId: data.resumeId,
             jobDescription: data.jobDescription,
+            systemPrompt: data.systemPrompt,
             messages: params.messages as never,
             apiKey: data.apiKey,
             model: data.model,

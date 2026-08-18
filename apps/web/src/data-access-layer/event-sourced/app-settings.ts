@@ -17,6 +17,14 @@ export function readAppSettings(db: AppDb): AppSettings {
   return db.collections.settings.get(APP_SETTINGS_ID) ?? defaultSettings();
 }
 
+export function updateAppSettings(db: AppDb, patch: Partial<Omit<AppSettings, "id">>): AppSettings {
+  const current = readAppSettings(db);
+  db.collections.settings.update(APP_SETTINGS_ID, (draft) => {
+    Object.assign(draft, patch);
+  });
+  return db.collections.settings.get(APP_SETTINGS_ID) ?? { ...current, ...patch };
+}
+
 export function applyManagedSyncGate(db: AppDb, isAuthenticated: boolean): AppSettings {
   const settings = readAppSettings(db);
   db.setSyncEnabled(Boolean(isAuthenticated && settings.syncEnabled));
