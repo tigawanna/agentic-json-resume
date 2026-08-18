@@ -10,6 +10,7 @@ import {
   Globe,
   GraduationCap,
   Heart,
+  Inbox,
   LayoutDashboard,
   Link,
   Mic,
@@ -50,6 +51,7 @@ export function getDashboardPrimaryRoutes(): SidebarItem[] {
     },
     { title: "Repositories", href: "/event-sourced/repos", icon: Github },
     { title: "Saved Projects", href: "/event-sourced/saved-projects", icon: FolderGit2 },
+    { title: "Events", href: "/event-sourced/events", icon: Inbox },
   ];
 }
 

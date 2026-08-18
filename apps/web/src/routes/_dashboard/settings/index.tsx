@@ -7,14 +7,14 @@ import { unwrapUnknownError } from "@/utils/errors";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertCircle, Trash2 } from "lucide-react";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { ApiKeysSection } from "./-components/ApiKeysSection";
+import { LocalBackupSection } from "./-components/LocalBackupSection";
 
 export const Route = createFileRoute("/_dashboard/settings/")({
   component: SettingsPage,
   head: () => ({
-    meta: [{ title: "Settings", description: "Manage your account and API keys" }],
+    meta: [{ title: "Settings", description: "Manage your account and local data" }],
   }),
 });
 
@@ -49,35 +49,41 @@ function SettingsPage() {
           <CardTitle>Account Information</CardTitle>
           <CardDescription>Manage your account details</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground text-xs font-medium">Email</p>
-              <p className="mt-1 text-sm font-medium">{viewer.user?.email || "—"}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-xs font-medium">Name</p>
-              <p className="mt-1 text-sm font-medium">{viewer.user?.name || "—"}</p>
-            </div>
-          </div>
-          {viewer.user?.image && (
-            <div>
-              <p className="text-muted-foreground text-xs font-medium">Avatar</p>
+        <CardContent>
+          <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-6">
+            {viewer.user?.image ? (
               <img
                 src={viewer.user.image}
-                alt={viewer.user.name || "User avatar"}
-                className="mt-2 size-16 rounded-full"
+                alt=""
+                className="size-24 shrink-0 rounded-full object-cover ring-2 ring-border ring-offset-2 ring-offset-card sm:size-28"
               />
-            </div>
-          )}
+            ) : (
+              <div
+                aria-hidden
+                className="bg-muted text-muted-foreground flex size-24 shrink-0 items-center justify-center rounded-full text-2xl font-semibold ring-2 ring-border ring-offset-2 ring-offset-card sm:size-28"
+              >
+                {(viewer.user?.name ?? viewer.user?.email ?? "?").slice(0, 1).toUpperCase()}
+              </div>
+            )}
+            <dl className="grid min-w-0 flex-1 gap-4 sm:grid-cols-2">
+              <div className="min-w-0">
+                <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Name
+                </dt>
+                <dd className="mt-1 truncate text-base font-medium">{viewer.user?.name || "—"}</dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Email
+                </dt>
+                <dd className="mt-1 truncate text-base font-medium">{viewer.user?.email || "—"}</dd>
+              </div>
+            </dl>
+          </div>
         </CardContent>
       </Card>
 
-      {/* <McpConnectSection /> */}
-
-      <Suspense>
-        <ApiKeysSection />
-      </Suspense>
+      <LocalBackupSection />
 
       <Card className="border-destructive">
         <CardHeader>

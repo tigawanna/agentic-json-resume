@@ -10,7 +10,7 @@ import {
   dashboard_account_routes,
   dashboard_admin_routes,
   getDashboardPrimaryRoutes,
-} from "./-component/dashboard_routes";
+} from "./-components/dashboard_routes";
 
 export const Route = createFileRoute("/event-sourced")({
   pendingComponent: () => <RouterPendingComponent />,

@@ -14,8 +14,8 @@ type LibraryEmptyProps = {
   icon: LucideIcon;
   title: string;
   description: string;
-  actionLabel: string;
-  onAction: () => void;
+  actionLabel?: string;
+  onAction?: () => void;
   onClearSearch?: () => void;
   hasSearch?: boolean;
   dataTest?: string;
@@ -44,18 +44,20 @@ export function LibraryEmpty({
             : description}
         </EmptyDescription>
       </EmptyHeader>
-      <EmptyContent className="flex-row justify-center gap-2">
-        {hasSearch && onClearSearch ? (
+      {hasSearch && onClearSearch ? (
+        <EmptyContent className="flex-row justify-center gap-2">
           <Button variant="outline" size="sm" onClick={onClearSearch} data-test="clear-search-btn">
             Clear search
           </Button>
-        ) : (
+        </EmptyContent>
+      ) : actionLabel && onAction ? (
+        <EmptyContent className="flex-row justify-center gap-2">
           <Button size="sm" onClick={onAction} data-test="empty-create-btn">
             <Plus className="mr-1 size-4" />
             {actionLabel}
           </Button>
-        )}
-      </EmptyContent>
+        </EmptyContent>
+      ) : null}
     </Empty>
   );
 }
