@@ -10,11 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as EventSourcedLayoutRouteImport } from './routes/event-sourced/layout'
 import { Route as AuthLayoutRouteImport } from './routes/auth/layout'
 import { Route as PublicLayoutRouteImport } from './routes/_public/layout'
 import { Route as DashboardLayoutRouteImport } from './routes/_dashboard/layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestIndexRouteImport } from './routes/test/index'
+import { Route as EventSourcedIndexRouteImport } from './routes/event-sourced/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthGithubRouteImport } from './routes/auth/github'
@@ -51,6 +53,11 @@ const SearchRoute = SearchRouteImport.update({
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventSourcedLayoutRoute = EventSourcedLayoutRouteImport.update({
+  id: '/event-sourced',
+  path: '/event-sourced',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -73,6 +80,11 @@ const TestIndexRoute = TestIndexRouteImport.update({
   id: '/test/',
   path: '/test/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const EventSourcedIndexRoute = EventSourcedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EventSourcedLayoutRoute,
 } as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
@@ -235,6 +247,7 @@ const ApiAgenticOpenapiJsonRoute = ApiAgenticOpenapiJsonRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthLayoutRouteWithChildren
+  '/event-sourced': typeof EventSourcedLayoutRouteWithChildren
   '/search': typeof SearchRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/preview': typeof PublicPreviewRoute
@@ -242,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
+  '/event-sourced/': typeof EventSourcedIndexRoute
   '/test/': typeof TestIndexRoute
   '/api/agentic/$': typeof ApiAgenticSplatRoute
   '/api/agentic/openapi': typeof ApiAgenticOpenapiRouteWithChildren
@@ -277,6 +291,7 @@ export interface FileRoutesByTo {
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
+  '/event-sourced': typeof EventSourcedIndexRoute
   '/test': typeof TestIndexRoute
   '/api/agentic/$': typeof ApiAgenticSplatRoute
   '/api/agentic/openapi': typeof ApiAgenticOpenapiRouteWithChildren
@@ -309,6 +324,7 @@ export interface FileRoutesById {
   '/_dashboard': typeof DashboardLayoutRouteWithChildren
   '/_public': typeof PublicLayoutRouteWithChildren
   '/auth': typeof AuthLayoutRouteWithChildren
+  '/event-sourced': typeof EventSourcedLayoutRouteWithChildren
   '/search': typeof SearchRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_public/preview': typeof PublicPreviewRoute
@@ -316,6 +332,7 @@ export interface FileRoutesById {
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
+  '/event-sourced/': typeof EventSourcedIndexRoute
   '/test/': typeof TestIndexRoute
   '/api/agentic/$': typeof ApiAgenticSplatRoute
   '/api/agentic/openapi': typeof ApiAgenticOpenapiRouteWithChildren
@@ -347,6 +364,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/event-sourced'
     | '/search'
     | '/dashboard'
     | '/preview'
@@ -354,6 +372,7 @@ export interface FileRouteTypes {
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
+    | '/event-sourced/'
     | '/test/'
     | '/api/agentic/$'
     | '/api/agentic/openapi'
@@ -389,6 +408,7 @@ export interface FileRouteTypes {
     | '/auth/github'
     | '/auth/signup'
     | '/auth'
+    | '/event-sourced'
     | '/test'
     | '/api/agentic/$'
     | '/api/agentic/openapi'
@@ -420,6 +440,7 @@ export interface FileRouteTypes {
     | '/_dashboard'
     | '/_public'
     | '/auth'
+    | '/event-sourced'
     | '/search'
     | '/_dashboard/dashboard'
     | '/_public/preview'
@@ -427,6 +448,7 @@ export interface FileRouteTypes {
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
+    | '/event-sourced/'
     | '/test/'
     | '/api/agentic/$'
     | '/api/agentic/openapi'
@@ -459,6 +481,7 @@ export interface RootRouteChildren {
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
   PublicLayoutRoute: typeof PublicLayoutRouteWithChildren
   AuthLayoutRoute: typeof AuthLayoutRouteWithChildren
+  EventSourcedLayoutRoute: typeof EventSourcedLayoutRouteWithChildren
   SearchRoute: typeof SearchRoute
   ApiMcpRoute: typeof ApiMcpRoute
   TestIndexRoute: typeof TestIndexRoute
@@ -477,6 +500,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/event-sourced': {
+      id: '/event-sourced'
+      path: '/event-sourced'
+      fullPath: '/event-sourced'
+      preLoaderRoute: typeof EventSourcedLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -513,6 +543,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/test/'
       preLoaderRoute: typeof TestIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/event-sourced/': {
+      id: '/event-sourced/'
+      path: '/'
+      fullPath: '/event-sourced/'
+      preLoaderRoute: typeof EventSourcedIndexRouteImport
+      parentRoute: typeof EventSourcedLayoutRoute
     }
     '/auth/': {
       id: '/auth/'
@@ -801,6 +838,17 @@ const AuthLayoutRouteWithChildren = AuthLayoutRoute._addFileChildren(
   AuthLayoutRouteChildren,
 )
 
+interface EventSourcedLayoutRouteChildren {
+  EventSourcedIndexRoute: typeof EventSourcedIndexRoute
+}
+
+const EventSourcedLayoutRouteChildren: EventSourcedLayoutRouteChildren = {
+  EventSourcedIndexRoute: EventSourcedIndexRoute,
+}
+
+const EventSourcedLayoutRouteWithChildren =
+  EventSourcedLayoutRoute._addFileChildren(EventSourcedLayoutRouteChildren)
+
 interface ApiAgenticOpenapiRouteChildren {
   ApiAgenticOpenapiJsonRoute: typeof ApiAgenticOpenapiJsonRoute
 }
@@ -817,6 +865,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
   PublicLayoutRoute: PublicLayoutRouteWithChildren,
   AuthLayoutRoute: AuthLayoutRouteWithChildren,
+  EventSourcedLayoutRoute: EventSourcedLayoutRouteWithChildren,
   SearchRoute: SearchRoute,
   ApiMcpRoute: ApiMcpRoute,
   TestIndexRoute: TestIndexRoute,

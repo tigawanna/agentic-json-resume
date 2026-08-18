@@ -1,24 +1,24 @@
-import { RouterNotFoundComponent } from "@/lib/tanstack/router/RouterNotFoundComponent";
-import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { RouterErrorComponent } from "@/lib/tanstack/router/routerErrorComponent";
-import { AppConfig } from "@/utils/system";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { DashboardLayout } from "@/components/dashoboard-sidebar/DashboardLayout";
+import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
+import { RouterNotFoundComponent } from "@/lib/tanstack/router/RouterNotFoundComponent";
+import { RouterErrorComponent } from "@/lib/tanstack/router/routerErrorComponent";
 import { viewerMiddleware } from "@/data-access-layer/auth/viewer";
+import { AppConfig } from "@/utils/system";
 import {
   dashboard_account_routes,
   dashboard_admin_routes,
   getDashboardPrimaryRoutes,
-} from "./-components/dashboard_routes";
+} from "./-component/dashboard_routes";
+import { DashboardLayout } from "@/components/dashoboard-sidebar/DashboardLayout";
 
-export const Route = createFileRoute("/_dashboard")({
+export const Route = createFileRoute("/event-sourced")({
   pendingComponent: () => <RouterPendingComponent />,
   notFoundComponent: () => <RouterNotFoundComponent />,
   errorComponent: ({ error }) => <RouterErrorComponent error={error} />,
   server: {
     middleware: [viewerMiddleware],
   },
-  component: DashboardShell,
+  component: RouteComponent,
   beforeLoad: async ({ context, serverContext }) => {
     if (!serverContext?.isServer && !context.viewer?.user) {
       throw redirect({ to: "/auth", search: { returnTo: location.pathname } });
@@ -27,14 +27,14 @@ export const Route = createFileRoute("/_dashboard")({
   head: () => ({
     meta: [
       {
-        title: `${AppConfig.name} | Dashboard`,
+        title: `${AppConfig.name} | Event Sourced`,
         description: "Your résumé JSON and PDF exports",
       },
     ],
   }),
 });
 
-function DashboardShell() {
+function RouteComponent() {
   const primaryRoutes = getDashboardPrimaryRoutes();
   return (
     <DashboardLayout

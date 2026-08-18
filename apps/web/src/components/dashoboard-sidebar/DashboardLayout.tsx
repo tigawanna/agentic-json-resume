@@ -20,7 +20,7 @@ import { Outlet } from "@tanstack/react-router";
 import { QueryActivityNprogress } from "@/components/navigation/nprogress/QueryActivityNprogress";
 import { DashboardSidebarFooter } from "./DashboardSidebarFooter";
 import { DashboardSidebarHeader } from "./DashboardSidebarHeader";
-import { FloatingPersonaChat } from "../persona-chat/FloatingPersonaChat";
+// import { FloatingPersonaChat } from "../persona-chat/FloatingPersonaChat";
 
 interface DashboardLayoutProps {
   sidebarRoutes: SidebarItem[];
@@ -93,7 +93,7 @@ export function DashboardLayout({
           <Outlet />
         </div>
       </SidebarInset>
-      <FloatingPersonaChat />
+      {/* <FloatingPersonaChat /> */}
     </SidebarProvider>
   );
 }
