@@ -72,7 +72,7 @@ export function ResponsiveEntityTable<T extends { id: string }>({
             {rows.map((row) => (
               <TableRow key={row.id} data-test={`row-${row.id}`}>
                 {columns.map((col) => (
-                  <TableCell key={col.id} className={cn("max-w-[28rem] truncate", col.className)}>
+                  <TableCell key={col.id} className={cn("max-w-md truncate", col.className)}>
                     {col.cell(row)}
                   </TableCell>
                 ))}
