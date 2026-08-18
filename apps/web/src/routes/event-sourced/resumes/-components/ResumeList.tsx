@@ -7,6 +7,7 @@ import type { Resume } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { unwrapUnknownError } from "@/utils/errors";
 import { count, useLiveQuery } from "@tanstack/react-db";
+import { useNavigate } from "@tanstack/react-router";
 import { FileText, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -36,6 +37,7 @@ function formatUpdatedAt(ms: number) {
 
 export function ResumeList() {
   const db = useEventSourcedDb();
+  const navigate = useNavigate();
   const { page = 1, q = "" } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
@@ -186,7 +188,17 @@ export function ResumeList() {
         mobileSubtitle={(row) => row.headline || undefined}
         dataTest="resumes-table"
         actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
+          <RowActionButtons
+            onEdit={() => setEditing(row)}
+            onDelete={() => handleDelete(row.id)}
+            onNavigateToDetails={() =>
+              void navigate({
+                to: "/event-sourced/resumes/$resumeId",
+                params: { resumeId: row.id },
+                search: { tab: "edit" },
+              })
+            }
+          />
         )}
       />
 

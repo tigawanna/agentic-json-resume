@@ -37,6 +37,22 @@ export function ResumePreviewTab({ resumeId, selectedTemplate, doc }: ResumePrev
       .findOne(),
   );
 
+  return (
+    <ResumePreviewView
+      resumeName={resume?.name ?? "Resume"}
+      selectedTemplate={selectedTemplate}
+      doc={doc}
+    />
+  );
+}
+
+interface ResumePreviewViewProps {
+  resumeName: string;
+  selectedTemplate: TemplateId;
+  doc: ResumeDocumentV1;
+}
+
+export function ResumePreviewView({ resumeName, selectedTemplate, doc }: ResumePreviewViewProps) {
   const { resolvedTheme } = useThemeContext();
 
   const spec = resumeDocumentToSpec(doc, selectedTemplate);
@@ -48,7 +64,7 @@ export function ResumePreviewTab({ resumeId, selectedTemplate, doc }: ResumePrev
   const prevUrlRef = useRef<string | null>(null);
   const generationSeqRef = useRef(0);
 
-  const fileStem = resumePdfFileStem(resume?.name ?? "resume", doc);
+  const fileStem = resumePdfFileStem(resumeName, doc);
   const fileLabel = `${fileStem}.pdf`;
 
   async function buildPdfPreview(
@@ -128,7 +144,7 @@ export function ResumePreviewTab({ resumeId, selectedTemplate, doc }: ResumePrev
     <div className="mx-auto w-full max-w-[1600px]" data-test="resume-preview-tab">
       <div className="mb-4">
         <p className="text-muted-foreground text-sm">
-          Preview of <span className="font-medium">{resume?.name ?? "Resume"}</span>
+          Preview of <span className="font-medium">{resumeName}</span>
         </p>
       </div>
 

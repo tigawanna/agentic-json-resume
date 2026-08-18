@@ -57,6 +57,7 @@ import { Route as ApiAiResumeTailorRouteImport } from "./routes/api/ai/resume-ta
 import { Route as ApiAiPersonaWriterRouteImport } from "./routes/api/ai/persona-writer";
 import { Route as ApiAgenticOpenapiRouteImport } from "./routes/api/agentic/openapi";
 import { Route as ApiAgenticSplatRouteImport } from "./routes/api/agentic/$";
+import { Route as EventSourcedResumesResumeIdIndexRouteImport } from "./routes/event-sourced/resumes/$resumeId/index";
 import { Route as DashboardResumesResumeIdIndexRouteImport } from "./routes/_dashboard/resumes/$resumeId/index";
 import { Route as ApiAgenticRpcSplatRouteImport } from "./routes/api/agentic/rpc/$";
 import { Route as ApiAgenticOpenapiJsonRouteImport } from "./routes/api/agentic/openapi.json";
@@ -299,6 +300,11 @@ const ApiAgenticSplatRoute = ApiAgenticSplatRouteImport.update({
   path: "/api/agentic/$",
   getParentRoute: () => rootRouteImport,
 } as any);
+const EventSourcedResumesResumeIdIndexRoute = EventSourcedResumesResumeIdIndexRouteImport.update({
+  id: "/resumes/$resumeId/",
+  path: "/resumes/$resumeId/",
+  getParentRoute: () => EventSourcedLayoutRoute,
+} as any);
 const DashboardResumesResumeIdIndexRoute = DashboardResumesResumeIdIndexRouteImport.update({
   id: "/resumes/$resumeId/",
   path: "/resumes/$resumeId/",
@@ -365,6 +371,7 @@ export interface FileRoutesByFullPath {
   "/api/agentic/openapi/json": typeof ApiAgenticOpenapiJsonRoute;
   "/api/agentic/rpc/$": typeof ApiAgenticRpcSplatRoute;
   "/resumes/$resumeId/": typeof DashboardResumesResumeIdIndexRoute;
+  "/event-sourced/resumes/$resumeId/": typeof EventSourcedResumesResumeIdIndexRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
@@ -414,6 +421,7 @@ export interface FileRoutesByTo {
   "/api/agentic/openapi/json": typeof ApiAgenticOpenapiJsonRoute;
   "/api/agentic/rpc/$": typeof ApiAgenticRpcSplatRoute;
   "/resumes/$resumeId": typeof DashboardResumesResumeIdIndexRoute;
+  "/event-sourced/resumes/$resumeId": typeof EventSourcedResumesResumeIdIndexRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -468,6 +476,7 @@ export interface FileRoutesById {
   "/api/agentic/openapi/json": typeof ApiAgenticOpenapiJsonRoute;
   "/api/agentic/rpc/$": typeof ApiAgenticRpcSplatRoute;
   "/_dashboard/resumes/$resumeId/": typeof DashboardResumesResumeIdIndexRoute;
+  "/event-sourced/resumes/$resumeId/": typeof EventSourcedResumesResumeIdIndexRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -520,7 +529,8 @@ export interface FileRouteTypes {
     | "/event-sourced/volunteers/"
     | "/api/agentic/openapi/json"
     | "/api/agentic/rpc/$"
-    | "/resumes/$resumeId/";
+    | "/resumes/$resumeId/"
+    | "/event-sourced/resumes/$resumeId/";
   fileRoutesByTo: FileRoutesByTo;
   to:
     | "/"
@@ -569,7 +579,8 @@ export interface FileRouteTypes {
     | "/event-sourced/volunteers"
     | "/api/agentic/openapi/json"
     | "/api/agentic/rpc/$"
-    | "/resumes/$resumeId";
+    | "/resumes/$resumeId"
+    | "/event-sourced/resumes/$resumeId";
   id:
     | "__root__"
     | "/"
@@ -622,7 +633,8 @@ export interface FileRouteTypes {
     | "/event-sourced/volunteers/"
     | "/api/agentic/openapi/json"
     | "/api/agentic/rpc/$"
-    | "/_dashboard/resumes/$resumeId/";
+    | "/_dashboard/resumes/$resumeId/"
+    | "/event-sourced/resumes/$resumeId/";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -980,6 +992,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ApiAgenticSplatRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/event-sourced/resumes/$resumeId/": {
+      id: "/event-sourced/resumes/$resumeId/";
+      path: "/resumes/$resumeId";
+      fullPath: "/event-sourced/resumes/$resumeId/";
+      preLoaderRoute: typeof EventSourcedResumesResumeIdIndexRouteImport;
+      parentRoute: typeof EventSourcedLayoutRoute;
+    };
     "/_dashboard/resumes/$resumeId/": {
       id: "/_dashboard/resumes/$resumeId/";
       path: "/resumes/$resumeId";
@@ -1089,6 +1108,7 @@ interface EventSourcedLayoutRouteChildren {
   EventSourcedSummariesIndexRoute: typeof EventSourcedSummariesIndexRoute;
   EventSourcedTalksIndexRoute: typeof EventSourcedTalksIndexRoute;
   EventSourcedVolunteersIndexRoute: typeof EventSourcedVolunteersIndexRoute;
+  EventSourcedResumesResumeIdIndexRoute: typeof EventSourcedResumesResumeIdIndexRoute;
 }
 
 const EventSourcedLayoutRouteChildren: EventSourcedLayoutRouteChildren = {
@@ -1106,6 +1126,7 @@ const EventSourcedLayoutRouteChildren: EventSourcedLayoutRouteChildren = {
   EventSourcedSummariesIndexRoute: EventSourcedSummariesIndexRoute,
   EventSourcedTalksIndexRoute: EventSourcedTalksIndexRoute,
   EventSourcedVolunteersIndexRoute: EventSourcedVolunteersIndexRoute,
+  EventSourcedResumesResumeIdIndexRoute: EventSourcedResumesResumeIdIndexRoute,
 };
 
 const EventSourcedLayoutRouteWithChildren = EventSourcedLayoutRoute._addFileChildren(
