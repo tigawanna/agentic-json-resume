@@ -141,7 +141,7 @@ export function ResumePreviewView({ resumeName, selectedTemplate, doc }: ResumeP
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1600px]" data-test="resume-preview-tab">
+    <div className="mx-auto w-full max-w-400" data-test="resume-preview-tab">
       <div className="mb-4">
         <p className="text-muted-foreground text-sm">
           Preview of <span className="font-medium">{resumeName}</span>
