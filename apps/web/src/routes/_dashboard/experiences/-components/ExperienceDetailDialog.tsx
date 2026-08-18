@@ -4,6 +4,7 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, ListOrdered, MapPin, Pencil } from "lucide-react";
+import { formatLocaleDate } from "@/utils/date-helpers";
 import type { ExperienceDisplayGroupDTO } from "./experience-display-groups";
 import { getPrimaryExperience } from "./experience-display-groups";
 
@@ -20,11 +21,7 @@ export function ExperienceDetailContent({
 }: ExperienceDetailContentProps) {
   const primary = getPrimaryExperience(group);
   const dateRange = [group.startDate, group.endDate].filter(Boolean).join(" – ");
-  const updatedLabel = new Date(group.updatedAt).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const updatedLabel = formatLocaleDate(group.updatedAt);
 
   return (
     <>

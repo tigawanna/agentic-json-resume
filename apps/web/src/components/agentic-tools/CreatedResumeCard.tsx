@@ -6,11 +6,13 @@ import { Box, ExternalLink } from "lucide-react";
 interface CreatedResumeCardProps {
   output: CreatedResumeOutput;
   dataTest?: string;
+  to?: "/resumes/$resumeId" | "/event-sourced/resumes/$resumeId";
 }
 
 export function CreatedResumeCard({
   output,
   dataTest = "created-resume-card",
+  to = "/resumes/$resumeId",
 }: CreatedResumeCardProps) {
   return (
     <div
@@ -29,7 +31,7 @@ export function CreatedResumeCard({
         </div>
         <Button asChild size="sm" className="h-8 shrink-0 gap-1.5 rounded-lg">
           <Link
-            to="/resumes/$resumeId"
+            to={to}
             params={{ resumeId: output.resumeId }}
             search={{ tab: "edit" }}
             data-test="open-created-resume"

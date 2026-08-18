@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { EducationCreateForm, EducationCreateFormDialog } from "./EducationCreateForm";
 import { EducationEditForm } from "./EducationEditForm";
@@ -29,27 +30,27 @@ const columns: ResponsiveColumn<ResumeEducation>[] = [
   {
     id: "school",
     header: "School",
-    cell: (row) => row.school || "—",
+    cell: (row) => dashIfEmpty(row.school),
   },
   {
     id: "degree",
     header: "Qualification",
-    cell: (row) => row.degree || "—",
+    cell: (row) => dashIfEmpty(row.degree),
   },
   {
     id: "field",
     header: "Field",
-    cell: (row) => row.field || "—",
+    cell: (row) => dashIfEmpty(row.field),
   },
   {
     id: "startDate",
     header: "Start",
-    cell: (row) => row.startDate || "—",
+    cell: (row) => dashIfEmpty(row.startDate),
   },
   {
     id: "endDate",
     header: "End",
-    cell: (row) => row.endDate || "—",
+    cell: (row) => dashIfEmpty(row.endDate),
   },
 ];
 

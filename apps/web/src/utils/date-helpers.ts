@@ -61,6 +61,39 @@ export function getRelativeTimeString(date: Date | number, lang = navigator.lang
   return rtf.format(Math.floor(deltaSeconds / divisor), units[unitIndex] || "hour");
 }
 
+export function formatLocaleDate(
+  value: number | string | Date,
+  locale?: Intl.LocalesArgument,
+): string {
+  try {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString(locale, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+export function formatLocaleDateTime(
+  value: number | string | Date,
+  locale?: Intl.LocalesArgument,
+): string {
+  try {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(date);
+  } catch {
+    return "—";
+  }
+}
+
 export function isdateGreater(date1: Date | string, date2: Date | string) {
   if (typeof date1 === "string") date1 = new Date(date1);
   if (typeof date2 === "string") date2 = new Date(date2);

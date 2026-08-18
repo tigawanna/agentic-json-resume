@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { ExperienceListItemDTO } from "@/data-access-layer/resume/experiences/experience.types";
+import { formatLocaleDate } from "@/utils/date-helpers";
 import { ArrowDown, ArrowUp, Briefcase, ListOrdered, MapPin, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ExperienceDetailContent } from "./ExperienceDetailDialog";
@@ -38,11 +39,7 @@ export function ExperienceListCard({
 
   const primary = getPrimaryExperience(group);
   const dateRange = [group.startDate, group.endDate].filter(Boolean).join(" – ");
-  const updatedLabel = new Date(group.updatedAt).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const updatedLabel = formatLocaleDate(group.updatedAt);
   const resumeSections = group.resumeSections;
 
   const editingExperience: ExperienceListItemDTO | null = editingExperienceId

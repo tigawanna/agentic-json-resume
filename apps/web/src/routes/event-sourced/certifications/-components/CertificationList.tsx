@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { CertificationCreateForm, CertificationCreateFormDialog } from "./CertificationCreateForm";
 import { CertificationEditForm } from "./CertificationEditForm";
@@ -29,17 +30,17 @@ const columns: ResponsiveColumn<ResumeCertification>[] = [
   {
     id: "name",
     header: "Name",
-    cell: (row) => row.name || "—",
+    cell: (row) => dashIfEmpty(row.name),
   },
   {
     id: "issuer",
     header: "Issuer",
-    cell: (row) => row.issuer || "—",
+    cell: (row) => dashIfEmpty(row.issuer),
   },
   {
     id: "date",
     header: "Date",
-    cell: (row) => row.date || "—",
+    cell: (row) => dashIfEmpty(row.date),
   },
 ];
 

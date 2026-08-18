@@ -1,5 +1,7 @@
 import type { InboxEntry, MutationType, OutboxEntry } from "event-sourced-collection";
 
+export { formatLocaleDateTime as formatEventDate } from "@/utils/date-helpers";
+
 export type SyncEventView = {
   id: string;
   eventId: string;
@@ -24,11 +26,4 @@ export function toEventView(entry: OutboxEntry | InboxEntry): SyncEventView {
     sync: entry.sync,
     globalSeq: entry.globalSeq ?? null,
   };
-}
-
-export function formatEventDate(timestamp: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(timestamp));
 }

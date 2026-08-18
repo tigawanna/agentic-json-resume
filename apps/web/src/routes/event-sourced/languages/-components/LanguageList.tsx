@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { LanguageCreateForm, LanguageCreateFormDialog } from "./LanguageCreateForm";
 import { LanguageEditForm } from "./LanguageEditForm";
@@ -29,12 +30,12 @@ const columns: ResponsiveColumn<ResumeLanguage>[] = [
   {
     id: "name",
     header: "Language",
-    cell: (row) => row.name || "—",
+    cell: (row) => dashIfEmpty(row.name),
   },
   {
     id: "proficiency",
     header: "Proficiency",
-    cell: (row) => row.proficiency || "—",
+    cell: (row) => dashIfEmpty(row.proficiency),
   },
 ];
 

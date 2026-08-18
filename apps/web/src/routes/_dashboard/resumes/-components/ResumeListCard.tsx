@@ -12,6 +12,7 @@ import { deleteResumeMutationOptions } from "@/data-access-layer/resume/resume-m
 import { resumeDetailQueryOptions } from "@/data-access-layer/resume/resume-query-options";
 import type { ResumeListItemDTO } from "@/data-access-layer/resume/resume.types";
 import { unwrapUnknownError } from "@/utils/errors";
+import { formatLocaleDate } from "@/utils/date-helpers";
 import { getResumeCardDisplayName } from "@/utils/resume-display-name";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -130,7 +131,7 @@ export function ResumeListCard({ resume, onClone }: ResumeListCardProps) {
               </CardDescription>
             ) : null}
             <p className="text-muted-foreground text-xs">
-              Updated {new Date(resume.updatedAt).toLocaleDateString()}
+              Updated {formatLocaleDate(resume.updatedAt)}
             </p>
           </Link>
         </div>

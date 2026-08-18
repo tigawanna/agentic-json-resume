@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { parseTalkLinks } from "../-utils/talk-links";
 import { Route } from "..";
 import { TalkCreateForm, TalkCreateFormDialog } from "./TalkCreateForm";
@@ -30,24 +31,24 @@ const columns: ResponsiveColumn<ResumeTalk>[] = [
   {
     id: "title",
     header: "Title",
-    cell: (row) => row.title || "—",
+    cell: (row) => dashIfEmpty(row.title),
   },
   {
     id: "event",
     header: "Event",
-    cell: (row) => row.event || "—",
+    cell: (row) => dashIfEmpty(row.event),
   },
   {
     id: "date",
     header: "Date",
-    cell: (row) => row.date || "—",
+    cell: (row) => dashIfEmpty(row.date),
   },
   {
     id: "description",
     header: "Description",
     cell: (row) => (
       <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-        {row.description || "—"}
+        {dashIfEmpty(row.description)}
       </span>
     ),
     hideOnMobile: true,

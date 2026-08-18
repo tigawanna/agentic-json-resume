@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { ProjectCreateForm, ProjectCreateFormDialog } from "./ProjectCreateForm";
 import { ProjectEditForm } from "./ProjectEditForm";
@@ -29,21 +30,21 @@ const columns: ResponsiveColumn<ResumeProject>[] = [
   {
     id: "name",
     header: "Name",
-    cell: (row) => row.name || "—",
+    cell: (row) => dashIfEmpty(row.name),
   },
   {
     id: "description",
     header: "Description",
     cell: (row) => (
       <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-        {row.description || "—"}
+        {dashIfEmpty(row.description)}
       </span>
     ),
   },
   {
     id: "tech",
     header: "Tech",
-    cell: (row) => row.tech || "—",
+    cell: (row) => dashIfEmpty(row.tech),
     hideOnMobile: true,
   },
 ];

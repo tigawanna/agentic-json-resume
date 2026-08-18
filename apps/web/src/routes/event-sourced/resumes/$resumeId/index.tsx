@@ -31,10 +31,11 @@ import { ArrowLeft, FileUp, FileX, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { EventSourcedResumeAiTab } from "../../-ai/EventSourcedResumeAiTab";
 import { ResumePreviewView } from "../../../_dashboard/resumes/$resumeId/-components/ResumePreviewTab";
 import { useEventSourcedResumeDetail } from "./-hooks/use-event-sourced-resume-detail";
 
-const tabsList = ["edit", "preview", "json"] as const;
+const tabsList = ["edit", "preview", "json", "ai"] as const;
 const tabSchema = z.enum(tabsList).default("edit").catch("edit");
 
 export const Route = createFileRoute("/event-sourced/resumes/$resumeId/")({
@@ -185,6 +186,7 @@ function EventSourcedResumeWorkbench({ resumeId }: { resumeId: string }) {
             <TabsTrigger value="edit">Edit</TabsTrigger>
             <TabsTrigger value="preview">Preview</TabsTrigger>
             <TabsTrigger value="json">JSON</TabsTrigger>
+            <TabsTrigger value="ai">AI</TabsTrigger>
           </TabsList>
 
           <TabsContent value="edit" forceMount className="mt-4 data-[state=inactive]:hidden">
@@ -201,6 +203,13 @@ function EventSourcedResumeWorkbench({ resumeId }: { resumeId: string }) {
             className="mt-4 data-[state=inactive]:hidden max-w-[98%]"
           >
             <ResumeJsonTab />
+          </TabsContent>
+
+          <TabsContent value="ai" className="mt-4">
+            <EventSourcedResumeAiTab
+              resumeId={resumeId}
+              jobDescription={detail.jobDescription ?? ""}
+            />
           </TabsContent>
         </Tabs>
 

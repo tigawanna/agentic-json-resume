@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { ContactCreateForm, ContactCreateFormDialog } from "./ContactCreateForm";
 import { ContactEditForm } from "./ContactEditForm";
@@ -29,17 +30,17 @@ const columns: ResponsiveColumn<ResumeContact>[] = [
   {
     id: "value",
     header: "Value",
-    cell: (row) => row.value || "—",
+    cell: (row) => dashIfEmpty(row.value),
   },
   {
     id: "type",
     header: "Type",
-    cell: (row) => row.type || "—",
+    cell: (row) => dashIfEmpty(row.type),
   },
   {
     id: "label",
     header: "Label",
-    cell: (row) => row.label || "—",
+    cell: (row) => dashIfEmpty(row.label),
   },
 ];
 

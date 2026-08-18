@@ -27,6 +27,7 @@ interface ResumeAiPromptsCardProps {
   onClearDialogOpenChange: (open: boolean) => void;
   onClearRemote: () => void;
   onSendStarter: ResumeAiPromptAction;
+  localOnlyClear?: boolean;
 }
 
 export function ResumeAiPromptsCard({
@@ -41,6 +42,7 @@ export function ResumeAiPromptsCard({
   onClearDialogOpenChange,
   onClearRemote,
   onSendStarter,
+  localOnlyClear = false,
 }: ResumeAiPromptsCardProps) {
   return (
     <Card className="overflow-hidden border-0 bg-[color-mix(in_oklch,var(--color-base-200)_92%,var(--color-base-content)_8%)] shadow-[0_18px_55px_color-mix(in_oklch,var(--color-base-content)_8%,transparent)] ring-1 ring-[color-mix(in_oklch,var(--color-base-content)_10%,transparent)]">
@@ -106,6 +108,7 @@ export function ResumeAiPromptsCard({
           hasMessages={hasMessages}
           isBusy={isBusy}
           isPending={isClearPending}
+          localOnlyClear={localOnlyClear}
           open={clearDialogOpen}
           onClearBoth={onClearBoth}
           onClearRemote={onClearRemote}
@@ -149,6 +152,7 @@ function ClearChatDialog(props: {
   hasMessages: boolean;
   isBusy: boolean;
   isPending: boolean;
+  localOnlyClear: boolean;
   onClearBoth: () => void;
   onClearRemote: () => void;
   onOpenChange: (open: boolean) => void;
@@ -171,28 +175,47 @@ function ClearChatDialog(props: {
         <AlertDialogHeader>
           <AlertDialogTitle>Clear chat history?</AlertDialogTitle>
           <AlertDialogDescription className="leading-6">
-            Choose whether to delete only the synced server copy or delete both the synced copy and
-            this browser's local cached conversation.
+            {props.localOnlyClear
+              ? "This removes the conversation stored in this browser. It is not synced to the server."
+              : "Choose whether to delete only the synced server copy or delete both the synced copy and this browser's local cached conversation."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={props.isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            variant="outline"
-            disabled={props.isPending}
-            onClick={props.onClearRemote}
-            data-test="resume-ai-clear-remote"
-          >
-            {props.clearScope === "remote" ? "Clearing..." : "Remote only"}
-          </AlertDialogAction>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={props.isPending}
-            onClick={props.onClearBoth}
-            data-test="resume-ai-clear-both"
-          >
-            {props.clearScope === "both" ? "Clearing..." : "Remote and local"}
-          </AlertDialogAction>
+          <AlertDialogCancel disabled={props.isPending} size="sm" variant="outline">
+            Cancel
+          </AlertDialogCancel>
+          {props.localOnlyClear ? (
+            <AlertDialogAction
+              variant="destructive"
+              size="sm"
+              disabled={props.isPending}
+              onClick={props.onClearBoth}
+              data-test="resume-ai-clear-local"
+            >
+              Clear this chat
+            </AlertDialogAction>
+          ) : (
+            <>
+              <AlertDialogAction
+                variant="outline"
+                size="sm"
+                disabled={props.isPending}
+                onClick={props.onClearRemote}
+                data-test="resume-ai-clear-remote"
+              >
+                {props.clearScope === "remote" ? "Clearing..." : "Remote only"}
+              </AlertDialogAction>
+              <AlertDialogAction
+                variant="destructive"
+                size="sm"
+                disabled={props.isPending}
+                onClick={props.onClearBoth}
+                data-test="resume-ai-clear-both"
+              >
+                {props.clearScope === "both" ? "Clearing..." : "Remote and local"}
+              </AlertDialogAction>
+            </>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

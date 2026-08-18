@@ -215,14 +215,17 @@ importers:
         specifier: ^5.0.56
         version: 5.0.63(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@tanstack/ai':
-        specifier: ^0.14.0
-        version: 0.14.0
+        specifier: ^0.44.1
+        version: 0.44.1(@opentelemetry/api@1.9.1)(zod@4.3.6)
+      '@tanstack/ai-client':
+        specifier: ^0.23.2
+        version: 0.23.2(@opentelemetry/api@1.9.1)(zod@4.3.6)
       '@tanstack/ai-openrouter':
-        specifier: ^0.8.2
-        version: 0.8.2(@tanstack/ai@0.14.0)
+        specifier: ^0.17.0
+        version: 0.17.0(@tanstack/ai@0.44.1(@opentelemetry/api@1.9.1)(zod@4.3.6))
       '@tanstack/ai-react':
-        specifier: ^0.8.0
-        version: 0.8.0(@tanstack/ai@0.14.0)(@types/react@19.2.14)(react@19.2.5)
+        specifier: ^0.19.2
+        version: 0.19.2(@opentelemetry/api@1.9.1)(@tanstack/ai@0.44.1(@opentelemetry/api@1.9.1)(zod@4.3.6))(@types/react@19.2.14)(react@19.2.5)(zod@4.3.6)
       '@tanstack/browser-db-sqlite-persistence':
         specifier: ^0.2.12
         version: 0.2.12(@journeyapps/wa-sqlite@1.6.0)(typescript@6.0.3)
@@ -504,8 +507,13 @@ packages:
   '@adobe/css-tools@4.5.0':
     resolution: {integrity: sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q==}
 
-  '@ag-ui/core@0.0.49':
-    resolution: {integrity: sha512-9ywypwjUGtIvTxJ2eKQjhPZgLnSFAfNK7vZUcT7Bz4ur4yAIB+lAFtzvu7VDYe6jsUx/6N/71Dh4R0zX5woNVw==}
+  '@ag-ui/core@0.1.1-canary.beta.0':
+    resolution: {integrity: sha512-zcP3RH5p3HJTZ0kyQxNOL1blnVFTDpaShitR7UMS/thwFdl48V6CAG+WQBcYEu/dfa8mKonRez88N0Ok+nEI+w==}
+    peerDependencies:
+      zod: ^3.25.18 || ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
 
   '@asamuzakjp/css-color@3.2.0':
     resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
@@ -1487,8 +1495,8 @@ packages:
     resolution: {integrity: sha512-hAX0pT/73190NLqBPPWSdBVGtbY6VOhWYK3qqHqtXQ1gK7kS2yz4+ivsN07hpJ6I3aeMtKP6J6npsEKOAzuTLA==}
     engines: {node: '>=20.0'}
 
-  '@openrouter/sdk@0.12.14':
-    resolution: {integrity: sha512-G32CZ1IkmtsGfQF7/mzcvt7W0Lmd6HUHFGjDWv5knBvL6sJcMmX6i3VPSIpHQYSgEqRQSxFuDROP6iErTu7XcA==}
+  '@openrouter/sdk@0.13.20':
+    resolution: {integrity: sha512-fx4o19FHgadEldfrSOgSbXAi32hCE3O708q1nxcoxYrW6fP6/WggX3o5PmnlnObzmxrqLMkZpqg188K+Twguhg==}
 
   '@opentelemetry/api@1.9.1':
     resolution: {integrity: sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q==}
@@ -3308,29 +3316,39 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@tanstack/ai-client@0.8.0':
-    resolution: {integrity: sha512-8G3mKwVWn/lwZlUcZgm1aTYWB96otFmr6LsYT+dOehOq1SrR8SiSbkSOVzozQXkfZFviHSueZXlLe/J6LrbVOg==}
+  '@tanstack/ai-client@0.23.2':
+    resolution: {integrity: sha512-6oTOGbOMt7pI8RVPcCQ/KpcR3GbmfiIEOeQ8jOyTp0JPQlFAAgnbSD63yba7FL47+FyJAlpRQsC/Qmvo5cersA==}
 
-  '@tanstack/ai-event-client@0.2.8':
-    resolution: {integrity: sha512-pdvT1hh7UorwBiDLrXnI5BFDfc7JSqnN06LaQHG4TGRl/621UnUrh16hQKOMn/msArKiCj+n+TG+cw4mDwMaLw==}
-    peerDependencies:
-      '@tanstack/ai': 0.14.0
+  '@tanstack/ai-event-client@0.8.0':
+    resolution: {integrity: sha512-UzhGQERwGU0yymziuGiHXNnKRZeR2JaGoPXeNzKuHwQtUmvMu1H8g0C9wpkpksj+pmTQPhdEBUOMlU6NhLDVpA==}
 
-  '@tanstack/ai-openrouter@0.8.2':
-    resolution: {integrity: sha512-bhg1UPIXYkC9RLApw+YS4dLMDyCTHG72x3hbSKqbwtbGYAiLNwOudscFvfG9Br21sMhzttB1fyBjA7tz2QBPTQ==}
+  '@tanstack/ai-openrouter@0.17.0':
+    resolution: {integrity: sha512-rD0lljULNKyfY2DIFdWt6tvNzS4tHXr0IqT/GJ7dSMuYpRBZy033RtMcVsZW5h1O0g+1N4UG4QycccL0Rj124Q==}
     peerDependencies:
-      '@tanstack/ai': 0.14.0
+      '@tanstack/ai': ^0.44.1
 
-  '@tanstack/ai-react@0.8.0':
-    resolution: {integrity: sha512-SP0erLxGhjFnGuunjUmFkIfCR3Uqj98RuMG3k2Qxlzy3F03K/JZWwufJvz7QJohaE8OLKc6m6TuxXAZ7Zk7//A==}
+  '@tanstack/ai-react@0.19.2':
+    resolution: {integrity: sha512-5w5rLgHXT2gjVWrwjUar9c5is0MKZYphX51bjORW58/19s5xQCNUqCDeZluZAeTkhN3XSqo7L6ArpEJneVuJWw==}
     peerDependencies:
-      '@tanstack/ai': ^0.14.0
+      '@mcp-ui/client': ^7
+      '@tanstack/ai': ^0.44.0
       '@types/react': ^19.2.14
       react: '>=18.0.0'
+    peerDependenciesMeta:
+      '@mcp-ui/client':
+        optional: true
 
-  '@tanstack/ai@0.14.0':
-    resolution: {integrity: sha512-oiyYHcWMmyVoKDf018xZMEX62BaJVhdgeeRQeRbqP3p5Nvar2UZUhKzFkUiE4L9KzklPqrtI5aYhVdAp9Z142g==}
+  '@tanstack/ai-utils@0.4.0':
+    resolution: {integrity: sha512-xqvAgPJkIuGk1m+jZKyb7vBTQIaBmUD9EVzlPkDWWMp80n69uwL0TnBZCVk+OwL9goTQiFy648dnBfLsiJgl6A==}
+
+  '@tanstack/ai@0.44.1':
+    resolution: {integrity: sha512-pF5JWRqz3qEcrcsJG76D8NEiv7dCaknPmL3HYbUrt2XJDxEbjkGgNDV+eQ9fmcBLqg7i66AjDjJlcSuREtJu/A==}
     engines: {node: '>=18'}
+    peerDependencies:
+      '@opentelemetry/api': '>=1.9.0'
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
 
   '@tanstack/browser-db-sqlite-persistence@0.2.12':
     resolution: {integrity: sha512-h/t8+U0hEbSLiXfyKtVSGd3zEj/W6Gq2Hwf6J8eG38599gp0WMaMw+BvoXqy/Fxf3EXETriFnnrVyOIN2Xeh0A==}
@@ -9122,9 +9140,9 @@ snapshots:
 
   '@adobe/css-tools@4.5.0': {}
 
-  '@ag-ui/core@0.0.49':
-    dependencies:
-      zod: 3.25.76
+  '@ag-ui/core@0.1.1-canary.beta.0(zod@4.3.6)':
+    optionalDependencies:
+      zod: 4.3.6
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:
@@ -10166,9 +10184,9 @@ snapshots:
 
   '@oozcitak/util@10.0.0': {}
 
-  '@openrouter/sdk@0.12.14':
+  '@openrouter/sdk@0.13.20':
     dependencies:
-      zod: 4.3.6
+      zod: 4.4.3
 
   '@opentelemetry/api@1.9.1':
     optional: true
@@ -11817,33 +11835,48 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@tanstack/ai-client@0.8.0':
+  '@tanstack/ai-client@0.23.2(@opentelemetry/api@1.9.1)(zod@4.3.6)':
     dependencies:
-      '@tanstack/ai': 0.14.0
-      '@tanstack/ai-event-client': 0.2.8(@tanstack/ai@0.14.0)
+      '@tanstack/ai': 0.44.1(@opentelemetry/api@1.9.1)(zod@4.3.6)
+      '@tanstack/ai-event-client': 0.8.0
+      '@tanstack/ai-utils': 0.4.0
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - zod
 
-  '@tanstack/ai-event-client@0.2.8(@tanstack/ai@0.14.0)':
+  '@tanstack/ai-event-client@0.8.0':
     dependencies:
-      '@tanstack/ai': 0.14.0
       '@tanstack/devtools-event-client': 0.4.3
 
-  '@tanstack/ai-openrouter@0.8.2(@tanstack/ai@0.14.0)':
+  '@tanstack/ai-openrouter@0.17.0(@tanstack/ai@0.44.1(@opentelemetry/api@1.9.1)(zod@4.3.6))':
     dependencies:
-      '@openrouter/sdk': 0.12.14
-      '@tanstack/ai': 0.14.0
+      '@openrouter/sdk': 0.13.20
+      '@tanstack/ai': 0.44.1(@opentelemetry/api@1.9.1)(zod@4.3.6)
+      '@tanstack/ai-utils': 0.4.0
 
-  '@tanstack/ai-react@0.8.0(@tanstack/ai@0.14.0)(@types/react@19.2.14)(react@19.2.5)':
+  '@tanstack/ai-react@0.19.2(@opentelemetry/api@1.9.1)(@tanstack/ai@0.44.1(@opentelemetry/api@1.9.1)(zod@4.3.6))(@types/react@19.2.14)(react@19.2.5)(zod@4.3.6)':
     dependencies:
-      '@tanstack/ai': 0.14.0
-      '@tanstack/ai-client': 0.8.0
+      '@tanstack/ai': 0.44.1(@opentelemetry/api@1.9.1)(zod@4.3.6)
+      '@tanstack/ai-client': 0.23.2(@opentelemetry/api@1.9.1)(zod@4.3.6)
       '@types/react': 19.2.14
       react: 19.2.5
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - zod
 
-  '@tanstack/ai@0.14.0':
+  '@tanstack/ai-utils@0.4.0': {}
+
+  '@tanstack/ai@0.44.1(@opentelemetry/api@1.9.1)(zod@4.3.6)':
     dependencies:
-      '@ag-ui/core': 0.0.49
-      '@tanstack/ai-event-client': 0.2.8(@tanstack/ai@0.14.0)
+      '@ag-ui/core': 0.1.1-canary.beta.0(zod@4.3.6)
+      '@standard-schema/spec': 1.1.0
+      '@tanstack/ai-event-client': 0.8.0
+      '@tanstack/ai-utils': 0.4.0
       partial-json: 0.1.7
+    optionalDependencies:
+      '@opentelemetry/api': 1.9.1
+    transitivePeerDependencies:
+      - zod
 
   '@tanstack/browser-db-sqlite-persistence@0.2.12(@journeyapps/wa-sqlite@1.6.0)(typescript@6.0.3)':
     dependencies:

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { SummaryListItemDTO } from "@/data-access-layer/resume/summaries/summary.types";
+import { formatLocaleDate } from "@/utils/date-helpers";
 import { FileText, ListOrdered, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { SummaryEditForm } from "./SummaryEditForm";
@@ -14,11 +15,7 @@ interface SummaryListCardProps {
 
 export function SummaryListCard({ summary, onDelete }: SummaryListCardProps) {
   const [open, setOpen] = useState(false);
-  const updatedLabel = new Date(summary.updatedAt).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const updatedLabel = formatLocaleDate(summary.updatedAt);
 
   return (
     <>

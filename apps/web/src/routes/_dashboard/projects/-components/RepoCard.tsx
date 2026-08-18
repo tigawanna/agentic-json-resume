@@ -8,6 +8,7 @@ import {
 } from "@/data-access-layer/saved-project/saved-project.functions";
 import type { SavedProjectRow } from "@/data-access-layer/saved-project/saved-project.server";
 import { unwrapUnknownError } from "@/utils/errors";
+import { formatLocaleDate } from "@/utils/date-helpers";
 import { useMutation } from "@tanstack/react-query";
 import { Bookmark, BookmarkCheck, ExternalLink, GitFork, Globe, Star } from "lucide-react";
 import { toast } from "sonner";
@@ -82,13 +83,7 @@ export default function RepoCard({ repo, savedProject }: RepoCardProps) {
 
   const isToggling = saveMutation.isPending || unsaveMutation.isPending;
 
-  const updatedAt = repo.updated_at
-    ? new Date(repo.updated_at).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
+  const updatedAt = repo.updated_at ? formatLocaleDate(repo.updated_at, "en-US") : null;
 
   return (
     <div

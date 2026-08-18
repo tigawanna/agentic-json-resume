@@ -33,7 +33,20 @@ export function ResumeAiThinkingBlock({ parts }: ResumeAiThinkingBlockProps) {
         ))}
         {parts.map((part, index) => {
           if (part.type === "tool-call") return <ToolCallPanel key={index} part={part} />;
-          if (part.type === "tool-result") return <ToolResultPanel key={index} part={part} />;
+          if (part.type === "tool-result") {
+            return (
+              <ToolResultPanel
+                key={index}
+                part={{
+                  toolCallId: part.toolCallId,
+                  content:
+                    typeof part.content === "string" ? part.content : JSON.stringify(part.content),
+                  state: part.state,
+                  error: part.error,
+                }}
+              />
+            );
+          }
           return null;
         })}
       </div>

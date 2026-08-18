@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { VolunteerCreateForm, VolunteerCreateFormDialog } from "./VolunteerCreateForm";
 import { VolunteerEditForm } from "./VolunteerEditForm";
@@ -29,22 +30,22 @@ const columns: ResponsiveColumn<ResumeVolunteer>[] = [
   {
     id: "organization",
     header: "Organization",
-    cell: (row) => row.organization || "—",
+    cell: (row) => dashIfEmpty(row.organization),
   },
   {
     id: "role",
     header: "Role",
-    cell: (row) => row.role || "—",
+    cell: (row) => dashIfEmpty(row.role),
   },
   {
     id: "startDate",
     header: "Start",
-    cell: (row) => row.startDate || "—",
+    cell: (row) => dashIfEmpty(row.startDate),
   },
   {
     id: "endDate",
     header: "End",
-    cell: (row) => row.endDate || "—",
+    cell: (row) => dashIfEmpty(row.endDate),
   },
 ];
 

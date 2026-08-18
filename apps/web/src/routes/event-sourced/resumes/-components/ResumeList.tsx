@@ -5,7 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import type { Resume } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
+import { formatLocaleDate } from "@/utils/date-helpers";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { count, useLiveQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
 import { FileText, Plus } from "lucide-react";
@@ -22,18 +24,6 @@ import { ResumeEditForm } from "./ResumeEditForm";
 import { Route } from "..";
 
 const ROUTE_ID = "/event-sourced/resumes/" as const;
-
-function formatUpdatedAt(ms: number) {
-  try {
-    return new Date(ms).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return "—";
-  }
-}
 
 export function ResumeList() {
   const db = useEventSourcedDb();
@@ -171,17 +161,18 @@ export function ResumeList() {
         rows={items}
         columns={[
           { id: "name", header: "Name", cell: (row) => row.name },
-          { id: "headline", header: "Headline", cell: (row) => row.headline || "—" },
+          { id: "headline", header: "Headline", cell: (row) => dashIfEmpty(row.headline) },
+
           {
             id: "fullName",
             header: "Full Name",
-            cell: (row) => row.fullName || "—",
+            cell: (row) => dashIfEmpty(row.fullName),
             hideOnMobile: true,
           },
           {
             id: "updatedAt",
             header: "Updated",
-            cell: (row) => formatUpdatedAt(row.updatedAt),
+            cell: (row) => formatLocaleDate(row.updatedAt),
           },
         ]}
         mobileTitle={(row) => row.name}

@@ -6,6 +6,7 @@ import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import type { ResumeNote } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { count, useLiveQuery } from "@tanstack/react-db";
 import { Notebook, Plus } from "lucide-react";
 import { useState } from "react";
@@ -36,7 +37,7 @@ const columns: ResponsiveColumn<ResumeNote>[] = [
     header: "Body",
     cell: (row) => (
       <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-        {row.text || "—"}
+        {dashIfEmpty(row.text)}
       </span>
     ),
   },

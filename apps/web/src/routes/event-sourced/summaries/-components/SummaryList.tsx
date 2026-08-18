@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { SummaryCreateForm, SummaryCreateFormDialog } from "./SummaryCreateForm";
 import { SummaryEditForm } from "./SummaryEditForm";
@@ -31,7 +32,7 @@ const columns: ResponsiveColumn<ResumeSummary>[] = [
     header: "Summary",
     cell: (row) => (
       <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-        {row.text || "—"}
+        {dashIfEmpty(row.text)}
       </span>
     ),
   },

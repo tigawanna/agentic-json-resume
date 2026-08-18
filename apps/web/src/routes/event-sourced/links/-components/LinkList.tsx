@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { LinkCreateForm, LinkCreateFormDialog } from "./LinkCreateForm";
 import { LinkEditForm } from "./LinkEditForm";
@@ -29,17 +30,17 @@ const columns: ResponsiveColumn<ResumeLink>[] = [
   {
     id: "label",
     header: "Label",
-    cell: (row) => row.label || "—",
+    cell: (row) => dashIfEmpty(row.label),
   },
   {
     id: "url",
     header: "URL",
-    cell: (row) => row.url || "—",
+    cell: (row) => dashIfEmpty(row.url),
   },
   {
     id: "icon",
     header: "Icon",
-    cell: (row) => row.icon || "—",
+    cell: (row) => dashIfEmpty(row.icon),
     hideOnMobile: true,
   },
 ];

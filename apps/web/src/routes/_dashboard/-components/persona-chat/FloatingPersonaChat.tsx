@@ -69,7 +69,7 @@ export function FloatingPersonaChat() {
   const isReady = isLocalMode || !!settings;
 
   const chat = useChat({
-    id: "persona-writer-chat",
+    threadId: "persona-writer-chat",
     connection: fetchServerSentEvents("/api/ai/persona-writer"),
     body: {
       apiKey: settings?.apiKey,

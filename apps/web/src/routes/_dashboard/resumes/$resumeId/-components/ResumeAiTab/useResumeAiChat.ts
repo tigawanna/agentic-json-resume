@@ -54,7 +54,7 @@ export function useResumeAiChat({ resumeId, jobDescription }: ResumeAiTabProps) 
   });
 
   const chat = useChat({
-    id: `resume-ai-chat-${resumeId}`,
+    threadId: `resume-ai-chat-${resumeId}`,
     initialMessages: toUiMessages(initialStoredMessages),
     connection: fetchServerSentEvents("/api/ai/resume-tailor"),
     body: {

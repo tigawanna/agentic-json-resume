@@ -97,12 +97,14 @@ export function toStoredMessages(messages: UIMessage[]): ResumeAiChatMessage[] {
 
         if (part.type === "tool-call") {
           const output = toJsonValue(part.output);
+          const state =
+            part.state === "complete" || part.state === "error" ? "input-complete" : part.state;
           return {
             type: "tool-call",
             id: part.id,
             name: part.name,
             arguments: part.arguments,
-            state: part.state,
+            state,
             ...(part.approval === undefined ? {} : { approval: part.approval }),
             ...(output === undefined ? {} : { output }),
           };
@@ -112,7 +114,7 @@ export function toStoredMessages(messages: UIMessage[]): ResumeAiChatMessage[] {
           return {
             type: "tool-result",
             toolCallId: part.toolCallId,
-            content: part.content,
+            content: typeof part.content === "string" ? part.content : JSON.stringify(part.content),
             state: part.state,
             ...(part.error === undefined ? {} : { error: part.error }),
           };

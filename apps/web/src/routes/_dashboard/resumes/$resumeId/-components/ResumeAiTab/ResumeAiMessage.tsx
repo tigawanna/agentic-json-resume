@@ -15,6 +15,7 @@ interface ResumeAiMessageProps {
   isReady: boolean;
   onEdit: ResumeAiMessageAction;
   onResend: ResumeAiMessageAction;
+  createdResumeTo?: "/resumes/$resumeId" | "/event-sourced/resumes/$resumeId";
 }
 
 function ChatAvatar({ role }: { role: ResumeAiRole }) {
@@ -41,6 +42,7 @@ export function ResumeAiMessage({
   isReady,
   onEdit,
   onResend,
+  createdResumeTo,
 }: ResumeAiMessageProps) {
   const role: ResumeAiRole = message.role === "assistant" ? "assistant" : "user";
   const createdResumes = role === "assistant" ? getCreatedResumesFromParts(message.parts) : [];
@@ -97,6 +99,7 @@ export function ResumeAiMessage({
             <CreatedResumeCard
               key={output.resumeId}
               output={output}
+              to={createdResumeTo}
               dataTest="resume-ai-created-resume-card"
             />
           ))}

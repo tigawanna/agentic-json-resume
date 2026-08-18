@@ -1,3 +1,9 @@
+/** Empty table cells: missing or whitespace-only values render as an em dash. */
+export function dashIfEmpty(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : "—";
+}
+
 export function isString(text?: string | null) {
   if (!text) {
     return false;

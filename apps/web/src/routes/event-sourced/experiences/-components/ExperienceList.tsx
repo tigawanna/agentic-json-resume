@@ -19,6 +19,7 @@ import {
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { ExperienceCreateForm, ExperienceCreateFormDialog } from "./ExperienceCreateForm";
 import { ExperienceEditForm } from "./ExperienceEditForm";
@@ -29,27 +30,27 @@ const columns: ResponsiveColumn<ResumeExperience>[] = [
   {
     id: "role",
     header: "Role",
-    cell: (row) => row.role || "—",
+    cell: (row) => dashIfEmpty(row.role),
   },
   {
     id: "company",
     header: "Company",
-    cell: (row) => row.company || "—",
+    cell: (row) => dashIfEmpty(row.company),
   },
   {
     id: "location",
     header: "Location",
-    cell: (row) => row.location || "—",
+    cell: (row) => dashIfEmpty(row.location),
   },
   {
     id: "startDate",
     header: "Start",
-    cell: (row) => row.startDate || "—",
+    cell: (row) => dashIfEmpty(row.startDate),
   },
   {
     id: "endDate",
     header: "End",
-    cell: (row) => row.endDate || "—",
+    cell: (row) => dashIfEmpty(row.endDate),
   },
 ];
 

@@ -16,6 +16,7 @@ interface ResumeAiConversationCardProps extends Omit<
   messages: UIMessage[];
   onEditPastPrompt: ResumeAiMessageAction;
   onResendPastPrompt: ResumeAiMessageAction;
+  createdResumeTo?: "/resumes/$resumeId" | "/event-sourced/resumes/$resumeId";
 }
 
 export function ResumeAiConversationCard({
@@ -25,6 +26,7 @@ export function ResumeAiConversationCard({
   messages,
   onEditPastPrompt,
   onResendPastPrompt,
+  createdResumeTo,
   ...composerProps
 }: ResumeAiConversationCardProps) {
   return (
@@ -45,6 +47,7 @@ export function ResumeAiConversationCard({
                 isReady={isReady}
                 onEdit={onEditPastPrompt}
                 onResend={onResendPastPrompt}
+                createdResumeTo={createdResumeTo}
               />
             ))
           )}
