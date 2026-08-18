@@ -115,5 +115,5 @@
 }
 
 [data-style="slides"]::view-transition-old(root) {
-  animation: none;
+  display: none;
 }

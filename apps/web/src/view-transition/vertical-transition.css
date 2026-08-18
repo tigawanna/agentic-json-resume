@@ -1,17 +1,20 @@
-[data-style="vertical"]::view-transition-new(root) {
-  animation: reveal 1s;
-  clip-path: inset(0 0 0 0);
-  z-index: 2;
-}
-
+/**
+ * Vertical — incoming page reveals from an edge.
+ * Flash fix: hide old snapshot instead of leaving it under with animation: none.
+ */
 [data-style="vertical"]::view-transition-old(root) {
-  z-index: -1;
-  animation: none;
+  display: none;
 }
 
-@keyframes reveal {
+[data-style="vertical"]::view-transition-new(root) {
+  animation: vertical-reveal 1s ease;
+  animation-fill-mode: both;
+  clip-path: inset(0 0 0 0);
+}
+
+@keyframes vertical-reveal {
   from {
-    clip-path: inset(var(--from));
+    clip-path: inset(var(--from, 0 0 100% 0));
   }
 }
 

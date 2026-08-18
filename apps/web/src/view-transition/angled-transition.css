@@ -1,15 +1,18 @@
-/* Angled */
+/**
+ * Angled — incoming page unclips from a corner.
+ * Flash fix: hide old snapshot (was animation: none + z-index -1).
+ */
 [data-style="angled"]::view-transition-old(root) {
-  animation: none;
-  z-index: -1;
+  display: none;
 }
 
 [data-style="angled"]::view-transition-new(root) {
-  animation: unclip 1s;
+  animation: angled-unclip 1s ease;
+  animation-fill-mode: both;
   clip-path: polygon(-100vmax 100%, 100% 100%, 100% -100vmax);
 }
 
-@keyframes unclip {
+@keyframes angled-unclip {
   0% {
     clip-path: polygon(100% 100%, 100% 100%, 100% 100%);
   }
