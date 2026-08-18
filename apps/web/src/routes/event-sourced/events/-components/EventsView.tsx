@@ -1,0 +1,60 @@
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import type { EventQueueTab } from "../../-utils/list-search";
+import { Route } from "..";
+import { DeadLetterList, DeadLetterRetryAllButton } from "./DeadLetterList";
+import { InboxList } from "./InboxList";
+import { OutboxList } from "./OutboxList";
+import { useState } from "react";
+
+const ROUTE_ID = "/event-sourced/events/" as const;
+
+const EVENT_TAB_HINTS: Record<EventQueueTab, string> = {
+  outbox: "Local changes waiting to be pushed to the server.",
+  inbox: "Remote changes received from the server to be applied locally.",
+  deadletter: "Permanently rejected events. Retry to requeue, or discard to drop them.",
+};
+
+export function EventsView() {
+  const navigate = Route.useNavigate();
+  const { tab: tabParam } = Route.useSearch();
+  const tab: EventQueueTab = tabParam ?? "outbox";
+  const [totalPages, setTotalPages] = useState(0);
+
+  function setTab(next: string) {
+    const nextTab = next as EventQueueTab;
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        tab: nextTab === "outbox" ? undefined : nextTab,
+        page: undefined,
+      }),
+      replace: true,
+    });
+    setTotalPages(0);
+  }
+
+  return (
+    <EventSourcedListScaffold
+      routeID={ROUTE_ID}
+      title="Events"
+      description={EVENT_TAB_HINTS[tab]}
+      searchPlaceholder="Search events…"
+      totalPages={totalPages}
+      dataTest="events-page"
+      actions={tab === "deadletter" ? <DeadLetterRetryAllButton /> : undefined}
+    >
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList data-test="events-tabs">
+          <TabsTrigger value="outbox">Outbox</TabsTrigger>
+          <TabsTrigger value="inbox">Inbox</TabsTrigger>
+          <TabsTrigger value="deadletter">Dead letter</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {tab === "outbox" ? <OutboxList onTotalPages={setTotalPages} /> : null}
+      {tab === "inbox" ? <InboxList onTotalPages={setTotalPages} /> : null}
+      {tab === "deadletter" ? <DeadLetterList onTotalPages={setTotalPages} /> : null}
+    </EventSourcedListScaffold>
+  );
+}
