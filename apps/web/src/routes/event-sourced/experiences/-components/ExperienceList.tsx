@@ -10,6 +10,7 @@ import { Briefcase, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
   ResponsiveEntityTable,
@@ -121,14 +122,17 @@ export function ExperienceList() {
   }
 
   const actions = (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => setCreateOpen(true)}
-      data-test="add-experiences-btn"
-    >
-      <Plus className="mr-1 size-4" /> Add
-    </Button>
+    <>
+      <ImportFromLegacyButton importer="experiences" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-experiences-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
   );
 
   if (isLoading) {

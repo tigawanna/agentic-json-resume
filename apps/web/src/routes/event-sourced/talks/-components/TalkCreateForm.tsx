@@ -17,6 +17,7 @@ import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
 import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 import { serializeTalkLinks, talkLinksSearchable } from "../-utils/talk-links";
 import { TalkLinksFields } from "./TalkLinksFields";
@@ -45,6 +46,16 @@ export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
     onSubmit: async ({ value }) => {
       setPending(true);
       try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeTalk,
+          value.title,
+          (row) => row.title,
+        );
+        if (existing) {
+          toast.success("Talk already in library");
+          onSuccess?.();
+          return;
+        }
         const base = libraryRowBase(viewer.user?.id);
         const linksJson = serializeTalkLinks(value.links);
         const searchableText = joinSearchable(

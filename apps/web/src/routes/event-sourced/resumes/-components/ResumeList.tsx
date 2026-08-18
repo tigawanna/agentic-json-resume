@@ -11,6 +11,7 @@ import { FileText, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import { ResponsiveEntityTable } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
@@ -100,14 +101,17 @@ export function ResumeList() {
   }
 
   const actions = (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => setCreateOpen(true)}
-      data-test="add-resumes-btn"
-    >
-      <Plus className="mr-1 size-4" /> Add
-    </Button>
+    <>
+      <ImportFromLegacyButton importer="resumes" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-resumes-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
   );
 
   if (isLoading) {

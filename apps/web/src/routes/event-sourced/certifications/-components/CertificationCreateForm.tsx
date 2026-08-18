@@ -17,6 +17,7 @@ import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
 import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
@@ -37,6 +38,16 @@ export function CertificationCreateForm({ onSuccess }: CertificationCreateFormPr
     onSubmit: async ({ value }) => {
       setPending(true);
       try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeCertification,
+          value.name,
+          (row) => row.name,
+        );
+        if (existing) {
+          toast.success("Certification already in library");
+          onSuccess?.();
+          return;
+        }
         const base = libraryRowBase(viewer.user?.id);
         const searchableText = joinSearchable(value.name, value.issuer, value.date, value.url);
         db.collections.resumeCertification.insert({

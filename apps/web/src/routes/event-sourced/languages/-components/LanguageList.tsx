@@ -10,6 +10,7 @@ import { Globe, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
   ResponsiveEntityTable,
@@ -86,14 +87,17 @@ export function LanguageList() {
   }
 
   const actions = (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => setCreateOpen(true)}
-      data-test="add-languages-btn"
-    >
-      <Plus className="mr-1 size-4" /> Add
-    </Button>
+    <>
+      <ImportFromLegacyButton importer="languages" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-languages-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
   );
 
   if (isLoading) {

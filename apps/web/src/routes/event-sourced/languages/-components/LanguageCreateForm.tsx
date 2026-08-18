@@ -23,6 +23,7 @@ import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
 import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
@@ -44,6 +45,16 @@ export function LanguageCreateForm({ onSuccess }: LanguageCreateFormProps) {
     onSubmit: async ({ value }) => {
       setPending(true);
       try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeLanguage,
+          value.name,
+          (row) => row.name,
+        );
+        if (existing) {
+          toast.success("Language already in library");
+          onSuccess?.();
+          return;
+        }
         const base = libraryRowBase(viewer.user?.id);
         const searchableText = joinSearchable(value.name, value.proficiency);
         db.collections.resumeLanguage.insert({

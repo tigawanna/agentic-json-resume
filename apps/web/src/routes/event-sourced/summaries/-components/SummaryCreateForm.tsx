@@ -17,6 +17,7 @@ import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
 import { useState } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
 import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
@@ -37,6 +38,16 @@ export function SummaryCreateForm({ onSuccess }: SummaryCreateFormProps) {
     onSubmit: async ({ value }) => {
       setPending(true);
       try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeSummary,
+          value.text,
+          (row) => row.text,
+        );
+        if (existing) {
+          toast.success("Summary already in library");
+          onSuccess?.();
+          return;
+        }
         const base = libraryRowBase(viewer.user?.id);
         const searchableText = joinSearchable(value.text);
         db.collections.resumeSummary.insert({

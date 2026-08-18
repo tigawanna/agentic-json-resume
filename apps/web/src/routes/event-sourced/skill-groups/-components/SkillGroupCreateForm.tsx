@@ -16,6 +16,7 @@ import { formOptions } from "@tanstack/react-form";
 import { X } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
 import { joinSearchable, libraryRowBase, newId, nowMs } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
@@ -38,6 +39,16 @@ export function SkillGroupCreateForm({ onSuccess }: SkillGroupCreateFormProps) {
     onSubmit: async ({ value }) => {
       setPending(true);
       try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeSkillGroup,
+          value.name,
+          (row) => row.name,
+        );
+        if (existing) {
+          toast.success("Skill group already in library");
+          onSuccess?.();
+          return;
+        }
         const base = libraryRowBase(viewer.user?.id);
         const searchableText = joinSearchable(value.name, ...skills);
         db.collections.resumeSkillGroup.insert({
