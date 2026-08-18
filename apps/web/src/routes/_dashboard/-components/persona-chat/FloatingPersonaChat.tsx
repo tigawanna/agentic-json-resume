@@ -75,6 +75,9 @@ export function FloatingPersonaChat() {
       apiKey: settings?.apiKey,
       model: settings?.model,
     },
+    devtools: {
+      name: "Persona writer",
+    },
   });
 
   const { messages, isLoading, status, setMessages } = chat;

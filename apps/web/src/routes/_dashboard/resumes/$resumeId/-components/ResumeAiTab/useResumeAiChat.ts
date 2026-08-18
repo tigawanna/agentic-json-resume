@@ -63,6 +63,9 @@ export function useResumeAiChat({ resumeId, jobDescription }: ResumeAiTabProps) 
       apiKey: settings?.apiKey,
       model: settings?.model,
     },
+    devtools: {
+      name: "Dashboard resume AI",
+    },
   });
   const { messages, isLoading, status, sessionGenerating, setMessages } = chat;
 

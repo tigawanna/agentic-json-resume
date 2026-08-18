@@ -1,7 +1,5 @@
 import { ResumeAiConversationCard } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/ResumeAiConversationCard";
-import { ResumeAiPromptsCard } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/ResumeAiPromptsCard";
-import { ResumeAiProviderSettings } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/ResumeAiProviderSettings";
-import { EventSourcedSystemPromptCard } from "./EventSourcedSystemPromptCard";
+import { EventSourcedAiChrome } from "./EventSourcedAiChrome";
 import { useEventSourcedResumeAiChat } from "./use-event-sourced-resume-ai";
 
 export function EventSourcedResumeAiTab({
@@ -15,37 +13,29 @@ export function EventSourcedResumeAiTab({
 
   return (
     <div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-4"
+      className="mx-auto flex w-full max-w-6xl flex-col gap-3"
       data-test="event-sourced-resume-ai-tab"
     >
-      <ResumeAiProviderSettings
-        clearSettings={chat.clearSettings}
-        open={chat.settingsOpen}
-        onOpenChange={chat.setSettingsOpen}
-        saveSettings={chat.saveSettings}
-        settings={chat.settings}
-      />
-
-      <EventSourcedSystemPromptCard
-        isCustom={chat.isCustomSystemPrompt}
-        systemPrompt={chat.systemPrompt}
-        onReset={chat.resetSystemPrompt}
-        onSave={chat.saveSystemPrompt}
-      />
-
-      <ResumeAiPromptsCard
+      <EventSourcedAiChrome
+        activeModelLabel={chat.activeModelLabel}
         clearDialogOpen={chat.clearDialogOpen}
-        clearScope="both"
         hasJobDescription={!!jobDescription.trim()}
         hasMessages={chat.messages.length > 0}
         isBusy={chat.isLoading}
-        isClearPending={false}
+        isCustomSystemPrompt={chat.isCustomSystemPrompt}
         isReady={chat.isReady}
-        onClearBoth={chat.clearLocalConversation}
+        settings={chat.settings}
+        settingsOpen={chat.settingsOpen}
+        systemPrompt={chat.systemPrompt}
+        onClearChat={chat.clearLocalConversation}
         onClearDialogOpenChange={chat.handleClearDialogOpenChange}
-        onClearRemote={chat.clearLocalConversation}
+        onClearSettings={chat.clearSettings}
+        onOpenSettings={() => chat.setSettingsOpen(true)}
+        onResetSystemPrompt={chat.resetSystemPrompt}
+        onSaveSettings={chat.saveSettings}
+        onSaveSystemPrompt={chat.saveSystemPrompt}
         onSendStarter={(message) => void chat.sendStarter(message)}
-        localOnlyClear
+        onSettingsOpenChange={chat.setSettingsOpen}
       />
 
       <ResumeAiConversationCard

@@ -64,6 +64,9 @@ export function useEventSourcedResumeAiChat(resumeId: string, jobDescription: st
     persistence: persistenceRef.current,
     tools: eventSourcedResumeAiClientTools,
     context,
+    devtools: {
+      name: "Event-sourced resume AI",
+    },
     forwardedProps: {
       resumeId,
       jobDescription,

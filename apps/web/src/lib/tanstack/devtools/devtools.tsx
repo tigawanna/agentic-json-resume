@@ -2,12 +2,16 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { pacerDevtoolsPlugin } from "@tanstack/react-pacer-devtools";
+import { aiDevtoolsPlugin } from "@tanstack/react-ai-devtools";
 
 export function TanstackDevtools() {
   return (
     <TanStackDevtools
       config={{
         position: "bottom-right",
+      }}
+      eventBusConfig={{
+        connectToServerBus: true,
       }}
       plugins={[
         {
@@ -19,6 +23,7 @@ export function TanstackDevtools() {
           render: <ReactQueryDevtoolsPanel />,
         },
         pacerDevtoolsPlugin(),
+        aiDevtoolsPlugin(),
       ]}
     />
   );
