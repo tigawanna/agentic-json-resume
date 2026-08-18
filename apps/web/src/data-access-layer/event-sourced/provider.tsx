@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { applyManagedSyncGate } from "./app-settings";
 import { db as dbProxy, ensureDb, type AppDb } from "./collection";
 
 type EventSourcedDbContextValue = {
@@ -36,18 +38,20 @@ export function EventSourcedDbProvider({
   fallback,
   errorFallback,
 }: EventSourcedDbProviderProps) {
+  const { viewer } = useViewer();
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const isAuthenticated = Boolean(viewer.user?.id);
 
   useEffect(() => {
     let cancelled = false;
 
     ensureDb()
       .then(() => {
-        if (!cancelled) {
-          setReady(true);
-          setError(null);
-        }
+        if (cancelled) return;
+        applyManagedSyncGate(dbProxy, isAuthenticated);
+        setReady(true);
+        setError(null);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -58,7 +62,7 @@ export function EventSourcedDbProvider({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   if (error) {
     if (errorFallback) {

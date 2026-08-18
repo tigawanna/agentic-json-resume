@@ -10,6 +10,7 @@ import { AlertCircle, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { LocalBackupSection } from "./-components/LocalBackupSection";
+import { ManagedSyncSection } from "./-components/ManagedSyncSection";
 
 export const Route = createFileRoute("/_dashboard/settings/")({
   component: SettingsPage,
@@ -82,6 +83,8 @@ function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ManagedSyncSection />
 
       <LocalBackupSection />
 

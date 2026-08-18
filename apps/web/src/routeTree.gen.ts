@@ -53,6 +53,8 @@ import { Route as DashboardExperiencesIndexRouteImport } from './routes/_dashboa
 import { Route as DashboardEducationIndexRouteImport } from './routes/_dashboard/education/index'
 import { Route as DashboardContactsIndexRouteImport } from './routes/_dashboard/contacts/index'
 import { Route as DashboardCertificationsIndexRouteImport } from './routes/_dashboard/certifications/index'
+import { Route as ApiSyncEventsRouteImport } from './routes/api/sync/events'
+import { Route as ApiCronProjectSyncEventsRouteImport } from './routes/api/cron/project-sync-events'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAiResumeTailorRouteImport } from './routes/api/ai/resume-tailor'
 import { Route as ApiAiPersonaWriterRouteImport } from './routes/api/ai/persona-writer'
@@ -297,6 +299,17 @@ const DashboardCertificationsIndexRoute =
     path: '/certifications/',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
+const ApiSyncEventsRoute = ApiSyncEventsRouteImport.update({
+  id: '/api/sync/events',
+  path: '/api/sync/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronProjectSyncEventsRoute =
+  ApiCronProjectSyncEventsRouteImport.update({
+    id: '/api/cron/project-sync-events',
+    path: '/api/cron/project-sync-events',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -363,6 +376,8 @@ export interface FileRoutesByFullPath {
   '/api/ai/persona-writer': typeof ApiAiPersonaWriterRoute
   '/api/ai/resume-tailor': typeof ApiAiResumeTailorRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/project-sync-events': typeof ApiCronProjectSyncEventsRoute
+  '/api/sync/events': typeof ApiSyncEventsRoute
   '/certifications/': typeof DashboardCertificationsIndexRoute
   '/contacts/': typeof DashboardContactsIndexRoute
   '/education/': typeof DashboardEducationIndexRoute
@@ -414,6 +429,8 @@ export interface FileRoutesByTo {
   '/api/ai/persona-writer': typeof ApiAiPersonaWriterRoute
   '/api/ai/resume-tailor': typeof ApiAiResumeTailorRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/project-sync-events': typeof ApiCronProjectSyncEventsRoute
+  '/api/sync/events': typeof ApiSyncEventsRoute
   '/certifications': typeof DashboardCertificationsIndexRoute
   '/contacts': typeof DashboardContactsIndexRoute
   '/education': typeof DashboardEducationIndexRoute
@@ -470,6 +487,8 @@ export interface FileRoutesById {
   '/api/ai/persona-writer': typeof ApiAiPersonaWriterRoute
   '/api/ai/resume-tailor': typeof ApiAiResumeTailorRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/project-sync-events': typeof ApiCronProjectSyncEventsRoute
+  '/api/sync/events': typeof ApiSyncEventsRoute
   '/_dashboard/certifications/': typeof DashboardCertificationsIndexRoute
   '/_dashboard/contacts/': typeof DashboardContactsIndexRoute
   '/_dashboard/education/': typeof DashboardEducationIndexRoute
@@ -525,6 +544,8 @@ export interface FileRouteTypes {
     | '/api/ai/persona-writer'
     | '/api/ai/resume-tailor'
     | '/api/auth/$'
+    | '/api/cron/project-sync-events'
+    | '/api/sync/events'
     | '/certifications/'
     | '/contacts/'
     | '/education/'
@@ -576,6 +597,8 @@ export interface FileRouteTypes {
     | '/api/ai/persona-writer'
     | '/api/ai/resume-tailor'
     | '/api/auth/$'
+    | '/api/cron/project-sync-events'
+    | '/api/sync/events'
     | '/certifications'
     | '/contacts'
     | '/education'
@@ -631,6 +654,8 @@ export interface FileRouteTypes {
     | '/api/ai/persona-writer'
     | '/api/ai/resume-tailor'
     | '/api/auth/$'
+    | '/api/cron/project-sync-events'
+    | '/api/sync/events'
     | '/_dashboard/certifications/'
     | '/_dashboard/contacts/'
     | '/_dashboard/education/'
@@ -681,6 +706,8 @@ export interface RootRouteChildren {
   ApiAiPersonaWriterRoute: typeof ApiAiPersonaWriterRoute
   ApiAiResumeTailorRoute: typeof ApiAiResumeTailorRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiCronProjectSyncEventsRoute: typeof ApiCronProjectSyncEventsRoute
+  ApiSyncEventsRoute: typeof ApiSyncEventsRoute
   ApiAgenticRpcSplatRoute: typeof ApiAgenticRpcSplatRoute
 }
 
@@ -994,6 +1021,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCertificationsIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/api/sync/events': {
+      id: '/api/sync/events'
+      path: '/api/sync/events'
+      fullPath: '/api/sync/events'
+      preLoaderRoute: typeof ApiSyncEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/project-sync-events': {
+      id: '/api/cron/project-sync-events'
+      path: '/api/cron/project-sync-events'
+      fullPath: '/api/cron/project-sync-events'
+      preLoaderRoute: typeof ApiCronProjectSyncEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -1200,6 +1241,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiPersonaWriterRoute: ApiAiPersonaWriterRoute,
   ApiAiResumeTailorRoute: ApiAiResumeTailorRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiCronProjectSyncEventsRoute: ApiCronProjectSyncEventsRoute,
+  ApiSyncEventsRoute: ApiSyncEventsRoute,
   ApiAgenticRpcSplatRoute: ApiAgenticRpcSplatRoute,
 }
 export const routeTree = rootRouteImport

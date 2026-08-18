@@ -23,6 +23,7 @@ const envSchema = z.object({
   LMSTUDIO_BASE_URL: z.url().optional(),
   LMSTUDIO_MODEL: z.string().optional(),
   VITE_AI_LOCAL_MODE: z.string().optional(),
+  CRON_SECRET: z.string().optional(),
 });
 
 // Validate client environment

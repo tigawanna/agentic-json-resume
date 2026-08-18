@@ -1,6 +1,7 @@
 import { BasicIndex } from "@tanstack/db";
 import { createBrowserEventSourcedDB } from "event-sourced-collection/browser";
 import type { CollectionDef, EventSourcedDB } from "event-sourced-collection";
+import { createCookieSyncTransport } from "./sync-transport";
 
 import type {
   AppSettings,
@@ -116,8 +117,8 @@ const byResumeId = <T extends { resumeId: string }>(name = "by-resume") => ({
 
 /**
  * Local-first event-sourced DB.
- * Sync is off until a real `/api/sync` (or handlers) exists — mutations still
- * queue in the built-in `outbox`. Call `await ensureDb()` once at app mount.
+ * Sync transport is wired but starts disabled. Call `applyManagedSyncGate`
+ * after `ensureDb()` once the user session and local settings are known.
  */
 const { ensureDb, db, close } = createBrowserEventSourcedDB<AppCollectionDefs>({
   databaseName: "agentic-json-resume.sqlite",
@@ -125,6 +126,7 @@ const { ensureDb, db, close } = createBrowserEventSourcedDB<AppCollectionDefs>({
   schemaVersion: 1,
   eventSchemaVersion: 1,
   syncEnabled: false,
+  sync: createCookieSyncTransport(),
 
   collections: {
     resume: {
