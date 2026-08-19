@@ -9,7 +9,9 @@ import { count, useLiveQuery } from "@tanstack/react-db";
 import { Contact, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
@@ -17,7 +19,13 @@ import {
   type ResponsiveColumn,
 } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
 import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
@@ -46,13 +54,27 @@ const columns: ResponsiveColumn<ResumeContact>[] = [
 
 export function ContactList() {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ResumeContact | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeContact}
+      sortableColumns={createSortableColumns(db.collections.resumeContact, [
+        { value: "value", label: "Value" },
+        { value: "type", label: "Type" },
+        { value: "label", label: "Label" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -63,11 +85,11 @@ export function ContactList() {
           )
         : base;
       return filtered
-        .orderBy(({ row }) => row.updatedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -118,6 +140,7 @@ export function ContactList() {
         description="Contact details in your local library."
         searchPlaceholder="Search contacts…"
         actions={actions}
+        filters={filters}
         dataTest="contacts-list-page"
       >
         <RouterPendingComponent />
@@ -134,6 +157,7 @@ export function ContactList() {
         searchPlaceholder="Search contacts…"
         totalPages={0}
         actions={actions}
+        filters={filters}
         dataTest="contacts-list-page"
       >
         <LibraryEmpty
@@ -159,6 +183,7 @@ export function ContactList() {
       searchPlaceholder="Search contacts…"
       totalPages={totalPages}
       actions={actions}
+      filters={filters}
       dataTest="contacts-list-page"
     >
       <ResponsiveEntityTable

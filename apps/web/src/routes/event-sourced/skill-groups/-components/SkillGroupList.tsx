@@ -10,12 +10,20 @@ import { count, eq, queryOnce, toArray, useLiveQuery } from "@tanstack/react-db"
 import { Plus, Wrench } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import { ResponsiveEntityTable } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { Route } from "..";
 import { SkillGroupCreateForm, SkillGroupCreateFormDialog } from "./SkillGroupCreateForm";
 import { SkillGroupEditForm } from "./SkillGroupEditForm";
@@ -26,13 +34,25 @@ type SkillGroupRow = ResumeSkillGroup & { skills: ResumeSkill[] };
 
 export function SkillGroupList() {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<SkillGroupRow | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeSkillGroup}
+      sortableColumns={createSortableColumns(db.collections.resumeSkillGroup, [
+        { value: "name", label: "Name" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -41,7 +61,7 @@ export function SkillGroupList() {
         ? base.where(({ row }) => orIlike(keyword, row.name, row.searchableText))
         : base;
       return filtered
-        .orderBy(({ row }) => row.updatedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset)
         .select(({ row }) => ({
@@ -54,7 +74,7 @@ export function SkillGroupList() {
           ),
         }));
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -111,6 +131,7 @@ export function SkillGroupList() {
         description="Skill groups in your local library."
         searchPlaceholder="Search skill groups…"
         actions={actions}
+        filters={filters}
         dataTest="skill-groups-list-page"
       >
         <RouterPendingComponent />
@@ -127,6 +148,7 @@ export function SkillGroupList() {
         searchPlaceholder="Search skill groups…"
         totalPages={0}
         actions={actions}
+        filters={filters}
         dataTest="skill-groups-list-page"
       >
         <LibraryEmpty
@@ -152,6 +174,7 @@ export function SkillGroupList() {
       searchPlaceholder="Search skill groups…"
       totalPages={totalPages}
       actions={actions}
+      filters={filters}
       dataTest="skill-groups-list-page"
     >
       <ResponsiveEntityTable
@@ -165,6 +188,7 @@ export function SkillGroupList() {
           {
             id: "skills",
             header: "Skills",
+            sortable: false,
             cell: (row) =>
               row.skills.length > 0 ? (
                 <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
@@ -179,6 +203,7 @@ export function SkillGroupList() {
             header: "Count",
             cell: (row) => String(row.skills.length),
             hideOnMobile: true,
+            sortable: false,
           },
         ]}
         mobileTitle={(row) => row.name}

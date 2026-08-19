@@ -11,6 +11,8 @@ type EventSourcedListScaffoldProps = {
   searchPlaceholder: string;
   totalPages?: number;
   actions?: ReactNode;
+  /** Sort UI (TanstackDBSortSelect) — stays above the table. */
+  filters?: ReactNode;
   children: ReactNode;
   dataTest?: string;
 };
@@ -26,6 +28,7 @@ export function EventSourcedListScaffold({
   searchPlaceholder,
   totalPages = 0,
   actions,
+  filters,
   children,
   dataTest,
 }: EventSourcedListScaffoldProps) {
@@ -50,6 +53,7 @@ export function EventSourcedListScaffold({
             inputProps={{ placeholder: searchPlaceholder }}
           />
         </div>
+        {filters ? <div className="flex shrink-0 items-center gap-2">{filters}</div> : null}
       </div>
 
       {children}

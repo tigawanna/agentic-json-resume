@@ -16,7 +16,13 @@ import {
   ResponsiveEntityTable,
   type ResponsiveColumn,
 } from "../../-components/ResponsiveEntityTable";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { Route } from "..";
 import { EventTypeBadge } from "./event-queue-table";
 import { formatEventDate } from "./event-view";
@@ -29,6 +35,7 @@ const columns: ResponsiveColumn<DeadLetterRow>[] = [
   {
     id: "collection",
     header: "Collection",
+    sortKey: "collectionId",
     cell: (row) => <span className="font-medium">{row.collectionId}</span>,
   },
   {
@@ -57,6 +64,7 @@ const columns: ResponsiveColumn<DeadLetterRow>[] = [
   {
     id: "failed",
     header: "Failed",
+    sortKey: "failedAt",
     cell: (row) => <span className="text-muted-foreground">{formatEventDate(row.failedAt)}</span>,
   },
 ];
@@ -67,12 +75,13 @@ type DeadLetterListProps = {
 
 export function DeadLetterList({ onTotalPages }: DeadLetterListProps) {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+  const sortDir = listSortDirection(sortDirection);
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -83,11 +92,11 @@ export function DeadLetterList({ onTotalPages }: DeadLetterListProps) {
           )
         : base;
       return filtered
-        .orderBy(({ row }) => row.failedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "failedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -156,6 +165,7 @@ export function DeadLetterList({ onTotalPages }: DeadLetterListProps) {
       mobileTitle={(row) => row.collectionId}
       mobileSubtitle={(row) => row.reason}
       dataTest="deadletter-table"
+      defaultSortBy="failedAt"
       actions={(row) => {
         const busy = busyId === row.eventId || busyId === "*";
         return (

@@ -29,3 +29,25 @@ export function totalPagesFromCount(totalItems: number, perPage = ADMIN_LIST_PER
   if (totalItems <= 0) return 0;
   return Math.ceil(totalItems / perPage);
 }
+
+export type ListSortDirection = "asc" | "desc";
+
+export function listSortDirection(
+  dir: string | undefined,
+  fallback: ListSortDirection = "desc",
+): ListSortDirection {
+  return dir === "asc" || dir === "desc" ? dir : fallback;
+}
+
+/**
+ * Query-builder field ref for `.orderBy`. Sort in TanStack DB, never in JS.
+ */
+export function listOrderByRef<T extends object>(
+  row: T,
+  sortBy: string | undefined,
+  fallback: keyof T & string,
+) {
+  const key = (sortBy ?? fallback) as keyof T;
+  const selected = row[key];
+  return selected === undefined ? row[fallback] : selected;
+}

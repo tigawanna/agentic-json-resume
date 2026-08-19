@@ -10,6 +10,7 @@ import { Mic, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
@@ -17,7 +18,14 @@ import {
   type ResponsiveColumn,
 } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { unwrapUnknownError } from "@/utils/errors";
 import { dashIfEmpty } from "@/utils/string";
 import { parseTalkLinks } from "../-utils/talk-links";
@@ -77,18 +85,33 @@ const columns: ResponsiveColumn<ResumeTalk>[] = [
       );
     },
     className: "whitespace-normal",
+    sortable: false,
   },
 ];
 
 export function TalkList() {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ResumeTalk | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeTalk}
+      sortableColumns={createSortableColumns(db.collections.resumeTalk, [
+        { value: "title", label: "Title" },
+        { value: "event", label: "Event" },
+        { value: "date", label: "Date" },
+        { value: "description", label: "Description" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -99,11 +122,11 @@ export function TalkList() {
           )
         : base;
       return filtered
-        .orderBy(({ row }) => row.updatedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -154,6 +177,7 @@ export function TalkList() {
         description="Talks and presentations in your local library."
         searchPlaceholder="Search talks…"
         actions={actions}
+        filters={filters}
         dataTest="talks-list-page"
       >
         <RouterPendingComponent />
@@ -170,6 +194,7 @@ export function TalkList() {
         searchPlaceholder="Search talks…"
         totalPages={0}
         actions={actions}
+        filters={filters}
         dataTest="talks-list-page"
       >
         <LibraryEmpty
@@ -195,6 +220,7 @@ export function TalkList() {
       searchPlaceholder="Search talks…"
       totalPages={totalPages}
       actions={actions}
+      filters={filters}
       dataTest="talks-list-page"
     >
       <ResponsiveEntityTable

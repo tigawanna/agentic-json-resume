@@ -11,7 +11,9 @@ import { count, useLiveQuery } from "@tanstack/react-db";
 import { Notebook, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
@@ -19,7 +21,13 @@ import {
   type ResponsiveColumn,
 } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { Route } from "..";
 import { NoteCreateForm, NoteCreateFormDialog } from "./NoteCreateForm";
 import { NoteEditForm } from "./NoteEditForm";
@@ -45,13 +53,26 @@ const columns: ResponsiveColumn<ResumeNote>[] = [
 
 export function NoteList() {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ResumeNote | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeNote}
+      sortableColumns={createSortableColumns(db.collections.resumeNote, [
+        { value: "label", label: "Label" },
+        { value: "text", label: "Text" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -60,11 +81,11 @@ export function NoteList() {
         ? base.where(({ row }) => orIlike(keyword, row.label, row.text, row.searchableText))
         : base;
       return filtered
-        .orderBy(({ row }) => row.updatedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -113,6 +134,7 @@ export function NoteList() {
         description="Footer copy — condensed cover letters and addenda — in your local library."
         searchPlaceholder="Search notes…"
         actions={actions}
+        filters={filters}
         dataTest="notes-list-page"
       >
         <RouterPendingComponent />
@@ -129,6 +151,7 @@ export function NoteList() {
         searchPlaceholder="Search notes…"
         totalPages={0}
         actions={actions}
+        filters={filters}
         dataTest="notes-list-page"
       >
         <LibraryEmpty
@@ -154,6 +177,7 @@ export function NoteList() {
       searchPlaceholder="Search notes…"
       totalPages={totalPages}
       actions={actions}
+      filters={filters}
       dataTest="notes-list-page"
     >
       <ResponsiveEntityTable

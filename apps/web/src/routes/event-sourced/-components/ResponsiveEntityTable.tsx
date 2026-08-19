@@ -1,3 +1,12 @@
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -7,6 +16,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Columns3 } from "lucide-react";
 import type { ReactNode } from "react";
 
 export type ResponsiveColumn<T> = {
@@ -20,6 +31,12 @@ export type ResponsiveColumn<T> = {
   hideOnMobile?: boolean;
   className?: string;
   headClassName?: string;
+  /**
+   * Collection field used in `orderBy`. Defaults to `id`.
+   * Set `sortable: false` for computed columns.
+   */
+  sortKey?: string;
+  sortable?: boolean;
 };
 
 type ResponsiveEntityTableProps<T extends { id: string }> = {
@@ -32,11 +49,24 @@ type ResponsiveEntityTableProps<T extends { id: string }> = {
   actions?: (row: T) => ReactNode;
   dataTest?: string;
   empty?: ReactNode;
+  /** Collection field used when the URL has no `sortBy`. */
+  defaultSortBy?: string;
+  defaultSortDirection?: "asc" | "desc";
 };
 
+function parseHiddenIds(hidden: unknown) {
+  if (typeof hidden !== "string" || hidden.length === 0) return new Set<string>();
+  return new Set(hidden.split(",").filter(Boolean));
+}
+
+function columnSortKey<T>(col: ResponsiveColumn<T>) {
+  return col.sortKey ?? col.id;
+}
+
 /**
- * Desktop: real table. Mobile: stacked rows with labeled fields
- * (tables are painful on narrow viewports).
+ * Desktop: real table. Mobile: stacked rows with labeled fields.
+ * Column visibility and header sort write URL search (`hidden`, `sortBy`, `sortDirection`).
+ * Callers must apply `orderBy` in `useLiveQuery` — this table never sorts rows in JS.
  */
 export function ResponsiveEntityTable<T extends { id: string }>({
   rows,
@@ -46,32 +76,154 @@ export function ResponsiveEntityTable<T extends { id: string }>({
   actions,
   dataTest,
   empty,
+  defaultSortBy = "updatedAt",
+  defaultSortDirection = "desc",
 }: ResponsiveEntityTableProps<T>) {
+  const search = useSearch({ strict: false });
+  const navigate = useNavigate();
+
+  const hiddenIds = parseHiddenIds(search.hidden);
+  const visibleColumns = columns.filter((col) => !hiddenIds.has(col.id));
+  const displayColumns = visibleColumns.length > 0 ? visibleColumns : columns.slice(0, 1);
+
+  const activeSortBy = search.sortBy && search.sortBy.length > 0 ? search.sortBy : defaultSortBy;
+
+  const activeSortDirection =
+    search.sortDirection === "asc" || search.sortDirection === "desc"
+      ? search.sortDirection
+      : defaultSortDirection;
+
+  function patchSearch(patch: Record<string, unknown>) {
+    void navigate({
+      to: ".",
+      search: (prev) => ({
+        ...prev,
+        ...patch,
+      }),
+      replace: true,
+    });
+  }
+
+  function toggleHidden(columnId: string, nextHidden: boolean) {
+    const next = new Set(hiddenIds);
+    if (nextHidden) {
+      if (displayColumns.length <= 1 && displayColumns[0]?.id === columnId) return;
+      next.add(columnId);
+    } else {
+      next.delete(columnId);
+    }
+    const serialized = [...next].join(",");
+    patchSearch({ hidden: serialized.length > 0 ? serialized : undefined });
+  }
+
+  function toggleSort(col: ResponsiveColumn<T>) {
+    if (col.sortable === false) return;
+    const key = columnSortKey(col);
+    const nextDirection = activeSortBy === key && activeSortDirection === "desc" ? "asc" : "desc";
+    patchSearch({
+      sortBy: key,
+      sortDirection: nextDirection,
+      page: undefined,
+    });
+  }
+
   if (rows.length === 0) {
     return <>{empty ?? null}</>;
   }
 
-  const mobileColumns = columns.filter((c) => !c.hideOnMobile);
+  const mobileColumns = displayColumns.filter((c) => !c.hideOnMobile);
 
   return (
-    <div data-test={dataTest}>
-      {/* Desktop / tablet table */}
+    <div data-test={dataTest} className="flex flex-col gap-2">
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              aria-label="Show or hide columns"
+              data-test="column-visibility-btn"
+            >
+              <Columns3 className="size-4" />
+              Columns
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {columns.map((col) => {
+              const checked = !hiddenIds.has(col.id);
+              const lastVisible = checked && displayColumns.length <= 1;
+              return (
+                <DropdownMenuCheckboxItem
+                  key={col.id}
+                  checked={checked}
+                  disabled={lastVisible}
+                  onCheckedChange={(value) => toggleHidden(col.id, value === false)}
+                >
+                  {col.header}
+                </DropdownMenuCheckboxItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <div className="border-border hidden overflow-hidden rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
-              {columns.map((col) => (
-                <TableHead key={col.id} className={col.headClassName}>
-                  {col.header}
-                </TableHead>
-              ))}
+              {displayColumns.map((col) => {
+                const sortable = col.sortable !== false;
+                const key = columnSortKey(col);
+                const isActive = sortable && activeSortBy === key;
+                const ariaSort = !sortable
+                  ? undefined
+                  : isActive
+                    ? activeSortDirection === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none";
+
+                return (
+                  <TableHead key={col.id} className={col.headClassName} aria-sort={ariaSort}>
+                    {sortable ? (
+                      <button
+                        type="button"
+                        className="hover:text-foreground inline-flex items-center gap-1 font-medium"
+                        onClick={() => toggleSort(col)}
+                        data-test={`sort-${key}`}
+                      >
+                        {col.header}
+                        {isActive ? (
+                          activeSortDirection === "asc" ? (
+                            <ArrowUp className="size-3.5" />
+                          ) : (
+                            <ArrowDown className="size-3.5" />
+                          )
+                        ) : (
+                          <ChevronsUpDown className="text-muted-foreground size-3.5" />
+                        )}
+                      </button>
+                    ) : (
+                      col.header
+                    )}
+                  </TableHead>
+                );
+              })}
               {actions ? <TableHead className="w-[1%] text-right">Actions</TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.id} data-test={`row-${row.id}`}>
-                {columns.map((col) => (
+              <TableRow
+                key={row.id}
+                data-test={`row-${row.id}`}
+                className="hover:bg-primary/30 cursor-pointer"
+              >
+                {displayColumns.map((col) => (
                   <TableCell key={col.id} className={cn("max-w-md truncate", col.className)}>
                     {col.cell(row)}
                   </TableCell>
@@ -85,7 +237,6 @@ export function ResponsiveEntityTable<T extends { id: string }>({
         </Table>
       </div>
 
-      {/* Mobile stacked fallback */}
       <ul className="flex flex-col gap-3 md:hidden" data-test={`${dataTest ?? "list"}-mobile`}>
         {rows.map((row) => {
           const title = mobileTitle?.(row) ?? mobileColumns[0]?.cell(row) ?? null;

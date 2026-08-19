@@ -13,12 +13,20 @@ import { useNavigate } from "@tanstack/react-router";
 import { FileText, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import { ResponsiveEntityTable } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { ResumeCreateForm, ResumeCreateFormDialog } from "./ResumeCreateForm";
 import { ResumeEditForm } from "./ResumeEditForm";
 import { Route } from "..";
@@ -28,13 +36,27 @@ const ROUTE_ID = "/event-sourced/resumes/" as const;
 export function ResumeList() {
   const db = useEventSourcedDb();
   const navigate = useNavigate();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Resume | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resume}
+      sortableColumns={createSortableColumns(db.collections.resume, [
+        { value: "name", label: "Name" },
+        { value: "headline", label: "Headline" },
+        { value: "fullName", label: "Full Name" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -52,11 +74,11 @@ export function ResumeList() {
           )
         : base;
       return filtered
-        .orderBy(({ row }) => row.updatedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -114,6 +136,7 @@ export function ResumeList() {
         description="Local-first résumés stored in your event-sourced collection."
         searchPlaceholder="Search résumés…"
         actions={actions}
+        filters={filters}
         dataTest="resumes-list-page"
       >
         <RouterPendingComponent />
@@ -130,6 +153,7 @@ export function ResumeList() {
         searchPlaceholder="Search résumés…"
         totalPages={0}
         actions={actions}
+        filters={filters}
         dataTest="resumes-list-page"
       >
         <LibraryEmpty
@@ -155,6 +179,7 @@ export function ResumeList() {
       searchPlaceholder="Search résumés…"
       totalPages={totalPages}
       actions={actions}
+      filters={filters}
       dataTest="resumes-list-page"
     >
       <ResponsiveEntityTable

@@ -52,32 +52,38 @@ export function SyncStatusBadge({
 export function eventQueueColumns(
   syncedLabel: string,
   pendingLabel: string,
+  seqSortKey: "localSeq" | "globalSeq",
 ): ResponsiveColumn<SyncEventView>[] {
   return [
     {
       id: "type",
       header: "Type",
+      sortKey: "type",
       cell: (row) => <EventTypeBadge type={row.type} />,
     },
     {
       id: "collection",
       header: "Collection",
+      sortKey: "collectionId",
       cell: (row) => <span className="font-medium">{row.collectionId}</span>,
     },
     {
       id: "key",
       header: "Key",
+      sortKey: "key",
       cell: (row) => <span className="font-mono text-xs">{row.key}</span>,
     },
     {
       id: "seq",
       header: "Seq",
+      sortKey: seqSortKey,
       cell: (row) => row.globalSeq ?? "—",
       hideOnMobile: true,
     },
     {
       id: "status",
       header: "Status",
+      sortKey: "sync",
       cell: (row) => (
         <SyncStatusBadge sync={row.sync} syncedLabel={syncedLabel} pendingLabel={pendingLabel} />
       ),
@@ -85,6 +91,7 @@ export function eventQueueColumns(
     {
       id: "time",
       header: "Time",
+      sortKey: "timestamp",
       cell: (row) => (
         <span className="text-muted-foreground">{formatEventDate(row.timestamp)}</span>
       ),

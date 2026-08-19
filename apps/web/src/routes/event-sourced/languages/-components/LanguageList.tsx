@@ -9,7 +9,9 @@ import { count, useLiveQuery } from "@tanstack/react-db";
 import { Globe, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
@@ -17,7 +19,13 @@ import {
   type ResponsiveColumn,
 } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
 import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
@@ -41,13 +49,26 @@ const columns: ResponsiveColumn<ResumeLanguage>[] = [
 
 export function LanguageList() {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ResumeLanguage | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeLanguage}
+      sortableColumns={createSortableColumns(db.collections.resumeLanguage, [
+        { value: "name", label: "Name" },
+        { value: "proficiency", label: "Proficiency" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -56,11 +77,11 @@ export function LanguageList() {
         ? base.where(({ row }) => orIlike(keyword, row.name, row.proficiency, row.searchableText))
         : base;
       return filtered
-        .orderBy(({ row }) => row.updatedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -109,6 +130,7 @@ export function LanguageList() {
         description="Languages in your local library (not yet attached to a résumé)."
         searchPlaceholder="Search languages…"
         actions={actions}
+        filters={filters}
         dataTest="languages-list-page"
       >
         <RouterPendingComponent />
@@ -125,6 +147,7 @@ export function LanguageList() {
         searchPlaceholder="Search languages…"
         totalPages={0}
         actions={actions}
+        filters={filters}
         dataTest="languages-list-page"
       >
         <LibraryEmpty
@@ -150,6 +173,7 @@ export function LanguageList() {
       searchPlaceholder="Search languages…"
       totalPages={totalPages}
       actions={actions}
+      filters={filters}
       dataTest="languages-list-page"
     >
       <ResponsiveEntityTable

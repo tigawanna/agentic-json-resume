@@ -9,7 +9,13 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import { ResponsiveEntityTable } from "../../-components/ResponsiveEntityTable";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { Route } from "..";
 import { EventPayloadDialog } from "./EventPayloadDialog";
 import { EventQueueRowActions, eventQueueColumns } from "./event-queue-table";
@@ -23,12 +29,13 @@ type InboxListProps = {
 
 export function InboxList({ onTotalPages }: InboxListProps) {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [inspecting, setInspecting] = useState<SyncEventView | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+  const sortDir = listSortDirection(sortDirection);
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -37,11 +44,11 @@ export function InboxList({ onTotalPages }: InboxListProps) {
         ? base.where(({ row }) => orIlike(keyword, row.collectionId, row.type, row.eventId))
         : base;
       return filtered
-        .orderBy(({ row }) => row.globalSeq, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "globalSeq"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -85,10 +92,11 @@ export function InboxList({ onTotalPages }: InboxListProps) {
     <>
       <ResponsiveEntityTable
         rows={rows}
-        columns={eventQueueColumns("Applied", "Pending")}
+        columns={eventQueueColumns("Applied", "Pending", "globalSeq")}
         mobileTitle={(row) => row.collectionId}
         mobileSubtitle={(row) => row.type}
         dataTest="inbox-table"
+        defaultSortBy="globalSeq"
         actions={(row) => (
           <EventQueueRowActions
             onInspect={() => setInspecting(row)}

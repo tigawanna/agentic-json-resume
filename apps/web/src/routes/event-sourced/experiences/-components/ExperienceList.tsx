@@ -9,7 +9,9 @@ import { count, useLiveQuery } from "@tanstack/react-db";
 import { Briefcase, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
@@ -17,7 +19,13 @@ import {
   type ResponsiveColumn,
 } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
 import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
@@ -56,13 +64,29 @@ const columns: ResponsiveColumn<ResumeExperience>[] = [
 
 export function ExperienceList() {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ResumeExperience | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeExperience}
+      sortableColumns={createSortableColumns(db.collections.resumeExperience, [
+        { value: "role", label: "Role" },
+        { value: "company", label: "Company" },
+        { value: "location", label: "Location" },
+        { value: "startDate", label: "Start" },
+        { value: "endDate", label: "End" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -81,11 +105,11 @@ export function ExperienceList() {
           )
         : base;
       return filtered
-        .orderBy(({ row }) => row.updatedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -144,6 +168,7 @@ export function ExperienceList() {
         description="Work experiences in your local library."
         searchPlaceholder="Search experiences…"
         actions={actions}
+        filters={filters}
         dataTest="experiences-list-page"
       >
         <RouterPendingComponent />
@@ -160,6 +185,7 @@ export function ExperienceList() {
         searchPlaceholder="Search experiences…"
         totalPages={0}
         actions={actions}
+        filters={filters}
         dataTest="experiences-list-page"
       >
         <LibraryEmpty
@@ -185,6 +211,7 @@ export function ExperienceList() {
       searchPlaceholder="Search experiences…"
       totalPages={totalPages}
       actions={actions}
+      filters={filters}
       dataTest="experiences-list-page"
     >
       <ResponsiveEntityTable

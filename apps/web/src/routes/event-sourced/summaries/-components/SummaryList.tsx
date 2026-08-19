@@ -9,7 +9,9 @@ import { count, useLiveQuery } from "@tanstack/react-db";
 import { StickyNote, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
@@ -17,7 +19,13 @@ import {
   type ResponsiveColumn,
 } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
 import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
@@ -40,13 +48,25 @@ const columns: ResponsiveColumn<ResumeSummary>[] = [
 
 export function SummaryList() {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ResumeSummary | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeSummary}
+      sortableColumns={createSortableColumns(db.collections.resumeSummary, [
+        { value: "text", label: "Text" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -55,11 +75,11 @@ export function SummaryList() {
         ? base.where(({ row }) => orIlike(keyword, row.text, row.searchableText))
         : base;
       return filtered
-        .orderBy(({ row }) => row.updatedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -108,6 +128,7 @@ export function SummaryList() {
         description="Professional summaries in your local library."
         searchPlaceholder="Search summaries…"
         actions={actions}
+        filters={filters}
         dataTest="summaries-list-page"
       >
         <RouterPendingComponent />
@@ -124,6 +145,7 @@ export function SummaryList() {
         searchPlaceholder="Search summaries…"
         totalPages={0}
         actions={actions}
+        filters={filters}
         dataTest="summaries-list-page"
       >
         <LibraryEmpty
@@ -149,6 +171,7 @@ export function SummaryList() {
       searchPlaceholder="Search summaries…"
       totalPages={totalPages}
       actions={actions}
+      filters={filters}
       dataTest="summaries-list-page"
     >
       <ResponsiveEntityTable

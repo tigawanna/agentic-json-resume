@@ -9,7 +9,9 @@ import { count, useLiveQuery } from "@tanstack/react-db";
 import { Link, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
@@ -17,7 +19,13 @@ import {
   type ResponsiveColumn,
 } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { listOffset, orIlike, totalPagesFromCount } from "../../-utils/list-query";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
 import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
@@ -47,13 +55,27 @@ const columns: ResponsiveColumn<ResumeLink>[] = [
 
 export function LinkList() {
   const db = useEventSourcedDb();
-  const { page = 1, q = "" } = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<ResumeLink | null>(null);
 
   const keyword = q.trim();
   const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeLink}
+      sortableColumns={createSortableColumns(db.collections.resumeLink, [
+        { value: "label", label: "Label" },
+        { value: "url", label: "URL" },
+        { value: "icon", label: "Icon" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
 
   const { data: items, isLoading } = useLiveQuery(
     (query) => {
@@ -64,11 +86,11 @@ export function LinkList() {
           )
         : base;
       return filtered
-        .orderBy(({ row }) => row.updatedAt, "desc")
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
         .limit(ADMIN_LIST_PER_PAGE)
         .offset(offset);
     },
-    [keyword, offset],
+    [keyword, offset, sortBy, sortDir],
   );
 
   const { data: totals } = useLiveQuery(
@@ -119,6 +141,7 @@ export function LinkList() {
         description="Profile and portfolio links in your local library."
         searchPlaceholder="Search links…"
         actions={actions}
+        filters={filters}
         dataTest="links-list-page"
       >
         <RouterPendingComponent />
@@ -135,6 +158,7 @@ export function LinkList() {
         searchPlaceholder="Search links…"
         totalPages={0}
         actions={actions}
+        filters={filters}
         dataTest="links-list-page"
       >
         <LibraryEmpty
@@ -160,6 +184,7 @@ export function LinkList() {
       searchPlaceholder="Search links…"
       totalPages={totalPages}
       actions={actions}
+      filters={filters}
       dataTest="links-list-page"
     >
       <ResponsiveEntityTable

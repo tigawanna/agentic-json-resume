@@ -1,11 +1,14 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { useState } from "react";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import type { EventQueueTab } from "../../-utils/list-search";
 import { Route } from "..";
 import { DeadLetterList, DeadLetterRetryAllButton } from "./DeadLetterList";
 import { InboxList } from "./InboxList";
 import { OutboxList } from "./OutboxList";
-import { useState } from "react";
 
 const ROUTE_ID = "/event-sourced/events/" as const;
 
@@ -16,10 +19,49 @@ const EVENT_TAB_HINTS: Record<EventQueueTab, string> = {
 };
 
 export function EventsView() {
+  const db = useEventSourcedDb();
   const navigate = Route.useNavigate();
   const { tab: tabParam } = Route.useSearch();
   const tab: EventQueueTab = tabParam ?? "outbox";
   const [totalPages, setTotalPages] = useState(0);
+
+  const filters =
+    tab === "outbox" ? (
+      <EventSourcedSortToolbar
+        collection={db.collections.outbox}
+        sortableColumns={createSortableColumns(db.collections.outbox, [
+          { value: "type", label: "Type" },
+          { value: "collectionId", label: "Collection" },
+          { value: "localSeq", label: "Seq" },
+          { value: "sync", label: "Status" },
+          { value: "timestamp", label: "Time" },
+        ])}
+        defaultSortBy="localSeq"
+      />
+    ) : tab === "inbox" ? (
+      <EventSourcedSortToolbar
+        collection={db.collections.inbox}
+        sortableColumns={createSortableColumns(db.collections.inbox, [
+          { value: "type", label: "Type" },
+          { value: "collectionId", label: "Collection" },
+          { value: "globalSeq", label: "Seq" },
+          { value: "sync", label: "Status" },
+          { value: "timestamp", label: "Time" },
+        ])}
+        defaultSortBy="globalSeq"
+      />
+    ) : (
+      <EventSourcedSortToolbar
+        collection={db.collections.deadletter}
+        sortableColumns={createSortableColumns(db.collections.deadletter, [
+          { value: "collectionId", label: "Collection" },
+          { value: "type", label: "Type" },
+          { value: "reason", label: "Reason" },
+          { value: "failedAt", label: "Failed" },
+        ])}
+        defaultSortBy="failedAt"
+      />
+    );
 
   function setTab(next: string) {
     const nextTab = next as EventQueueTab;
@@ -28,6 +70,8 @@ export function EventsView() {
         ...prev,
         tab: nextTab === "outbox" ? undefined : nextTab,
         page: undefined,
+        sortBy: undefined,
+        sortDirection: undefined,
       }),
       replace: true,
     });
@@ -42,6 +86,7 @@ export function EventsView() {
       searchPlaceholder="Search events…"
       totalPages={totalPages}
       dataTest="events-page"
+      filters={filters}
       actions={tab === "deadletter" ? <DeadLetterRetryAllButton /> : undefined}
     >
       <Tabs value={tab} onValueChange={setTab}>
