@@ -59,6 +59,7 @@ export function ResumeCreateForm({ onSuccess }: ResumeCreateFormProps) {
           headline: value.headline,
           description: value.description,
           jobDescription: value.jobDescription,
+          jobId: null,
           templateId: value.templateId || "default",
           ...emptyResumeItemOrder,
           searchableText: joinSearchable(

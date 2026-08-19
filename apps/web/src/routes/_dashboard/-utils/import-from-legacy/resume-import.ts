@@ -410,6 +410,7 @@ export function insertImportedResume(ctx: SeedCtx, detail: ResumeDetailDTO) {
     headline: detail.headline,
     description: detail.description,
     jobDescription: detail.jobDescription,
+    jobId: null,
     templateId: detail.templateId || "default",
     ...emptyResumeItemOrder,
     searchableText: joinSearchable(

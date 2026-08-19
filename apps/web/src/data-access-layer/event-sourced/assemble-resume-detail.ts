@@ -30,8 +30,10 @@ import type {
   ResumeTalkItem,
   ResumeVolunteer,
   ResumeVolunteerItem,
+  Job,
 } from "./schemas";
 import { itemsInResumeOrder } from "./resume-item-order";
+import { resolveJobDescription } from "./job-rows";
 
 export type EventSourcedResumeSnapshots = {
   resume: Resume | undefined;
@@ -63,6 +65,7 @@ export type EventSourcedResumeSnapshots = {
   volunteerItems: ResumeVolunteerItem[];
   languages: ResumeLanguage[];
   languageItems: ResumeLanguageItem[];
+  jobs: Job[];
 };
 
 export function asTemplateId(value: string): TemplateId {
@@ -338,7 +341,8 @@ export function assembleResumeDetail(
     fullName: resume.fullName,
     headline: resume.headline,
     description: resume.description,
-    jobDescription: resume.jobDescription,
+    jobDescription: resolveJobDescription(resume, snapshots.jobs),
+    jobId: resume.jobId ?? null,
     templateId: asTemplateId(resume.templateId),
     createdAt: iso(resume.createdAt),
     updatedAt: iso(resume.updatedAt),

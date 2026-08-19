@@ -1,6 +1,7 @@
 import { BasicIndex } from "@tanstack/db";
 import { createBrowserEventSourcedDB } from "event-sourced-collection/browser";
 import type { CollectionDef, EventSourcedDB } from "event-sourced-collection";
+import type { BrowserWASQLitePersistenceOptions } from "@tanstack/browser-db-sqlite-persistence";
 import { createCookieSyncTransport } from "./sync-transport";
 
 import type {
@@ -38,6 +39,7 @@ import type {
   ResumeVolunteer,
   ResumeVolunteerItem,
   SavedProject,
+  Job,
 } from "./schemas";
 
 /**
@@ -92,6 +94,7 @@ export type AppCollectionDefs = {
   resumeAiMessage: CollectionDef<ResumeAiMessage, string>;
 
   savedProject: CollectionDef<SavedProject, string>;
+  job: CollectionDef<Job, string>;
   settings: CollectionDef<AppSettings, string>;
 };
 
@@ -355,6 +358,16 @@ const { ensureDb, db, close } = createBrowserEventSourcedDB<AppCollectionDefs>({
       ],
     },
 
+    job: {
+      getKey: (row) => row.id,
+      indexes: [
+        byId<Job>(),
+        byUserId<Job>(),
+        { select: (r) => r.status, indexType: BasicIndex, name: "by-status" },
+        { select: (r) => r.updatedAt, indexType: BasicIndex, name: "by-updated" },
+      ],
+    },
+
     settings: {
       getKey: (row) => row.id,
     },
@@ -372,7 +385,14 @@ const { ensureDb, db, close } = createBrowserEventSourcedDB<AppCollectionDefs>({
     return {
       createCollection,
       BrowserCollectionCoordinator,
-      createBrowserWASQLitePersistence,
+      // Local-only collections default to `sync-absent-error`, which retries
+      // forever if OPFS still has a leftover schema version (e.g. `job` from a
+      // global schemaVersion bump). Reset the mismatched collection only.
+      createBrowserWASQLitePersistence: (options: BrowserWASQLitePersistenceOptions) =>
+        createBrowserWASQLitePersistence({
+          ...options,
+          schemaMismatchPolicy: "reset",
+        }),
       openBrowserWASQLiteOPFSDatabase,
       persistedCollectionOptions,
     };

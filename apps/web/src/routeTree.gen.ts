@@ -34,6 +34,7 @@ import { Route as DashboardProjectsIndexRouteImport } from './routes/_dashboard/
 import { Route as DashboardNotesIndexRouteImport } from './routes/_dashboard/notes/index'
 import { Route as DashboardLinksIndexRouteImport } from './routes/_dashboard/links/index'
 import { Route as DashboardLanguagesIndexRouteImport } from './routes/_dashboard/languages/index'
+import { Route as DashboardJobsIndexRouteImport } from './routes/_dashboard/jobs/index'
 import { Route as DashboardExperiencesIndexRouteImport } from './routes/_dashboard/experiences/index'
 import { Route as DashboardEventsIndexRouteImport } from './routes/_dashboard/events/index'
 import { Route as DashboardEducationIndexRouteImport } from './routes/_dashboard/education/index'
@@ -178,6 +179,11 @@ const DashboardLanguagesIndexRoute = DashboardLanguagesIndexRouteImport.update({
   path: '/languages/',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardJobsIndexRoute = DashboardJobsIndexRouteImport.update({
+  id: '/jobs/',
+  path: '/jobs/',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const DashboardExperiencesIndexRoute =
   DashboardExperiencesIndexRouteImport.update({
     id: '/experiences/',
@@ -288,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/education/': typeof DashboardEducationIndexRoute
   '/events/': typeof DashboardEventsIndexRoute
   '/experiences/': typeof DashboardExperiencesIndexRoute
+  '/jobs/': typeof DashboardJobsIndexRoute
   '/languages/': typeof DashboardLanguagesIndexRoute
   '/links/': typeof DashboardLinksIndexRoute
   '/notes/': typeof DashboardNotesIndexRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByTo {
   '/education': typeof DashboardEducationIndexRoute
   '/events': typeof DashboardEventsIndexRoute
   '/experiences': typeof DashboardExperiencesIndexRoute
+  '/jobs': typeof DashboardJobsIndexRoute
   '/languages': typeof DashboardLanguagesIndexRoute
   '/links': typeof DashboardLinksIndexRoute
   '/notes': typeof DashboardNotesIndexRoute
@@ -372,6 +380,7 @@ export interface FileRoutesById {
   '/_dashboard/education/': typeof DashboardEducationIndexRoute
   '/_dashboard/events/': typeof DashboardEventsIndexRoute
   '/_dashboard/experiences/': typeof DashboardExperiencesIndexRoute
+  '/_dashboard/jobs/': typeof DashboardJobsIndexRoute
   '/_dashboard/languages/': typeof DashboardLanguagesIndexRoute
   '/_dashboard/links/': typeof DashboardLinksIndexRoute
   '/_dashboard/notes/': typeof DashboardNotesIndexRoute
@@ -415,6 +424,7 @@ export interface FileRouteTypes {
     | '/education/'
     | '/events/'
     | '/experiences/'
+    | '/jobs/'
     | '/languages/'
     | '/links/'
     | '/notes/'
@@ -455,6 +465,7 @@ export interface FileRouteTypes {
     | '/education'
     | '/events'
     | '/experiences'
+    | '/jobs'
     | '/languages'
     | '/links'
     | '/notes'
@@ -498,6 +509,7 @@ export interface FileRouteTypes {
     | '/_dashboard/education/'
     | '/_dashboard/events/'
     | '/_dashboard/experiences/'
+    | '/_dashboard/jobs/'
     | '/_dashboard/languages/'
     | '/_dashboard/links/'
     | '/_dashboard/notes/'
@@ -712,6 +724,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLanguagesIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_dashboard/jobs/': {
+      id: '/_dashboard/jobs/'
+      path: '/jobs'
+      fullPath: '/jobs/'
+      preLoaderRoute: typeof DashboardJobsIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/_dashboard/experiences/': {
       id: '/_dashboard/experiences/'
       path: '/experiences'
@@ -834,6 +853,7 @@ interface DashboardLayoutRouteChildren {
   DashboardEducationIndexRoute: typeof DashboardEducationIndexRoute
   DashboardEventsIndexRoute: typeof DashboardEventsIndexRoute
   DashboardExperiencesIndexRoute: typeof DashboardExperiencesIndexRoute
+  DashboardJobsIndexRoute: typeof DashboardJobsIndexRoute
   DashboardLanguagesIndexRoute: typeof DashboardLanguagesIndexRoute
   DashboardLinksIndexRoute: typeof DashboardLinksIndexRoute
   DashboardNotesIndexRoute: typeof DashboardNotesIndexRoute
@@ -857,6 +877,7 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardEducationIndexRoute: DashboardEducationIndexRoute,
   DashboardEventsIndexRoute: DashboardEventsIndexRoute,
   DashboardExperiencesIndexRoute: DashboardExperiencesIndexRoute,
+  DashboardJobsIndexRoute: DashboardJobsIndexRoute,
   DashboardLanguagesIndexRoute: DashboardLanguagesIndexRoute,
   DashboardLinksIndexRoute: DashboardLinksIndexRoute,
   DashboardNotesIndexRoute: DashboardNotesIndexRoute,

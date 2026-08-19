@@ -39,5 +39,6 @@ export function snapshotEventSourcedResume(
     volunteerItems: rows(db.collections.resumeVolunteerItem),
     languages: rows(db.collections.resumeLanguage),
     languageItems: rows(db.collections.resumeLanguageItem),
+    jobs: rows(db.collections.job),
   };
 }

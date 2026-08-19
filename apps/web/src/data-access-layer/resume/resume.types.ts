@@ -9,6 +9,7 @@ export interface ResumeRow {
   headline: string;
   description: string;
   jobDescription: string;
+  jobId?: string | null;
   templateId: string;
   createdAt: Date;
   updatedAt: Date;
@@ -168,6 +169,7 @@ export interface ResumeDetailDTO {
   headline: string;
   description: string;
   jobDescription: string;
+  jobId?: string | null;
   templateId: TemplateId;
   createdAt: string;
   updatedAt: string;

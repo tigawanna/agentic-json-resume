@@ -19,8 +19,9 @@ export const resume = sqliteTable(
     headline: text("headline").default("").notNull(),
     /** Internal notes about this resume */
     description: text("description").default("").notNull(),
-    /** Target job description used for AI tailoring */
+    /** Target job description used for AI tailoring (denormalized from `job` when linked) */
     jobDescription: text("job_description").default("").notNull(),
+    jobId: text("job_id"),
     /** Template used for rendering (classic, sidebar, accent, modern) */
     templateId: text("template_id").default("classic").notNull(),
     ...embeddable,
@@ -29,6 +30,7 @@ export const resume = sqliteTable(
   (table) => [
     index("resume_userId_idx").on(table.userId),
     index("resume_updatedAt_idx").on(table.updatedAt),
+    index("resume_jobId_idx").on(table.jobId),
   ],
 );
 

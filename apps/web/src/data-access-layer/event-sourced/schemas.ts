@@ -51,6 +51,8 @@ export const resumeSchema = z.object({
   headline: z.string(),
   description: z.string(),
   jobDescription: z.string(),
+  /** Linked row in the independent `job` collection, if any. */
+  jobId: z.string().nullable().optional(),
   templateId: z.string(),
   experienceOrder: z.array(z.string()).optional(),
   educationOrder: z.array(z.string()).optional(),
@@ -421,6 +423,34 @@ export const resumeAiMessageSchema = z.object({
   ...timestampsSchema.shape,
 });
 export type ResumeAiMessage = z.infer<typeof resumeAiMessageSchema>;
+
+// --- job (independent tracker: postings you saved / applied to) ---
+
+export const jobStatusSchema = z.enum([
+  "saved",
+  "applied",
+  "interviewing",
+  "offer",
+  "rejected",
+  "archived",
+]);
+export type JobStatus = z.infer<typeof jobStatusSchema>;
+
+export const jobSchema = z.object({
+  id: z.string(),
+  userId: z.string().nullable().optional(),
+  company: z.string(),
+  title: z.string(),
+  description: z.string(),
+  url: z.string(),
+  location: z.string(),
+  status: jobStatusSchema,
+  notes: z.string(),
+  appliedAt: z.number().nullable().optional(),
+  ...embeddableSchema.shape,
+  ...timestampsSchema.shape,
+});
+export type Job = z.infer<typeof jobSchema>;
 
 // --- saved project ---
 

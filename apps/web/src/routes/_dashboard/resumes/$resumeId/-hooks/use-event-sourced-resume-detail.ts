@@ -86,6 +86,7 @@ export function useEventSourcedResumeDetail(resumeId: string) {
     (q) => q.from({ row: db.collections.resumeLanguageItem }),
     [],
   );
+  const jobsQuery = useLiveQuery((q) => q.from({ row: db.collections.job }), []);
 
   const snapshots: EventSourcedResumeSnapshots = {
     resume: resumeQuery.data?.[0],
@@ -117,6 +118,7 @@ export function useEventSourcedResumeDetail(resumeId: string) {
     volunteerItems: asRows(volunteerItemsQuery.data),
     languages: asRows(languagesQuery.data),
     languageItems: asRows(languageItemsQuery.data),
+    jobs: asRows(jobsQuery.data),
   };
 
   return {

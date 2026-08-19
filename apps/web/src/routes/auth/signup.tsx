@@ -22,7 +22,7 @@ export const Route = createFileRoute("/auth/signup")({
   }),
 });
 
-export function SignupPage() {
+function SignupPage() {
   return (
     <div className="flex h-full min-h-screen w-full flex-col items-center justify-center">
       <ResponsiveGenericToolbar>
