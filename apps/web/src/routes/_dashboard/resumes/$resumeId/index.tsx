@@ -115,6 +115,7 @@ function EventSourcedResumeWorkbench({ resumeId }: { resumeId: string }) {
         headline: resume.headline,
         description: resume.description,
         jobDescription: resume.jobDescription,
+        jobId: resume.jobId ?? null,
         templateId,
       });
       toast.success("Template saved");

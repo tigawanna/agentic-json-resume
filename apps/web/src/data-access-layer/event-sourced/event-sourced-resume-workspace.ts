@@ -20,6 +20,7 @@ import {
   removeResumeItemOrder,
   reorderResumeItems,
 } from "./resume-item-order";
+import { attachJobToResume } from "./job-rows";
 import {
   joinSearchable,
   libraryRowBase,
@@ -65,6 +66,11 @@ export function createEventSourcedResumeWorkspace(
   return {
     mode: "local",
     resume: detail,
+    jobs: db.collections.job.toArray.map((job) => ({
+      id: job.id,
+      company: job.company,
+      title: job.title,
+    })),
     searches: {
       experiences: async (query) =>
         snapshots.experiences
@@ -126,7 +132,6 @@ export function createEventSourcedResumeWorkspace(
         draft.fullName = values.fullName;
         draft.headline = values.headline;
         draft.description = values.description;
-        draft.jobDescription = values.jobDescription;
         draft.templateId = values.templateId;
         draft.searchableText = joinSearchable(
           values.name,
@@ -136,6 +141,16 @@ export function createEventSourcedResumeWorkspace(
         );
         draft.updatedAt = nowMs();
       });
+      const nextJobId = values.jobId === undefined ? (detail.jobId ?? null) : values.jobId;
+      if (nextJobId) {
+        attachJobToResume(db, resumeId, nextJobId);
+      } else {
+        attachJobToResume(db, resumeId, null);
+        db.collections.resume.update(resumeId, (draft) => {
+          draft.jobDescription = values.jobDescription;
+          draft.updatedAt = nowMs();
+        });
+      }
     },
     async updateContacts(contacts: ContactDraft[]) {
       deleteResumeItems(db.collections.resumeContactItem, snapshots.contactItems, resumeId);

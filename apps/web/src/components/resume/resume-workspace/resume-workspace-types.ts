@@ -57,7 +57,14 @@ export interface ResumeMetadataDraft {
   headline: string;
   description: string;
   jobDescription: string;
+  jobId?: string | null;
   templateId: TemplateId;
+}
+
+export interface WorkspaceJobOption {
+  id: string;
+  company: string;
+  title: string;
 }
 
 export interface ResumeSearchAdapter {
@@ -86,6 +93,8 @@ export interface ResumeWorkspaceAdapter {
   mode: "remote" | "local";
   resume: ResumeDetailDTO;
   searches?: ResumeSearchAdapter;
+  /** Present when the workbench can attach an independent tracked job. */
+  jobs?: WorkspaceJobOption[];
   updateMetadata(values: ResumeMetadataDraft): Promise<void>;
   updateContacts(contacts: ContactDraft[]): Promise<void>;
   updateLinks(links: LinkDraft[]): Promise<void>;
