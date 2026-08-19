@@ -132,8 +132,35 @@ export const resumeDocumentV1Schema = z.object({
 export type ResumeDocumentV1 = z.infer<typeof resumeDocumentV1Schema>;
 
 export function parseResumeJson(raw: string): ResumeDocumentV1 {
-  const parsed: unknown = JSON.parse(raw);
-  return resumeDocumentV1Schema.parse(migrateResumeDocumentV1(parsed));
+  return toResumeDocumentV1(JSON.parse(raw));
+}
+
+function asBool(value: unknown, fallback = true): boolean {
+  if (typeof value === "boolean") return value;
+  if (value === 0 || value === "0" || value === "false" || value === "FALSE") return false;
+  if (value === 1 || value === "1" || value === "true" || value === "TRUE") return true;
+  if (value == null) return fallback;
+  return Boolean(value);
+}
+
+function asStr(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  return String(value);
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => asStr(item)).filter((item) => item.length > 0);
+}
+
+function coerceEnabledBlock<T extends Record<string, unknown>>(
+  block: unknown,
+  fallbackEnabled: boolean,
+  extra: (raw: Record<string, unknown>) => T,
+): T & { enabled: boolean } {
+  const raw = typeof block === "object" && block !== null ? (block as Record<string, unknown>) : {};
+  return { enabled: asBool(raw.enabled, fallbackEnabled), ...extra(raw) };
 }
 
 function migrateTemplateId(parsed: unknown): unknown {
@@ -169,20 +196,132 @@ export function migrateResumeDocumentV1(parsed: unknown): unknown {
   }
   const o = withTemplate as Record<string, unknown>;
   const out: Record<string, unknown> = { ...o };
+  out.version = 1;
+
+  const header = coerceEnabledBlock(out.header, true, (raw) => ({
+    fullName: asStr(raw.fullName),
+    headline: asStr(raw.headline),
+    email: asStr(raw.email),
+    location: asStr(raw.location),
+    links: Array.isArray(raw.links)
+      ? raw.links.flatMap((link) => {
+          if (typeof link !== "object" || link === null) return [];
+          const row = link as Record<string, unknown>;
+          return [{ label: asStr(row.label), url: asStr(row.url) }];
+        })
+      : [],
+  }));
+  out.header = header;
+
+  out.summary = coerceEnabledBlock(out.summary, true, (raw) => ({
+    text: asStr(raw.text),
+  }));
+
+  out.experience = coerceEnabledBlock(out.experience, true, (raw) => ({
+    items: Array.isArray(raw.items)
+      ? raw.items.flatMap((item) => {
+          if (typeof item !== "object" || item === null) return [];
+          const row = item as Record<string, unknown>;
+          return [
+            {
+              company: asStr(row.company),
+              role: asStr(row.role),
+              start: asStr(row.start),
+              end: asStr(row.end),
+              ...(row.location == null || asStr(row.location) === ""
+                ? {}
+                : { location: asStr(row.location) }),
+              bullets: asStringArray(row.bullets),
+            },
+          ];
+        })
+      : [],
+  }));
+
+  out.education = coerceEnabledBlock(out.education, true, (raw) => ({
+    items: Array.isArray(raw.items)
+      ? raw.items.flatMap((item) => {
+          if (typeof item !== "object" || item === null) return [];
+          const row = item as Record<string, unknown>;
+          const bullets = asStringArray(row.bullets);
+          return [
+            {
+              school: asStr(row.school),
+              degree: asStr(row.degree),
+              ...(row.field == null || asStr(row.field) === "" ? {} : { field: asStr(row.field) }),
+              year: asStr(row.year),
+              ...(bullets.length > 0 ? { bullets } : {}),
+            },
+          ];
+        })
+      : [],
+  }));
+
+  out.projects = coerceEnabledBlock(out.projects, true, (raw) => ({
+    items: Array.isArray(raw.items)
+      ? raw.items.flatMap((item) => {
+          if (typeof item !== "object" || item === null) return [];
+          const row = item as Record<string, unknown>;
+          return [
+            {
+              name: asStr(row.name),
+              url: asStr(row.url),
+              ...(row.homepageUrl == null || asStr(row.homepageUrl) === ""
+                ? {}
+                : { homepageUrl: asStr(row.homepageUrl) }),
+              description: asStr(row.description),
+              tech: asStringArray(row.tech),
+            },
+          ];
+        })
+      : [],
+  }));
+
   if (!("talks" in out) || typeof out.talks !== "object" || out.talks === null) {
     out.talks = defaultTalksBlock();
+  } else {
+    out.talks = coerceEnabledBlock(out.talks, false, (raw) => ({
+      items: Array.isArray(raw.items)
+        ? raw.items.flatMap((item) => {
+            if (typeof item !== "object" || item === null) return [];
+            const row = item as Record<string, unknown>;
+            return [
+              {
+                title: asStr(row.title),
+                event: asStr(row.event),
+                date: asStr(row.date),
+                links: Array.isArray(row.links)
+                  ? row.links.flatMap((link) => {
+                      if (typeof link !== "object" || link === null) return [];
+                      const pair = link as Record<string, unknown>;
+                      return [{ label: asStr(pair.label), url: asStr(pair.url) }];
+                    })
+                  : [],
+              },
+            ];
+          })
+        : [],
+    }));
   }
+
+  out.skills = coerceEnabledBlock(out.skills, true, (raw) => ({
+    groups: Array.isArray(raw.groups)
+      ? raw.groups.flatMap((group) => {
+          if (typeof group !== "object" || group === null) return [];
+          const row = group as Record<string, unknown>;
+          return [{ name: asStr(row.name), items: asStringArray(row.items) }];
+        })
+      : [],
+  }));
+
   if (!("notes" in out) || typeof out.notes !== "object" || out.notes === null) {
     out.notes = defaultNotesBlock();
   } else {
     const notes = out.notes as Record<string, unknown>;
     out.notes = {
-      enabled:
-        typeof notes.enabled === "boolean"
-          ? notes.enabled
-          : Boolean(String(notes.text ?? "").trim()),
-      label: typeof notes.label === "string" && notes.label.trim() ? notes.label : "Notes",
-      text: typeof notes.text === "string" ? notes.text : "",
+      enabled: asBool(notes.enabled, Boolean(asStr(notes.text).trim())),
+      label: asStr(notes.label).trim() || "Notes",
+      text: asStr(notes.text),
     };
   }
   if (Array.isArray(out.sectionOrder)) {
@@ -202,16 +341,21 @@ export function migrateResumeDocumentV1(parsed: unknown): unknown {
       }
     }
     out.sectionOrder = normalized;
+  } else {
+    out.sectionOrder = [...SECTION_KEYS];
   }
   return out;
+}
+
+export function toResumeDocumentV1(parsed: unknown): ResumeDocumentV1 {
+  return resumeDocumentV1Schema.parse(migrateResumeDocumentV1(parsed));
 }
 
 export function safeParseResumeJson(
   raw: string,
 ): { ok: true; data: ResumeDocumentV1 } | { ok: false; error: string } {
   try {
-    const parsed = migrateResumeDocumentV1(JSON.parse(raw));
-    const r = resumeDocumentV1Schema.safeParse(parsed);
+    const r = resumeDocumentV1Schema.safeParse(migrateResumeDocumentV1(JSON.parse(raw)));
     if (r.success) return { ok: true, data: r.data };
     return { ok: false, error: r.error.message };
   } catch (e: unknown) {

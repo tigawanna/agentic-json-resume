@@ -1,7 +1,10 @@
 import {
   SECTION_KEYS,
+  TEMPLATE_IDS,
+  toResumeDocumentV1,
   type ResumeDocumentV1,
   type SectionKey,
+  type TemplateId,
 } from "@/features/resume/resume-schema";
 import type { ResumeDetailDTO } from "./resume.types";
 
@@ -21,15 +24,21 @@ export function resumeDetailToDocument(detail: ResumeDetailDTO): ResumeDocumentV
 
   const sectionEnabled = (key: string): boolean => {
     const s = detail.sections.find((sec) => sec.key === key);
-    return s?.enabled ?? true;
+    const enabled: unknown = s?.enabled;
+    if (enabled === 0 || enabled === "0" || enabled === false) return false;
+    if (enabled === 1 || enabled === "1" || enabled === true) return true;
+    return true;
   };
 
   const emailContact = detail.contacts.find((c) => c.type === "email");
   const locationContact = detail.contacts.find((c) => c.type === "location");
+  const templateId: TemplateId = TEMPLATE_IDS.includes(detail.templateId as TemplateId)
+    ? (detail.templateId as TemplateId)
+    : "classic";
 
-  return {
+  return toResumeDocumentV1({
     version: 1,
-    meta: { templateId: detail.templateId },
+    meta: { templateId },
     sectionOrder,
     header: {
       enabled: sectionEnabled("header"),
@@ -110,7 +119,7 @@ export function resumeDetailToDocument(detail: ResumeDetailDTO): ResumeDocumentV
           items: g.skills.sort((a, b) => a.sortOrder - b.sortOrder).map((s) => s.name),
         })),
     },
-  };
+  });
 }
 
 function safeParseTech(raw: string): string[] {

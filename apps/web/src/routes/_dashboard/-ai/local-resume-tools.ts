@@ -81,9 +81,9 @@ export function getLocalResumeDocument(
   return {
     resume: {
       id: detail.id,
-      name: detail.name,
-      description: detail.description,
-      jobDescription: detail.jobDescription,
+      name: detail.name ?? "",
+      description: detail.description ?? "",
+      jobDescription: detail.jobDescription ?? "",
       document: resumeDetailToDocument(detail),
       updatedAt: detail.updatedAt,
     },

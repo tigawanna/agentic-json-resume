@@ -32,6 +32,7 @@ export const getCurrentResumeDocumentToolDefinition = toolDefinition({
   name: "get_current_resume_document",
   description:
     "Load the current working resume as structured ResumeDocumentV1 JSON before tailoring or giving specific rewrite advice.",
+  inputSchema: z.object({}),
   outputSchema: getResumeDocumentToolOutputSchema,
 });
 
