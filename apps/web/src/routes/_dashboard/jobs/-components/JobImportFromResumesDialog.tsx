@@ -52,11 +52,11 @@ export function JobImportFromResumesDialog({
   const db = useEventSourcedDb();
   const { viewer } = useViewer();
   const { data: resumeSnapshot } = useLiveQuery(
-    (query) => query.from({ row: db.collections.resume }).select(({ row }) => row.id),
+    (query) => query.from({ row: db.collections.resume }).select(({ row }) => ({ id: row.id })),
     [],
   );
   const { data: jobSnapshot } = useLiveQuery(
-    (query) => query.from({ row: db.collections.job }).select(({ row }) => row.id),
+    (query) => query.from({ row: db.collections.job }).select(({ row }) => ({ id: row.id })),
     [],
   );
   const groups = listJobImportGroups(db);

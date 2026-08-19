@@ -241,7 +241,7 @@ export function JobList() {
       />
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>New job</DialogTitle>
           </DialogHeader>
@@ -250,7 +250,7 @@ export function JobList() {
       </Dialog>
 
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit job</DialogTitle>
           </DialogHeader>
