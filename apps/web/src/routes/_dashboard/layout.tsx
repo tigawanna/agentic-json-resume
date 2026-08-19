@@ -5,6 +5,7 @@ import { AppConfig } from "@/utils/system";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { DashboardLayout } from "@/components/dashoboard-sidebar/DashboardLayout";
 import { viewerMiddleware } from "@/data-access-layer/auth/viewer";
+import { EventSourcedDbProvider } from "@/data-access-layer/event-sourced/provider";
 import {
   dashboard_account_routes,
   dashboard_admin_routes,
@@ -37,13 +38,15 @@ export const Route = createFileRoute("/_dashboard")({
 function DashboardShell() {
   const primaryRoutes = getDashboardPrimaryRoutes();
   return (
-    <DashboardLayout
-      sidebarRoutes={primaryRoutes}
-      sidebarLabel="Menu"
-      accountRoutes={dashboard_account_routes}
-      accountLabel="Account"
-      adminRoutes={dashboard_admin_routes}
-      adminLabel="Administration"
-    />
+    <EventSourcedDbProvider>
+      <DashboardLayout
+        sidebarRoutes={primaryRoutes}
+        sidebarLabel="Menu"
+        accountRoutes={dashboard_account_routes}
+        accountLabel="Account"
+        adminRoutes={dashboard_admin_routes}
+        adminLabel="Administration"
+      />
+    </EventSourcedDbProvider>
   );
 }

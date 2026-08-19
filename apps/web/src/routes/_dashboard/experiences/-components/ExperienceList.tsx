@@ -1,145 +1,249 @@
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
+import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import type { listExperiences } from "@/data-access-layer/resume/experiences/experience.functions";
-import { reorderExperienceFn } from "@/data-access-layer/resume/experiences/experience.functions";
-import { deleteExperienceMutationOptions } from "@/data-access-layer/resume/experiences/experience.mutation-options";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import type { ResumeExperience } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { useMutation } from "@tanstack/react-query";
-import { Briefcase, Loader2, Plus } from "lucide-react";
-import { useState, useTransition } from "react";
+import { count, useLiveQuery } from "@tanstack/react-db";
+import { Briefcase, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
+import { LibraryEmpty } from "../../-components/LibraryEmpty";
+import {
+  ResponsiveEntityTable,
+  type ResponsiveColumn,
+} from "../../-components/ResponsiveEntityTable";
+import { RowActionButtons } from "../../-components/RowActionButtons";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
+import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
-import { ExperienceCreateFormDialog } from "./ExperienceCreateForm";
-import { ExperienceListCard } from "./ExperienceListCard";
-import { getPrimaryExperience, groupExperiences } from "./experience-display-groups";
+import { ExperienceCreateForm, ExperienceCreateFormDialog } from "./ExperienceCreateForm";
+import { ExperienceEditForm } from "./ExperienceEditForm";
 
-type PageData = Awaited<ReturnType<typeof listExperiences>>;
+const ROUTE_ID = "/_dashboard/experiences/" as const;
 
-interface ExperienceListProps {
-  data: PageData | undefined;
-  isLoading: boolean;
-}
+const columns: ResponsiveColumn<ResumeExperience>[] = [
+  {
+    id: "role",
+    header: "Role",
+    cell: (row) => dashIfEmpty(row.role),
+  },
+  {
+    id: "company",
+    header: "Company",
+    cell: (row) => dashIfEmpty(row.company),
+  },
+  {
+    id: "location",
+    header: "Location",
+    cell: (row) => dashIfEmpty(row.location),
+  },
+  {
+    id: "startDate",
+    header: "Start",
+    cell: (row) => dashIfEmpty(row.startDate),
+  },
+  {
+    id: "endDate",
+    header: "End",
+    cell: (row) => dashIfEmpty(row.endDate),
+  },
+];
 
-export function ExperienceList({ data, isLoading }: ExperienceListProps) {
-  const { sq, cursor, dir } = Route.useSearch();
+export function ExperienceList() {
+  const db = useEventSourcedDb();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
+  const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
-  const [isCreateOpenPending, startCreateOpenTransition] = useTransition();
-  const navigate = Route.useNavigate();
-  const deleteMutation = useMutation(deleteExperienceMutationOptions);
+  const [editing, setEditing] = useState<ResumeExperience | null>(null);
 
-  function openCreateDialog() {
-    startCreateOpenTransition(() => {
-      setCreateOpen(true);
-    });
+  const keyword = q.trim();
+  const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeExperience}
+      sortableColumns={createSortableColumns(db.collections.resumeExperience, [
+        { value: "role", label: "Role" },
+        { value: "company", label: "Company" },
+        { value: "location", label: "Location" },
+        { value: "startDate", label: "Start" },
+        { value: "endDate", label: "End" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
+
+  const { data: items, isLoading } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeExperience });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(
+              keyword,
+              row.role,
+              row.company,
+              row.location,
+              row.startDate,
+              row.endDate,
+              row.searchableText,
+            ),
+          )
+        : base;
+      return filtered
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
+        .limit(ADMIN_LIST_PER_PAGE)
+        .offset(offset);
+    },
+    [keyword, offset, sortBy, sortDir],
+  );
+
+  const { data: totals } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeExperience });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(
+              keyword,
+              row.role,
+              row.company,
+              row.location,
+              row.startDate,
+              row.endDate,
+              row.searchableText,
+            ),
+          )
+        : base;
+      return filtered.select(({ row }) => ({ total: count(row.id) }));
+    },
+    [keyword],
+  );
+
+  const totalItems = totals?.[0]?.total ?? 0;
+  const totalPages = totalPagesFromCount(totalItems);
+  const hasSearch = keyword.length > 0;
+
+  function handleDelete(id: string) {
+    try {
+      db.collections.resumeExperience.delete(id);
+      toast.success("Experience deleted");
+    } catch (err: unknown) {
+      toast.error("Failed to delete", { description: unwrapUnknownError(err).message });
+    }
   }
 
-  const reorderMutation = useMutation({
-    mutationFn: (ids: { idA: string; idB: string }) => reorderExperienceFn({ data: ids }),
-    onSuccess(_, ___, ____, ctx) {
-      void ctx.client.invalidateQueries({
-        queryKey: [queryKeyPrefixes.experiences, "page", cursor, dir ?? "after", sq],
-      });
-      void ctx.client.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-    },
-  });
+  const actions = (
+    <>
+      <ImportFromLegacyButton importer="experiences" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-experiences-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
+  );
 
   if (isLoading) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="experience-list-page">
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Experiences"
+        description="Work experiences in your local library."
+        searchPlaceholder="Search experiences…"
+        actions={actions}
+        filters={filters}
+        dataTest="experiences-list-page"
+      >
         <RouterPendingComponent />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
-  if (!data || data.items.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="experience-list-page">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Briefcase className="text-muted-foreground size-12" />
-            </EmptyMedia>
-            <EmptyTitle>No Experiences Yet</EmptyTitle>
-            <EmptyDescription>
-              You haven&apos;t added any work experiences yet. Get started by adding your first
-              experience.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent className="flex-row justify-center gap-2">
-            <Button
-              size="sm"
-              onClick={openCreateDialog}
-              disabled={isCreateOpenPending}
-              data-test="add-experience-btn"
-            >
-              {isCreateOpenPending ? (
-                <Loader2 className="mr-1 size-4 animate-spin" />
-              ) : (
-                <Plus className="mr-1 size-4" />
-              )}
-              {isCreateOpenPending ? "Opening..." : "Create Experience"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                void navigate({
-                  to: ".",
-                  search: (prev) => ({ ...prev, sq: "" }),
-                  replace: true,
-                });
-              }}
-            >
-              Clear filters
-            </Button>
-          </EmptyContent>
-        </Empty>
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Experiences"
+        description="Work experiences in your local library."
+        searchPlaceholder="Search experiences…"
+        totalPages={0}
+        actions={actions}
+        filters={filters}
+        dataTest="experiences-list-page"
+      >
+        <LibraryEmpty
+          icon={Briefcase}
+          title="No Experiences Yet"
+          description="You haven't added any experiences yet. Create your first entry to get started."
+          actionLabel="Create Experience"
+          onAction={() => setCreateOpen(true)}
+          hasSearch={hasSearch}
+          onClearSearch={clearSearch}
+          dataTest="experiences-empty"
+        />
         <ExperienceCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
-
-  const experienceGroups = data ? groupExperiences(data.items) : [];
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="experience-list-page">
-      <div className="grid gap-4 lg:grid-cols-2" data-test="experience-list">
-        {experienceGroups.map((group, index) => (
-          <ExperienceListCard
-            key={group.key}
-            group={group}
-            onDelete={(experienceIds) => {
-              for (const experienceId of experienceIds) {
-                deleteMutation.mutate(experienceId);
-              }
-            }}
-            onMoveUp={
-              index > 0
-                ? () =>
-                    reorderMutation.mutate({
-                      idA: getPrimaryExperience(group).id,
-                      idB: getPrimaryExperience(experienceGroups[index - 1]).id,
-                    })
-                : undefined
-            }
-            onMoveDown={
-              index < experienceGroups.length - 1
-                ? () =>
-                    reorderMutation.mutate({
-                      idA: getPrimaryExperience(group).id,
-                      idB: getPrimaryExperience(experienceGroups[index + 1]).id,
-                    })
-                : undefined
-            }
-          />
-        ))}
-      </div>
-    </div>
+    <EventSourcedListScaffold
+      routeID={ROUTE_ID}
+      title="Experiences"
+      description="Work experiences in your local library."
+      searchPlaceholder="Search experiences…"
+      totalPages={totalPages}
+      actions={actions}
+      filters={filters}
+      dataTest="experiences-list-page"
+    >
+      <ResponsiveEntityTable
+        rows={items}
+        columns={columns}
+        mobileTitle={(row) => row.role}
+        mobileSubtitle={(row) => row.company || undefined}
+        dataTest="experiences-table"
+        actions={(row) => (
+          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
+        )}
+      />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Experience</DialogTitle>
+          </DialogHeader>
+          <ExperienceCreateForm onSuccess={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Experience</DialogTitle>
+          </DialogHeader>
+          {editing ? (
+            <ExperienceEditForm item={editing} onSuccess={() => setEditing(null)} />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </EventSourcedListScaffold>
   );
 }

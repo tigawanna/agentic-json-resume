@@ -1,107 +1,221 @@
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
+import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import type { listCertifications } from "@/data-access-layer/resume/certifications/certification.functions";
-import { deleteCertificationMutationOptions } from "@/data-access-layer/resume/certifications/certification.mutation-options";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import type { ResumeCertification } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { useMutation } from "@tanstack/react-query";
-import { Award, Loader2, Plus } from "lucide-react";
-import { useState, useTransition } from "react";
+import { count, useLiveQuery } from "@tanstack/react-db";
+import { Award, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
+import { LibraryEmpty } from "../../-components/LibraryEmpty";
+import {
+  ResponsiveEntityTable,
+  type ResponsiveColumn,
+} from "../../-components/ResponsiveEntityTable";
+import { RowActionButtons } from "../../-components/RowActionButtons";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
+import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
-import { CertificationCreateFormDialog } from "./CertificationCreateForm";
-import { CertificationListCard } from "./CertificationListCard";
+import { CertificationCreateForm, CertificationCreateFormDialog } from "./CertificationCreateForm";
+import { CertificationEditForm } from "./CertificationEditForm";
 
-type PageData = Awaited<ReturnType<typeof listCertifications>>;
+const ROUTE_ID = "/_dashboard/certifications/" as const;
 
-interface CertificationListProps {
-  data: PageData | undefined;
-  isLoading: boolean;
-}
+const columns: ResponsiveColumn<ResumeCertification>[] = [
+  {
+    id: "name",
+    header: "Name",
+    cell: (row) => dashIfEmpty(row.name),
+  },
+  {
+    id: "issuer",
+    header: "Issuer",
+    cell: (row) => dashIfEmpty(row.issuer),
+  },
+  {
+    id: "date",
+    header: "Date",
+    cell: (row) => dashIfEmpty(row.date),
+  },
+];
 
-export function CertificationList({ data, isLoading }: CertificationListProps) {
+export function CertificationList() {
+  const db = useEventSourcedDb();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
+  const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
-  const [isCreateOpenPending, startCreateOpenTransition] = useTransition();
-  const navigate = Route.useNavigate();
-  const deleteMutation = useMutation(deleteCertificationMutationOptions);
+  const [editing, setEditing] = useState<ResumeCertification | null>(null);
 
-  function openCreateDialog() {
-    startCreateOpenTransition(() => {
-      setCreateOpen(true);
-    });
+  const keyword = q.trim();
+  const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeCertification}
+      sortableColumns={createSortableColumns(db.collections.resumeCertification, [
+        { value: "name", label: "Name" },
+        { value: "issuer", label: "Issuer" },
+        { value: "date", label: "Date" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
+
+  const { data: items, isLoading } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeCertification });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(keyword, row.name, row.issuer, row.date, row.url, row.searchableText),
+          )
+        : base;
+      return filtered
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
+        .limit(ADMIN_LIST_PER_PAGE)
+        .offset(offset);
+    },
+    [keyword, offset, sortBy, sortDir],
+  );
+
+  const { data: totals } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeCertification });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(keyword, row.name, row.issuer, row.date, row.url, row.searchableText),
+          )
+        : base;
+      return filtered.select(({ row }) => ({ total: count(row.id) }));
+    },
+    [keyword],
+  );
+
+  const totalItems = totals?.[0]?.total ?? 0;
+  const totalPages = totalPagesFromCount(totalItems);
+  const hasSearch = keyword.length > 0;
+
+  function handleDelete(id: string) {
+    try {
+      db.collections.resumeCertification.delete(id);
+      toast.success("Certification deleted");
+    } catch (err: unknown) {
+      toast.error("Failed to delete", { description: unwrapUnknownError(err).message });
+    }
   }
+
+  const actions = (
+    <>
+      <ImportFromLegacyButton importer="certifications" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-certifications-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
+  );
 
   if (isLoading) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="certification-list-page">
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Certifications"
+        description="Certifications in your local library."
+        searchPlaceholder="Search certifications…"
+        actions={actions}
+        filters={filters}
+        dataTest="certifications-list-page"
+      >
         <RouterPendingComponent />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
-  if (!data || data.items.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="certification-list-page">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Award className="text-muted-foreground size-12" />
-            </EmptyMedia>
-            <EmptyTitle>No Certifications Yet</EmptyTitle>
-            <EmptyDescription>
-              You haven&apos;t added any certifications yet. Get started by adding your first
-              certification.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent className="flex-row justify-center gap-2">
-            <Button
-              size="sm"
-              onClick={openCreateDialog}
-              disabled={isCreateOpenPending}
-              data-test="add-certification-btn"
-            >
-              {isCreateOpenPending ? (
-                <Loader2 className="mr-1 size-4 animate-spin" />
-              ) : (
-                <Plus className="mr-1 size-4" />
-              )}
-              {isCreateOpenPending ? "Opening..." : "Create Certification"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                void navigate({
-                  to: ".",
-                  search: (prev) => ({ ...prev, sq: "" }),
-                  replace: true,
-                });
-              }}
-            >
-              Clear filters
-            </Button>
-          </EmptyContent>
-        </Empty>
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Certifications"
+        description="Certifications in your local library."
+        searchPlaceholder="Search certifications…"
+        totalPages={0}
+        actions={actions}
+        filters={filters}
+        dataTest="certifications-list-page"
+      >
+        <LibraryEmpty
+          icon={Award}
+          title="No Certifications Yet"
+          description="You haven't added any certifications yet. Create your first entry to get started."
+          actionLabel="Create Certification"
+          onAction={() => setCreateOpen(true)}
+          hasSearch={hasSearch}
+          onClearSearch={clearSearch}
+          dataTest="certifications-empty"
+        />
         <CertificationCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="certification-list-page">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-test="certification-list">
-        {data.items.map((item) => (
-          <CertificationListCard
-            key={item.id}
-            certification={item}
-            onDelete={(id) => deleteMutation.mutate(id)}
-          />
-        ))}
-      </div>
-    </div>
+    <EventSourcedListScaffold
+      routeID={ROUTE_ID}
+      title="Certifications"
+      description="Certifications in your local library."
+      searchPlaceholder="Search certifications…"
+      totalPages={totalPages}
+      actions={actions}
+      filters={filters}
+      dataTest="certifications-list-page"
+    >
+      <ResponsiveEntityTable
+        rows={items}
+        columns={columns}
+        mobileTitle={(row) => row.name}
+        mobileSubtitle={(row) => row.issuer || undefined}
+        dataTest="certifications-table"
+        actions={(row) => (
+          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
+        )}
+      />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Certification</DialogTitle>
+          </DialogHeader>
+          <CertificationCreateForm onSuccess={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Certification</DialogTitle>
+          </DialogHeader>
+          {editing ? (
+            <CertificationEditForm item={editing} onSuccess={() => setEditing(null)} />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </EventSourcedListScaffold>
   );
 }

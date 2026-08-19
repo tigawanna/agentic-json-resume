@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -8,24 +9,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { createExperience } from "@/data-access-layer/resume/resume.functions";
+
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
+import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
-  defaultValues: {
-    resumeId: "",
-    role: "",
-    company: "",
-    startDate: "",
-    endDate: "",
-    location: "",
-    sortOrder: 0,
-  },
+  defaultValues: { role: "", company: "", startDate: "", endDate: "", location: "" },
 });
 
 interface ExperienceCreateFormProps {
@@ -33,38 +29,52 @@ interface ExperienceCreateFormProps {
 }
 
 export function ExperienceCreateForm({ onSuccess }: ExperienceCreateFormProps) {
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: async (values: typeof createOpts.defaultValues) =>
-      createExperience({
-        data: {
-          resumeId: values.resumeId,
-          company: values.company,
-          role: values.role,
-          startDate: values.startDate,
-          endDate: values.endDate,
-          location: values.location,
-          sortOrder: values.sortOrder,
-          bullets: [],
-        },
-      }),
-    onSuccess() {
-      toast.success("Experience created");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.experiences] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to create experience", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+  const db = useEventSourcedDb();
+  const { viewer } = useViewer();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
     ...createOpts,
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeExperience,
+          `${value.role} @ ${value.company}`,
+          (row) => `${row.role} @ ${row.company}`,
+        );
+        if (existing) {
+          toast.success("Experience already in library");
+          onSuccess?.();
+          return;
+        }
+        const base = libraryRowBase(viewer.user?.id);
+        const searchableText = joinSearchable(
+          value.role,
+          value.company,
+          value.location,
+          value.startDate,
+          value.endDate,
+        );
+        db.collections.resumeExperience.insert({
+          ...base,
+          role: value.role,
+          company: value.company,
+          startDate: value.startDate,
+          endDate: value.endDate,
+          location: value.location,
+
+          searchableText,
+        });
+        toast.success("Experience created");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to create experience", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -73,7 +83,6 @@ export function ExperienceCreateForm({ onSuccess }: ExperienceCreateFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -82,7 +91,7 @@ export function ExperienceCreateForm({ onSuccess }: ExperienceCreateFormProps) {
         <form.AppField
           name="role"
           validators={{
-            onChange: ({ value }) => (!value?.trim() ? "Job title is required" : undefined),
+            onChange: ({ value }) => (!value?.trim() ? "Job Title is required" : undefined),
           }}
         >
           {(field) => (
@@ -118,7 +127,7 @@ export function ExperienceCreateForm({ onSuccess }: ExperienceCreateFormProps) {
         <form.AppField name="startDate">
           {(field) => (
             <div>
-              <Label className="text-xs">Start Date</Label>
+              <Label className="text-xs">Start</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -130,7 +139,7 @@ export function ExperienceCreateForm({ onSuccess }: ExperienceCreateFormProps) {
         <form.AppField name="endDate">
           {(field) => (
             <div>
-              <Label className="text-xs">End Date</Label>
+              <Label className="text-xs">End</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -152,50 +161,21 @@ export function ExperienceCreateForm({ onSuccess }: ExperienceCreateFormProps) {
           </div>
         )}
       </form.AppField>
-
-      <form.AppField
-        name="sortOrder"
-        validators={{
-          onChange: ({ value }) =>
-            !Number.isInteger(value) || value < 0 ? "Must be a non-negative integer" : undefined,
-        }}
-      >
-        {(field) => (
-          <div className="w-32">
-            <Label className="text-xs">Display Order</Label>
-            <Input
-              type="number"
-              min={0}
-              step={1}
-              value={field.state.value}
-              onChange={(e) => field.handleChange(Number(e.target.value))}
-              className="mt-1"
-            />
-            <p className="text-muted-foreground mt-1 text-xs">
-              Higher numbers appear first on the resume
-            </p>
-          </div>
-        )}
-      </form.AppField>
-
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
-          const hasRequired = Boolean(values.role.trim() && values.company.trim());
+          const hasRequired = Boolean(values.role.trim()) && Boolean(values.company.trim());
           return (
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
                 Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Creating…" : "Create"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Creating…" : "Create"}
               </Button>
             </DialogFooter>
           );
@@ -209,6 +189,7 @@ interface ExperienceCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 export function ExperienceCreateFormDialog({ open, setOpen }: ExperienceCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>

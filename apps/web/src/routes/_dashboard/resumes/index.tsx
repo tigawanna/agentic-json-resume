@@ -1,131 +1,21 @@
-import { SearchBox } from "@/components/search/SearchBox";
-import { Button } from "@/components/ui/button";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { listResumesPaginated } from "@/data-access-layer/resume/resume.functions";
-import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { useDebouncer } from "@tanstack/react-pacer";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Suspense, useState } from "react";
-import { z } from "zod";
-import { ImportResumeFromJsonButton } from "./-components/ImportResumeFromJsonButton";
-import { NewResumeButton } from "./-components/NewResumeButton";
-import { ResumeListPage } from "./-components/ResumeList";
-
-const resumesSearchSchema = z.object({
-  sq: z.string().optional().catch(""),
-  cursor: z.string().optional(),
-  dir: z.enum(["after", "before"]).optional().default("after"),
-});
+import { createFileRoute } from "@tanstack/react-router";
+import { eventSourcedListSearchSchema } from "../-utils/list-search";
+import { ResumeList } from "./-components/ResumeList";
 
 export const Route = createFileRoute("/_dashboard/resumes/")({
   component: RouteComponent,
-  head: () => ({
-    meta: [{ title: "Resumes", description: "Manage your resumes" }],
-  }),
   ssr: false,
-  validateSearch: (search) => resumesSearchSchema.parse(search),
+  validateSearch: (search) => eventSourcedListSearchSchema.parse(search),
+  head: () => ({
+    meta: [
+      {
+        title: "Résumés",
+        description: "Local-first résumés stored in your event-sourced collection.",
+      },
+    ],
+  }),
 });
 
 function RouteComponent() {
-  const { sq, cursor, dir } = Route.useSearch();
-  const navigate = useNavigate();
-  const [keyword, setKeyword] = useState(sq ?? "");
-
-  const { data, isLoading } = useQuery({
-    queryKey: [queryKeyPrefixes.resumes, "page", cursor, dir ?? "after", sq],
-    queryFn: () => listResumesPaginated({ data: { cursor, direction: dir, keyword: sq } }),
-    placeholderData: (prevData) => prevData,
-  });
-
-  const debouncer = useDebouncer(
-    (value: string) => {
-      void navigate({
-        to: ".",
-        search: (prev: Record<string, unknown>) => ({
-          ...prev,
-          sq: value || undefined,
-          cursor: undefined,
-          dir: undefined,
-        }),
-        replace: true,
-      });
-    },
-    { wait: 500 },
-    (state) => ({ isPending: state.isPending }),
-  );
-
-  const handleKeywordChange: React.Dispatch<React.SetStateAction<string>> = (action) => {
-    setKeyword((prev) => {
-      const next = typeof action === "function" ? action(prev ?? "") : action;
-      debouncer.maybeExecute(next);
-      return next;
-    });
-  };
-
-  function goNext() {
-    void navigate({
-      to: ".",
-      search: (prev) => ({ ...prev, cursor: data?.nextCursor, dir: "after" as const }),
-    });
-  }
-
-  function goPrevious() {
-    void navigate({
-      to: ".",
-      search: (prev) => ({ ...prev, cursor: data?.previousCursor, dir: "before" as const }),
-    });
-  }
-
-  const showPagination = Boolean(data?.items?.length);
-
-  return (
-    <div className="w-full flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold">Resumes</h1>
-          <p className="text-muted-foreground mt-1 truncate text-sm">
-            Create, edit and tailor your resumes for different roles.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <ImportResumeFromJsonButton />
-          <NewResumeButton />
-        </div>
-      </div>
-      <SearchBox
-        keyword={keyword}
-        setKeyword={handleKeywordChange}
-        debouncedValue={sq ?? ""}
-        isDebouncing={debouncer.state.isPending ?? false}
-        inputProps={{ placeholder: "Search resumes..." }}
-      />
-      <Suspense fallback={<RouterPendingComponent />}>
-        <ResumeListPage data={data} isLoading={isLoading} />
-      </Suspense>
-      {showPagination ? (
-        <div className="flex items-center justify-between border-t pt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goPrevious}
-            disabled={!data?.previousCursor}
-            data-test="pagination-prev"
-          >
-            <ChevronLeft className="mr-1 size-4" /> Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goNext}
-            disabled={!data?.nextCursor}
-            data-test="pagination-next"
-          >
-            Next <ChevronRight className="ml-1 size-4" />
-          </Button>
-        </div>
-      ) : null}
-    </div>
-  );
+  return <ResumeList />;
 }

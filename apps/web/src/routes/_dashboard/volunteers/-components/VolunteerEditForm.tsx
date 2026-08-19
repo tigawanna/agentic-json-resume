@@ -1,56 +1,67 @@
 import { Button } from "@/components/ui/button";
+
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { editVolunteer } from "@/data-access-layer/resume/resume.functions";
-import type { VolunteerListItemDTO } from "@/data-access-layer/resume/volunteers/volunteer.types";
+import type { ResumeVolunteer } from "@/data-access-layer/event-sourced/schemas";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { joinSearchable, touchUpdatedAt } from "../../-utils/row-helpers";
 
-const volunteerEditOpts = formOptions({
+const editOpts = formOptions({
   defaultValues: { organization: "", role: "", startDate: "", endDate: "", description: "" },
 });
 
 interface VolunteerEditFormProps {
-  volunteer: VolunteerListItemDTO;
+  item: ResumeVolunteer;
   onSuccess?: () => void;
 }
 
-export function VolunteerEditForm({ volunteer, onSuccess }: VolunteerEditFormProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof volunteerEditOpts.defaultValues) =>
-      editVolunteer({ data: { id: volunteer.id, ...values } }),
-    onSuccess() {
-      toast.success("Volunteer entry saved");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.volunteers] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to save volunteer entry", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+export function VolunteerEditForm({ item, onSuccess }: VolunteerEditFormProps) {
+  const db = useEventSourcedDb();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
-    ...volunteerEditOpts,
+    ...editOpts,
     defaultValues: {
-      organization: volunteer.organization,
-      role: volunteer.role,
-      startDate: volunteer.startDate,
-      endDate: volunteer.endDate,
-      description: volunteer.description,
+      organization: item.organization ?? "",
+      role: item.role ?? "",
+      startDate: item.startDate ?? "",
+      endDate: item.endDate ?? "",
+      description: item.description ?? "",
     },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        db.collections.resumeVolunteer.update(item.id, (draft) => {
+          draft.organization = value.organization;
+          draft.role = value.role;
+          draft.startDate = value.startDate;
+          draft.endDate = value.endDate;
+          draft.description = value.description;
+          draft.searchableText = joinSearchable(
+            value.organization,
+            value.role,
+            value.startDate,
+            value.endDate,
+            value.description,
+          );
+          draft.updatedAt = touchUpdatedAt();
+        });
+        toast.success("Volunteer saved");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to save volunteer", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -59,45 +70,46 @@ export function VolunteerEditForm({ volunteer, onSuccess }: VolunteerEditFormPro
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
     >
-      <form.AppField
-        name="organization"
-        validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Organization is required" : undefined),
-        }}
-      >
-        {(field) => (
-          <div>
-            <Label className="text-xs">Organization</Label>
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-        )}
-      </form.AppField>
-      <form.AppField name="role">
-        {(field) => (
-          <div>
-            <Label className="text-xs">Role</Label>
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-        )}
-      </form.AppField>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <form.AppField
+          name="organization"
+          validators={{
+            onChange: ({ value }) => (!value?.trim() ? "Organization is required" : undefined),
+          }}
+        >
+          {(field) => (
+            <div>
+              <Label className="text-xs">Organization</Label>
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          )}
+        </form.AppField>
+        <form.AppField name="role">
+          {(field) => (
+            <div>
+              <Label className="text-xs">Role</Label>
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          )}
+        </form.AppField>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <form.AppField name="startDate">
           {(field) => (
             <div>
-              <Label className="text-xs">Start Date</Label>
+              <Label className="text-xs">Start</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -109,7 +121,7 @@ export function VolunteerEditForm({ volunteer, onSuccess }: VolunteerEditFormPro
         <form.AppField name="endDate">
           {(field) => (
             <div>
-              <Label className="text-xs">End Date</Label>
+              <Label className="text-xs">End</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -126,8 +138,7 @@ export function VolunteerEditForm({ volunteer, onSuccess }: VolunteerEditFormPro
             <Textarea
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-              rows={3}
+              className="mt-1 min-h-24"
             />
           </div>
         )}
@@ -141,15 +152,12 @@ export function VolunteerEditForm({ volunteer, onSuccess }: VolunteerEditFormPro
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
-                Cancel
+                Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Saving…" : "Save"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           );

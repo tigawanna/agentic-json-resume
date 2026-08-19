@@ -6,7 +6,7 @@ import { Box, ExternalLink } from "lucide-react";
 interface CreatedResumeCardProps {
   output: CreatedResumeOutput;
   dataTest?: string;
-  to?: "/resumes/$resumeId" | "/event-sourced/resumes/$resumeId";
+  to?: "/resumes/$resumeId";
 }
 
 export function CreatedResumeCard({

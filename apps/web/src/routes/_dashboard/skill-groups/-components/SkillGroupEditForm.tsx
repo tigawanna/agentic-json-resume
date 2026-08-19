@@ -1,73 +1,87 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { editSkillGroup } from "@/data-access-layer/resume/resume.functions";
-import type { SkillGroupListItemDTO } from "@/data-access-layer/resume/skill-groups/skill-group.types";
+import type { ResumeSkill, ResumeSkillGroup } from "@/data-access-layer/event-sourced/schemas";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
+import { joinSearchable, newId, nowMs, touchUpdatedAt } from "../../-utils/row-helpers";
 
-function parseSkills(skills: string): string[] {
-  try {
-    const parsed: unknown = JSON.parse(skills);
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-const skillGroupEditOpts = formOptions({
+const editOpts = formOptions({
   defaultValues: { name: "" },
 });
 
 interface SkillGroupEditFormProps {
-  skillGroup: SkillGroupListItemDTO;
+  group: ResumeSkillGroup;
+  skills: ResumeSkill[];
   onSuccess?: () => void;
 }
 
-export function SkillGroupEditForm({ skillGroup, onSuccess }: SkillGroupEditFormProps) {
-  const queryClient = useQueryClient();
-  const [skills, setSkills] = useState(() => parseSkills(skillGroup.skills));
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof skillGroupEditOpts.defaultValues) =>
-      editSkillGroup({ data: { id: skillGroup.id, ...values, skills } }),
-    onSuccess() {
-      toast.success("Skill group saved");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.skillGroups] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to save skill group", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+export function SkillGroupEditForm({
+  group,
+  skills: initialSkills,
+  onSuccess,
+}: SkillGroupEditFormProps) {
+  const db = useEventSourcedDb();
+  const [pending, setPending] = useState(false);
+  const [skills, setSkills] = useState(() => initialSkills.map((s) => s.name));
+  const [skillInput, setSkillInput] = useState("");
 
   const form = useAppForm({
-    ...skillGroupEditOpts,
-    defaultValues: { name: skillGroup.name },
+    ...editOpts,
+    defaultValues: { name: group.name },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        db.collections.resumeSkillGroup.update(group.id, (draft) => {
+          draft.name = value.name;
+          draft.searchableText = joinSearchable(value.name, ...skills);
+          draft.updatedAt = touchUpdatedAt();
+        });
+
+        for (const existing of initialSkills) {
+          db.collections.resumeSkill.delete(existing.id);
+        }
+
+        skills.forEach((skillName, index) => {
+          const ts = nowMs();
+          db.collections.resumeSkill.insert({
+            id: newId(),
+            groupId: group.id,
+            name: skillName,
+            level: null,
+            sortOrder: index,
+            searchableText: skillName,
+            embedding: null,
+            embeddingModel: null,
+            createdAt: ts,
+            updatedAt: ts,
+          });
+        });
+
+        toast.success("Skill group saved");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to save skill group", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
-  function handleSkillKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" || e.key === ",") {
+  function handleSkillKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if ((e.key === "Enter" || e.key === ",") && skillInput.trim()) {
       e.preventDefault();
-      const val = e.currentTarget.value.trim();
-      if (val && !skills.includes(val)) {
-        setSkills((prev) => [...prev, val]);
-        e.currentTarget.value = "";
-      }
+      const val = skillInput.trim().replace(/,$/g, "");
+      if (val && !skills.includes(val)) setSkills((prev) => [...prev, val]);
+      setSkillInput("");
     }
   }
 
@@ -76,7 +90,6 @@ export function SkillGroupEditForm({ skillGroup, onSuccess }: SkillGroupEditForm
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -99,56 +112,49 @@ export function SkillGroupEditForm({ skillGroup, onSuccess }: SkillGroupEditForm
         )}
       </form.AppField>
       <div>
-        <Label className="text-xs">Skills (press Enter to add)</Label>
+        <Label className="text-xs">Skills</Label>
         <Input
+          value={skillInput}
+          onChange={(e) => setSkillInput(e.target.value)}
           onKeyDown={handleSkillKeyDown}
-          placeholder="e.g. React"
+          placeholder="Type a skill and press Enter"
           className="mt-1"
-          disabled={mutation.isPending}
         />
-        {skills.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {skills.map((s) => (
-              <Badge key={s} variant="secondary" className="text-xs">
-                {s}
+        {skills.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {skills.map((skill) => (
+              <span
+                key={skill}
+                className="bg-muted inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs"
+              >
+                {skill}
                 <button
                   type="button"
-                  className="ml-1"
-                  onClick={() => setSkills((prev) => prev.filter((x) => x !== s))}
-                  disabled={mutation.isPending}
+                  onClick={() => setSkills((prev) => prev.filter((s) => s !== skill))}
+                  className="hover:text-destructive"
+                  aria-label={`Remove ${skill}`}
                 >
                   <X className="size-3" />
                 </button>
-              </Badge>
+              </span>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
       <form.Subscribe selector={(s) => s.values}>
-        {(values) => {
-          const hasRequired = Boolean(values.name.trim());
-          return (
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  form.reset();
-                  setSkills(parseSkills(skillGroup.skills));
-                }}
-                disabled={mutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Saving…" : "Save"}
-              </Button>
-            </DialogFooter>
-          );
-        }}
+        {(values) => (
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => form.reset()} disabled={pending}>
+              Reset
+            </Button>
+            <Button
+              type="submit"
+              disabled={pending || !values.name.trim() || !form.state.isFormValid}
+            >
+              {pending ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        )}
       </form.Subscribe>
     </form>
   );

@@ -1,106 +1,219 @@
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
+import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import type { listContacts } from "@/data-access-layer/resume/contacts/contact.functions";
-import { deleteContactMutationOptions } from "@/data-access-layer/resume/contacts/contact.mutation-options";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import type { ResumeContact } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { useMutation } from "@tanstack/react-query";
-import { Contact, Loader2, Plus } from "lucide-react";
-import { useState, useTransition } from "react";
+import { count, useLiveQuery } from "@tanstack/react-db";
+import { Contact, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
+import { LibraryEmpty } from "../../-components/LibraryEmpty";
+import {
+  ResponsiveEntityTable,
+  type ResponsiveColumn,
+} from "../../-components/ResponsiveEntityTable";
+import { RowActionButtons } from "../../-components/RowActionButtons";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
+import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
-import { ContactCreateFormDialog } from "./ContactCreateForm";
-import { ContactListCard } from "./ContactListCard";
+import { ContactCreateForm, ContactCreateFormDialog } from "./ContactCreateForm";
+import { ContactEditForm } from "./ContactEditForm";
 
-type PageData = Awaited<ReturnType<typeof listContacts>>;
+const ROUTE_ID = "/_dashboard/contacts/" as const;
 
-interface ContactListProps {
-  data: PageData | undefined;
-  isLoading: boolean;
-}
+const columns: ResponsiveColumn<ResumeContact>[] = [
+  {
+    id: "value",
+    header: "Value",
+    cell: (row) => dashIfEmpty(row.value),
+  },
+  {
+    id: "type",
+    header: "Type",
+    cell: (row) => dashIfEmpty(row.type),
+  },
+  {
+    id: "label",
+    header: "Label",
+    cell: (row) => dashIfEmpty(row.label),
+  },
+];
 
-export function ContactList({ data, isLoading }: ContactListProps) {
+export function ContactList() {
+  const db = useEventSourcedDb();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
+  const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
-  const [isCreateOpenPending, startCreateOpenTransition] = useTransition();
-  const navigate = Route.useNavigate();
-  const deleteMutation = useMutation(deleteContactMutationOptions);
+  const [editing, setEditing] = useState<ResumeContact | null>(null);
 
-  function openCreateDialog() {
-    startCreateOpenTransition(() => {
-      setCreateOpen(true);
-    });
+  const keyword = q.trim();
+  const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeContact}
+      sortableColumns={createSortableColumns(db.collections.resumeContact, [
+        { value: "value", label: "Value" },
+        { value: "type", label: "Type" },
+        { value: "label", label: "Label" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
+
+  const { data: items, isLoading } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeContact });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(keyword, row.type, row.value, row.label, row.searchableText),
+          )
+        : base;
+      return filtered
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
+        .limit(ADMIN_LIST_PER_PAGE)
+        .offset(offset);
+    },
+    [keyword, offset, sortBy, sortDir],
+  );
+
+  const { data: totals } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeContact });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(keyword, row.type, row.value, row.label, row.searchableText),
+          )
+        : base;
+      return filtered.select(({ row }) => ({ total: count(row.id) }));
+    },
+    [keyword],
+  );
+
+  const totalItems = totals?.[0]?.total ?? 0;
+  const totalPages = totalPagesFromCount(totalItems);
+  const hasSearch = keyword.length > 0;
+
+  function handleDelete(id: string) {
+    try {
+      db.collections.resumeContact.delete(id);
+      toast.success("Contact deleted");
+    } catch (err: unknown) {
+      toast.error("Failed to delete", { description: unwrapUnknownError(err).message });
+    }
   }
+
+  const actions = (
+    <>
+      <ImportFromLegacyButton importer="contacts" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-contacts-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
+  );
 
   if (isLoading) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="contact-list-page">
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Contacts"
+        description="Contact details in your local library."
+        searchPlaceholder="Search contacts…"
+        actions={actions}
+        filters={filters}
+        dataTest="contacts-list-page"
+      >
         <RouterPendingComponent />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
-  if (!data || data.items.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="contact-list-page">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Contact className="text-muted-foreground size-12" />
-            </EmptyMedia>
-            <EmptyTitle>No Contacts Yet</EmptyTitle>
-            <EmptyDescription>
-              You haven&apos;t added any contacts yet. Get started by adding your first contact.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent className="flex-row justify-center gap-2">
-            <Button
-              size="sm"
-              onClick={openCreateDialog}
-              disabled={isCreateOpenPending}
-              data-test="add-contact-btn"
-            >
-              {isCreateOpenPending ? (
-                <Loader2 className="mr-1 size-4 animate-spin" />
-              ) : (
-                <Plus className="mr-1 size-4" />
-              )}
-              {isCreateOpenPending ? "Opening..." : "Create Contact"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                void navigate({
-                  to: ".",
-                  search: (prev) => ({ ...prev, sq: "" }),
-                  replace: true,
-                });
-              }}
-            >
-              Clear filters
-            </Button>
-          </EmptyContent>
-        </Empty>
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Contacts"
+        description="Contact details in your local library."
+        searchPlaceholder="Search contacts…"
+        totalPages={0}
+        actions={actions}
+        filters={filters}
+        dataTest="contacts-list-page"
+      >
+        <LibraryEmpty
+          icon={Contact}
+          title="No Contacts Yet"
+          description="You haven't added any contacts yet. Create your first entry to get started."
+          actionLabel="Create Contact"
+          onAction={() => setCreateOpen(true)}
+          hasSearch={hasSearch}
+          onClearSearch={clearSearch}
+          dataTest="contacts-empty"
+        />
         <ContactCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="contact-list-page">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-test="contact-list">
-        {data.items.map((item) => (
-          <ContactListCard
-            key={item.id}
-            contact={item}
-            onDelete={(id) => deleteMutation.mutate(id)}
-          />
-        ))}
-      </div>
-    </div>
+    <EventSourcedListScaffold
+      routeID={ROUTE_ID}
+      title="Contacts"
+      description="Contact details in your local library."
+      searchPlaceholder="Search contacts…"
+      totalPages={totalPages}
+      actions={actions}
+      filters={filters}
+      dataTest="contacts-list-page"
+    >
+      <ResponsiveEntityTable
+        rows={items}
+        columns={columns}
+        mobileTitle={(row) => row.value}
+        mobileSubtitle={(row) => row.type || undefined}
+        dataTest="contacts-table"
+        actions={(row) => (
+          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
+        )}
+      />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Contact</DialogTitle>
+          </DialogHeader>
+          <ContactCreateForm onSuccess={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Contact</DialogTitle>
+          </DialogHeader>
+          {editing ? <ContactEditForm item={editing} onSuccess={() => setEditing(null)} /> : null}
+        </DialogContent>
+      </Dialog>
+    </EventSourcedListScaffold>
   );
 }

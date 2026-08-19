@@ -8,18 +8,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { createSkillGroup } from "@/data-access-layer/resume/resume.functions";
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
+import { joinSearchable, libraryRowBase, newId, nowMs } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
-  defaultValues: { resumeId: "", name: "" },
+  defaultValues: { name: "" },
 });
 
 interface SkillGroupCreateFormProps {
@@ -27,37 +28,60 @@ interface SkillGroupCreateFormProps {
 }
 
 export function SkillGroupCreateForm({ onSuccess }: SkillGroupCreateFormProps) {
-  const queryClient = useQueryClient();
+  const db = useEventSourcedDb();
+  const { viewer } = useViewer();
+  const [pending, setPending] = useState(false);
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof createOpts.defaultValues) =>
-      createSkillGroup({
-        data: {
-          resumeId: values.resumeId,
-          name: values.name,
-          skills,
-          sortOrder: 0,
-        },
-      }),
-    onSuccess() {
-      toast.success("Skill group created");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.skillGroups] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to create skill group", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
 
   const form = useAppForm({
     ...createOpts,
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeSkillGroup,
+          value.name,
+          (row) => row.name,
+        );
+        if (existing) {
+          toast.success("Skill group already in library");
+          onSuccess?.();
+          return;
+        }
+        const base = libraryRowBase(viewer.user?.id);
+        const searchableText = joinSearchable(value.name, ...skills);
+        db.collections.resumeSkillGroup.insert({
+          ...base,
+          name: value.name,
+          searchableText,
+        });
+
+        skills.forEach((skillName, index) => {
+          const ts = nowMs();
+          db.collections.resumeSkill.insert({
+            id: newId(),
+            groupId: base.id,
+            name: skillName,
+            level: null,
+            sortOrder: index,
+            searchableText: skillName,
+            embedding: null,
+            embeddingModel: null,
+            createdAt: ts,
+            updatedAt: ts,
+          });
+        });
+
+        toast.success("Skill group created");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to create skill group", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -75,7 +99,6 @@ export function SkillGroupCreateForm({ onSuccess }: SkillGroupCreateFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -103,54 +126,53 @@ export function SkillGroupCreateForm({ onSuccess }: SkillGroupCreateFormProps) {
           value={skillInput}
           onChange={(e) => setSkillInput(e.target.value)}
           onKeyDown={handleSkillKeyDown}
-          className="mt-1"
           placeholder="Type a skill and press Enter"
+          className="mt-1"
         />
-        {skills.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {skills.map((s) => (
+        {skills.length > 0 ? (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {skills.map((skill) => (
               <span
-                key={s}
-                className="bg-secondary text-secondary-foreground inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs"
+                key={skill}
+                className="bg-muted inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs"
               >
-                {s}
+                {skill}
                 <button
                   type="button"
-                  onClick={() => setSkills((prev) => prev.filter((x) => x !== s))}
+                  onClick={() => setSkills((prev) => prev.filter((s) => s !== skill))}
                   className="hover:text-destructive"
+                  aria-label={`Remove ${skill}`}
                 >
                   <X className="size-3" />
                 </button>
               </span>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
       <form.Subscribe selector={(s) => s.values}>
-        {(values) => {
-          const hasRequired = Boolean(values.name.trim());
-          return (
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  form.reset();
-                  setSkills([]);
-                }}
-                disabled={mutation.isPending}
-              >
-                Reset
-              </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Creating…" : "Create"}
-              </Button>
-            </DialogFooter>
-          );
-        }}
+        {(values) => (
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                form.reset();
+                setSkills([]);
+                setSkillInput("");
+              }}
+              disabled={pending}
+            >
+              Reset
+            </Button>
+            <Button
+              type="submit"
+              disabled={pending || !values.name.trim() || !form.state.isFormValid}
+            >
+              {pending ? "Creating…" : "Create"}
+            </Button>
+          </DialogFooter>
+        )}
       </form.Subscribe>
     </form>
   );
@@ -160,6 +182,7 @@ interface SkillGroupCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 export function SkillGroupCreateFormDialog({ open, setOpen }: SkillGroupCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>

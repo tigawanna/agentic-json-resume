@@ -10,33 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SearchRouteImport } from './routes/search'
-import { Route as EventSourcedLayoutRouteImport } from './routes/event-sourced/layout'
 import { Route as AuthLayoutRouteImport } from './routes/auth/layout'
 import { Route as PublicLayoutRouteImport } from './routes/_public/layout'
 import { Route as DashboardLayoutRouteImport } from './routes/_dashboard/layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TestIndexRouteImport } from './routes/test/index'
-import { Route as EventSourcedIndexRouteImport } from './routes/event-sourced/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthGithubRouteImport } from './routes/auth/github'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as PublicPreviewRouteImport } from './routes/_public/preview'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
-import { Route as EventSourcedVolunteersIndexRouteImport } from './routes/event-sourced/volunteers/index'
-import { Route as EventSourcedTalksIndexRouteImport } from './routes/event-sourced/talks/index'
-import { Route as EventSourcedSummariesIndexRouteImport } from './routes/event-sourced/summaries/index'
-import { Route as EventSourcedSkillGroupsIndexRouteImport } from './routes/event-sourced/skill-groups/index'
-import { Route as EventSourcedResumesIndexRouteImport } from './routes/event-sourced/resumes/index'
-import { Route as EventSourcedResumeProjectsIndexRouteImport } from './routes/event-sourced/resume-projects/index'
-import { Route as EventSourcedNotesIndexRouteImport } from './routes/event-sourced/notes/index'
-import { Route as EventSourcedLinksIndexRouteImport } from './routes/event-sourced/links/index'
-import { Route as EventSourcedLanguagesIndexRouteImport } from './routes/event-sourced/languages/index'
-import { Route as EventSourcedExperiencesIndexRouteImport } from './routes/event-sourced/experiences/index'
-import { Route as EventSourcedEventsIndexRouteImport } from './routes/event-sourced/events/index'
-import { Route as EventSourcedEducationIndexRouteImport } from './routes/event-sourced/education/index'
-import { Route as EventSourcedContactsIndexRouteImport } from './routes/event-sourced/contacts/index'
-import { Route as EventSourcedCertificationsIndexRouteImport } from './routes/event-sourced/certifications/index'
 import { Route as DashboardVolunteersIndexRouteImport } from './routes/_dashboard/volunteers/index'
 import { Route as DashboardTalksIndexRouteImport } from './routes/_dashboard/talks/index'
 import { Route as DashboardSummariesIndexRouteImport } from './routes/_dashboard/summaries/index'
@@ -47,9 +31,11 @@ import { Route as DashboardResumesIndexRouteImport } from './routes/_dashboard/r
 import { Route as DashboardResumeProjectsIndexRouteImport } from './routes/_dashboard/resume-projects/index'
 import { Route as DashboardReposIndexRouteImport } from './routes/_dashboard/repos/index'
 import { Route as DashboardProjectsIndexRouteImport } from './routes/_dashboard/projects/index'
+import { Route as DashboardNotesIndexRouteImport } from './routes/_dashboard/notes/index'
 import { Route as DashboardLinksIndexRouteImport } from './routes/_dashboard/links/index'
 import { Route as DashboardLanguagesIndexRouteImport } from './routes/_dashboard/languages/index'
 import { Route as DashboardExperiencesIndexRouteImport } from './routes/_dashboard/experiences/index'
+import { Route as DashboardEventsIndexRouteImport } from './routes/_dashboard/events/index'
 import { Route as DashboardEducationIndexRouteImport } from './routes/_dashboard/education/index'
 import { Route as DashboardContactsIndexRouteImport } from './routes/_dashboard/contacts/index'
 import { Route as DashboardCertificationsIndexRouteImport } from './routes/_dashboard/certifications/index'
@@ -61,7 +47,6 @@ import { Route as ApiAiPersonaWriterRouteImport } from './routes/api/ai/persona-
 import { Route as ApiAiEventSourcedResumeTailorRouteImport } from './routes/api/ai/event-sourced-resume-tailor'
 import { Route as ApiAgenticOpenapiRouteImport } from './routes/api/agentic/openapi'
 import { Route as ApiAgenticSplatRouteImport } from './routes/api/agentic/$'
-import { Route as EventSourcedResumesResumeIdIndexRouteImport } from './routes/event-sourced/resumes/$resumeId/index'
 import { Route as DashboardResumesResumeIdIndexRouteImport } from './routes/_dashboard/resumes/$resumeId/index'
 import { Route as ApiAgenticRpcSplatRouteImport } from './routes/api/agentic/rpc/$'
 import { Route as ApiAgenticOpenapiJsonRouteImport } from './routes/api/agentic/openapi.json'
@@ -69,11 +54,6 @@ import { Route as ApiAgenticOpenapiJsonRouteImport } from './routes/api/agentic/
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EventSourcedLayoutRoute = EventSourcedLayoutRouteImport.update({
-  id: '/event-sourced',
-  path: '/event-sourced',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
@@ -98,11 +78,6 @@ const TestIndexRoute = TestIndexRouteImport.update({
   id: '/test/',
   path: '/test/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const EventSourcedIndexRoute = EventSourcedIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => EventSourcedLayoutRoute,
 } as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
@@ -134,86 +109,6 @@ const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
-const EventSourcedVolunteersIndexRoute =
-  EventSourcedVolunteersIndexRouteImport.update({
-    id: '/volunteers/',
-    path: '/volunteers/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
-const EventSourcedTalksIndexRoute = EventSourcedTalksIndexRouteImport.update({
-  id: '/talks/',
-  path: '/talks/',
-  getParentRoute: () => EventSourcedLayoutRoute,
-} as any)
-const EventSourcedSummariesIndexRoute =
-  EventSourcedSummariesIndexRouteImport.update({
-    id: '/summaries/',
-    path: '/summaries/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
-const EventSourcedSkillGroupsIndexRoute =
-  EventSourcedSkillGroupsIndexRouteImport.update({
-    id: '/skill-groups/',
-    path: '/skill-groups/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
-const EventSourcedResumesIndexRoute =
-  EventSourcedResumesIndexRouteImport.update({
-    id: '/resumes/',
-    path: '/resumes/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
-const EventSourcedResumeProjectsIndexRoute =
-  EventSourcedResumeProjectsIndexRouteImport.update({
-    id: '/resume-projects/',
-    path: '/resume-projects/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
-const EventSourcedNotesIndexRoute = EventSourcedNotesIndexRouteImport.update({
-  id: '/notes/',
-  path: '/notes/',
-  getParentRoute: () => EventSourcedLayoutRoute,
-} as any)
-const EventSourcedLinksIndexRoute = EventSourcedLinksIndexRouteImport.update({
-  id: '/links/',
-  path: '/links/',
-  getParentRoute: () => EventSourcedLayoutRoute,
-} as any)
-const EventSourcedLanguagesIndexRoute =
-  EventSourcedLanguagesIndexRouteImport.update({
-    id: '/languages/',
-    path: '/languages/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
-const EventSourcedExperiencesIndexRoute =
-  EventSourcedExperiencesIndexRouteImport.update({
-    id: '/experiences/',
-    path: '/experiences/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
-const EventSourcedEventsIndexRoute = EventSourcedEventsIndexRouteImport.update({
-  id: '/events/',
-  path: '/events/',
-  getParentRoute: () => EventSourcedLayoutRoute,
-} as any)
-const EventSourcedEducationIndexRoute =
-  EventSourcedEducationIndexRouteImport.update({
-    id: '/education/',
-    path: '/education/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
-const EventSourcedContactsIndexRoute =
-  EventSourcedContactsIndexRouteImport.update({
-    id: '/contacts/',
-    path: '/contacts/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
-const EventSourcedCertificationsIndexRoute =
-  EventSourcedCertificationsIndexRouteImport.update({
-    id: '/certifications/',
-    path: '/certifications/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
 const DashboardVolunteersIndexRoute =
   DashboardVolunteersIndexRouteImport.update({
     id: '/volunteers/',
@@ -268,6 +163,11 @@ const DashboardProjectsIndexRoute = DashboardProjectsIndexRouteImport.update({
   path: '/projects/',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardNotesIndexRoute = DashboardNotesIndexRouteImport.update({
+  id: '/notes/',
+  path: '/notes/',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const DashboardLinksIndexRoute = DashboardLinksIndexRouteImport.update({
   id: '/links/',
   path: '/links/',
@@ -284,6 +184,11 @@ const DashboardExperiencesIndexRoute =
     path: '/experiences/',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
+const DashboardEventsIndexRoute = DashboardEventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const DashboardEducationIndexRoute = DashboardEducationIndexRouteImport.update({
   id: '/education/',
   path: '/education/',
@@ -342,12 +247,6 @@ const ApiAgenticSplatRoute = ApiAgenticSplatRouteImport.update({
   path: '/api/agentic/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EventSourcedResumesResumeIdIndexRoute =
-  EventSourcedResumesResumeIdIndexRouteImport.update({
-    id: '/resumes/$resumeId/',
-    path: '/resumes/$resumeId/',
-    getParentRoute: () => EventSourcedLayoutRoute,
-  } as any)
 const DashboardResumesResumeIdIndexRoute =
   DashboardResumesResumeIdIndexRouteImport.update({
     id: '/resumes/$resumeId/',
@@ -368,7 +267,6 @@ const ApiAgenticOpenapiJsonRoute = ApiAgenticOpenapiJsonRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthLayoutRouteWithChildren
-  '/event-sourced': typeof EventSourcedLayoutRouteWithChildren
   '/search': typeof SearchRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/preview': typeof PublicPreviewRoute
@@ -376,7 +274,6 @@ export interface FileRoutesByFullPath {
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
-  '/event-sourced/': typeof EventSourcedIndexRoute
   '/test/': typeof TestIndexRoute
   '/api/agentic/$': typeof ApiAgenticSplatRoute
   '/api/agentic/openapi': typeof ApiAgenticOpenapiRouteWithChildren
@@ -389,9 +286,11 @@ export interface FileRoutesByFullPath {
   '/certifications/': typeof DashboardCertificationsIndexRoute
   '/contacts/': typeof DashboardContactsIndexRoute
   '/education/': typeof DashboardEducationIndexRoute
+  '/events/': typeof DashboardEventsIndexRoute
   '/experiences/': typeof DashboardExperiencesIndexRoute
   '/languages/': typeof DashboardLanguagesIndexRoute
   '/links/': typeof DashboardLinksIndexRoute
+  '/notes/': typeof DashboardNotesIndexRoute
   '/projects/': typeof DashboardProjectsIndexRoute
   '/repos/': typeof DashboardReposIndexRoute
   '/resume-projects/': typeof DashboardResumeProjectsIndexRoute
@@ -402,24 +301,9 @@ export interface FileRoutesByFullPath {
   '/summaries/': typeof DashboardSummariesIndexRoute
   '/talks/': typeof DashboardTalksIndexRoute
   '/volunteers/': typeof DashboardVolunteersIndexRoute
-  '/event-sourced/certifications/': typeof EventSourcedCertificationsIndexRoute
-  '/event-sourced/contacts/': typeof EventSourcedContactsIndexRoute
-  '/event-sourced/education/': typeof EventSourcedEducationIndexRoute
-  '/event-sourced/events/': typeof EventSourcedEventsIndexRoute
-  '/event-sourced/experiences/': typeof EventSourcedExperiencesIndexRoute
-  '/event-sourced/languages/': typeof EventSourcedLanguagesIndexRoute
-  '/event-sourced/links/': typeof EventSourcedLinksIndexRoute
-  '/event-sourced/notes/': typeof EventSourcedNotesIndexRoute
-  '/event-sourced/resume-projects/': typeof EventSourcedResumeProjectsIndexRoute
-  '/event-sourced/resumes/': typeof EventSourcedResumesIndexRoute
-  '/event-sourced/skill-groups/': typeof EventSourcedSkillGroupsIndexRoute
-  '/event-sourced/summaries/': typeof EventSourcedSummariesIndexRoute
-  '/event-sourced/talks/': typeof EventSourcedTalksIndexRoute
-  '/event-sourced/volunteers/': typeof EventSourcedVolunteersIndexRoute
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
-  '/event-sourced/resumes/$resumeId/': typeof EventSourcedResumesResumeIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -430,7 +314,6 @@ export interface FileRoutesByTo {
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
-  '/event-sourced': typeof EventSourcedIndexRoute
   '/test': typeof TestIndexRoute
   '/api/agentic/$': typeof ApiAgenticSplatRoute
   '/api/agentic/openapi': typeof ApiAgenticOpenapiRouteWithChildren
@@ -443,9 +326,11 @@ export interface FileRoutesByTo {
   '/certifications': typeof DashboardCertificationsIndexRoute
   '/contacts': typeof DashboardContactsIndexRoute
   '/education': typeof DashboardEducationIndexRoute
+  '/events': typeof DashboardEventsIndexRoute
   '/experiences': typeof DashboardExperiencesIndexRoute
   '/languages': typeof DashboardLanguagesIndexRoute
   '/links': typeof DashboardLinksIndexRoute
+  '/notes': typeof DashboardNotesIndexRoute
   '/projects': typeof DashboardProjectsIndexRoute
   '/repos': typeof DashboardReposIndexRoute
   '/resume-projects': typeof DashboardResumeProjectsIndexRoute
@@ -456,24 +341,9 @@ export interface FileRoutesByTo {
   '/summaries': typeof DashboardSummariesIndexRoute
   '/talks': typeof DashboardTalksIndexRoute
   '/volunteers': typeof DashboardVolunteersIndexRoute
-  '/event-sourced/certifications': typeof EventSourcedCertificationsIndexRoute
-  '/event-sourced/contacts': typeof EventSourcedContactsIndexRoute
-  '/event-sourced/education': typeof EventSourcedEducationIndexRoute
-  '/event-sourced/events': typeof EventSourcedEventsIndexRoute
-  '/event-sourced/experiences': typeof EventSourcedExperiencesIndexRoute
-  '/event-sourced/languages': typeof EventSourcedLanguagesIndexRoute
-  '/event-sourced/links': typeof EventSourcedLinksIndexRoute
-  '/event-sourced/notes': typeof EventSourcedNotesIndexRoute
-  '/event-sourced/resume-projects': typeof EventSourcedResumeProjectsIndexRoute
-  '/event-sourced/resumes': typeof EventSourcedResumesIndexRoute
-  '/event-sourced/skill-groups': typeof EventSourcedSkillGroupsIndexRoute
-  '/event-sourced/summaries': typeof EventSourcedSummariesIndexRoute
-  '/event-sourced/talks': typeof EventSourcedTalksIndexRoute
-  '/event-sourced/volunteers': typeof EventSourcedVolunteersIndexRoute
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/resumes/$resumeId': typeof DashboardResumesResumeIdIndexRoute
-  '/event-sourced/resumes/$resumeId': typeof EventSourcedResumesResumeIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -481,7 +351,6 @@ export interface FileRoutesById {
   '/_dashboard': typeof DashboardLayoutRouteWithChildren
   '/_public': typeof PublicLayoutRouteWithChildren
   '/auth': typeof AuthLayoutRouteWithChildren
-  '/event-sourced': typeof EventSourcedLayoutRouteWithChildren
   '/search': typeof SearchRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_public/preview': typeof PublicPreviewRoute
@@ -489,7 +358,6 @@ export interface FileRoutesById {
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
-  '/event-sourced/': typeof EventSourcedIndexRoute
   '/test/': typeof TestIndexRoute
   '/api/agentic/$': typeof ApiAgenticSplatRoute
   '/api/agentic/openapi': typeof ApiAgenticOpenapiRouteWithChildren
@@ -502,9 +370,11 @@ export interface FileRoutesById {
   '/_dashboard/certifications/': typeof DashboardCertificationsIndexRoute
   '/_dashboard/contacts/': typeof DashboardContactsIndexRoute
   '/_dashboard/education/': typeof DashboardEducationIndexRoute
+  '/_dashboard/events/': typeof DashboardEventsIndexRoute
   '/_dashboard/experiences/': typeof DashboardExperiencesIndexRoute
   '/_dashboard/languages/': typeof DashboardLanguagesIndexRoute
   '/_dashboard/links/': typeof DashboardLinksIndexRoute
+  '/_dashboard/notes/': typeof DashboardNotesIndexRoute
   '/_dashboard/projects/': typeof DashboardProjectsIndexRoute
   '/_dashboard/repos/': typeof DashboardReposIndexRoute
   '/_dashboard/resume-projects/': typeof DashboardResumeProjectsIndexRoute
@@ -515,31 +385,15 @@ export interface FileRoutesById {
   '/_dashboard/summaries/': typeof DashboardSummariesIndexRoute
   '/_dashboard/talks/': typeof DashboardTalksIndexRoute
   '/_dashboard/volunteers/': typeof DashboardVolunteersIndexRoute
-  '/event-sourced/certifications/': typeof EventSourcedCertificationsIndexRoute
-  '/event-sourced/contacts/': typeof EventSourcedContactsIndexRoute
-  '/event-sourced/education/': typeof EventSourcedEducationIndexRoute
-  '/event-sourced/events/': typeof EventSourcedEventsIndexRoute
-  '/event-sourced/experiences/': typeof EventSourcedExperiencesIndexRoute
-  '/event-sourced/languages/': typeof EventSourcedLanguagesIndexRoute
-  '/event-sourced/links/': typeof EventSourcedLinksIndexRoute
-  '/event-sourced/notes/': typeof EventSourcedNotesIndexRoute
-  '/event-sourced/resume-projects/': typeof EventSourcedResumeProjectsIndexRoute
-  '/event-sourced/resumes/': typeof EventSourcedResumesIndexRoute
-  '/event-sourced/skill-groups/': typeof EventSourcedSkillGroupsIndexRoute
-  '/event-sourced/summaries/': typeof EventSourcedSummariesIndexRoute
-  '/event-sourced/talks/': typeof EventSourcedTalksIndexRoute
-  '/event-sourced/volunteers/': typeof EventSourcedVolunteersIndexRoute
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/_dashboard/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
-  '/event-sourced/resumes/$resumeId/': typeof EventSourcedResumesResumeIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
-    | '/event-sourced'
     | '/search'
     | '/dashboard'
     | '/preview'
@@ -547,7 +401,6 @@ export interface FileRouteTypes {
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
-    | '/event-sourced/'
     | '/test/'
     | '/api/agentic/$'
     | '/api/agentic/openapi'
@@ -560,9 +413,11 @@ export interface FileRouteTypes {
     | '/certifications/'
     | '/contacts/'
     | '/education/'
+    | '/events/'
     | '/experiences/'
     | '/languages/'
     | '/links/'
+    | '/notes/'
     | '/projects/'
     | '/repos/'
     | '/resume-projects/'
@@ -573,24 +428,9 @@ export interface FileRouteTypes {
     | '/summaries/'
     | '/talks/'
     | '/volunteers/'
-    | '/event-sourced/certifications/'
-    | '/event-sourced/contacts/'
-    | '/event-sourced/education/'
-    | '/event-sourced/events/'
-    | '/event-sourced/experiences/'
-    | '/event-sourced/languages/'
-    | '/event-sourced/links/'
-    | '/event-sourced/notes/'
-    | '/event-sourced/resume-projects/'
-    | '/event-sourced/resumes/'
-    | '/event-sourced/skill-groups/'
-    | '/event-sourced/summaries/'
-    | '/event-sourced/talks/'
-    | '/event-sourced/volunteers/'
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/resumes/$resumeId/'
-    | '/event-sourced/resumes/$resumeId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -601,7 +441,6 @@ export interface FileRouteTypes {
     | '/auth/github'
     | '/auth/signup'
     | '/auth'
-    | '/event-sourced'
     | '/test'
     | '/api/agentic/$'
     | '/api/agentic/openapi'
@@ -614,9 +453,11 @@ export interface FileRouteTypes {
     | '/certifications'
     | '/contacts'
     | '/education'
+    | '/events'
     | '/experiences'
     | '/languages'
     | '/links'
+    | '/notes'
     | '/projects'
     | '/repos'
     | '/resume-projects'
@@ -627,31 +468,15 @@ export interface FileRouteTypes {
     | '/summaries'
     | '/talks'
     | '/volunteers'
-    | '/event-sourced/certifications'
-    | '/event-sourced/contacts'
-    | '/event-sourced/education'
-    | '/event-sourced/events'
-    | '/event-sourced/experiences'
-    | '/event-sourced/languages'
-    | '/event-sourced/links'
-    | '/event-sourced/notes'
-    | '/event-sourced/resume-projects'
-    | '/event-sourced/resumes'
-    | '/event-sourced/skill-groups'
-    | '/event-sourced/summaries'
-    | '/event-sourced/talks'
-    | '/event-sourced/volunteers'
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/resumes/$resumeId'
-    | '/event-sourced/resumes/$resumeId'
   id:
     | '__root__'
     | '/'
     | '/_dashboard'
     | '/_public'
     | '/auth'
-    | '/event-sourced'
     | '/search'
     | '/_dashboard/dashboard'
     | '/_public/preview'
@@ -659,7 +484,6 @@ export interface FileRouteTypes {
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
-    | '/event-sourced/'
     | '/test/'
     | '/api/agentic/$'
     | '/api/agentic/openapi'
@@ -672,9 +496,11 @@ export interface FileRouteTypes {
     | '/_dashboard/certifications/'
     | '/_dashboard/contacts/'
     | '/_dashboard/education/'
+    | '/_dashboard/events/'
     | '/_dashboard/experiences/'
     | '/_dashboard/languages/'
     | '/_dashboard/links/'
+    | '/_dashboard/notes/'
     | '/_dashboard/projects/'
     | '/_dashboard/repos/'
     | '/_dashboard/resume-projects/'
@@ -685,24 +511,9 @@ export interface FileRouteTypes {
     | '/_dashboard/summaries/'
     | '/_dashboard/talks/'
     | '/_dashboard/volunteers/'
-    | '/event-sourced/certifications/'
-    | '/event-sourced/contacts/'
-    | '/event-sourced/education/'
-    | '/event-sourced/events/'
-    | '/event-sourced/experiences/'
-    | '/event-sourced/languages/'
-    | '/event-sourced/links/'
-    | '/event-sourced/notes/'
-    | '/event-sourced/resume-projects/'
-    | '/event-sourced/resumes/'
-    | '/event-sourced/skill-groups/'
-    | '/event-sourced/summaries/'
-    | '/event-sourced/talks/'
-    | '/event-sourced/volunteers/'
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/_dashboard/resumes/$resumeId/'
-    | '/event-sourced/resumes/$resumeId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -710,7 +521,6 @@ export interface RootRouteChildren {
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
   PublicLayoutRoute: typeof PublicLayoutRouteWithChildren
   AuthLayoutRoute: typeof AuthLayoutRouteWithChildren
-  EventSourcedLayoutRoute: typeof EventSourcedLayoutRouteWithChildren
   SearchRoute: typeof SearchRoute
   ApiMcpRoute: typeof ApiMcpRoute
   TestIndexRoute: typeof TestIndexRoute
@@ -732,13 +542,6 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/event-sourced': {
-      id: '/event-sourced'
-      path: '/event-sourced'
-      fullPath: '/event-sourced'
-      preLoaderRoute: typeof EventSourcedLayoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -775,13 +578,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/test/'
       preLoaderRoute: typeof TestIndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/event-sourced/': {
-      id: '/event-sourced/'
-      path: '/'
-      fullPath: '/event-sourced/'
-      preLoaderRoute: typeof EventSourcedIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
     }
     '/auth/': {
       id: '/auth/'
@@ -824,104 +620,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardDashboardRouteImport
       parentRoute: typeof DashboardLayoutRoute
-    }
-    '/event-sourced/volunteers/': {
-      id: '/event-sourced/volunteers/'
-      path: '/volunteers'
-      fullPath: '/event-sourced/volunteers/'
-      preLoaderRoute: typeof EventSourcedVolunteersIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/talks/': {
-      id: '/event-sourced/talks/'
-      path: '/talks'
-      fullPath: '/event-sourced/talks/'
-      preLoaderRoute: typeof EventSourcedTalksIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/summaries/': {
-      id: '/event-sourced/summaries/'
-      path: '/summaries'
-      fullPath: '/event-sourced/summaries/'
-      preLoaderRoute: typeof EventSourcedSummariesIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/skill-groups/': {
-      id: '/event-sourced/skill-groups/'
-      path: '/skill-groups'
-      fullPath: '/event-sourced/skill-groups/'
-      preLoaderRoute: typeof EventSourcedSkillGroupsIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/resumes/': {
-      id: '/event-sourced/resumes/'
-      path: '/resumes'
-      fullPath: '/event-sourced/resumes/'
-      preLoaderRoute: typeof EventSourcedResumesIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/resume-projects/': {
-      id: '/event-sourced/resume-projects/'
-      path: '/resume-projects'
-      fullPath: '/event-sourced/resume-projects/'
-      preLoaderRoute: typeof EventSourcedResumeProjectsIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/notes/': {
-      id: '/event-sourced/notes/'
-      path: '/notes'
-      fullPath: '/event-sourced/notes/'
-      preLoaderRoute: typeof EventSourcedNotesIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/links/': {
-      id: '/event-sourced/links/'
-      path: '/links'
-      fullPath: '/event-sourced/links/'
-      preLoaderRoute: typeof EventSourcedLinksIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/languages/': {
-      id: '/event-sourced/languages/'
-      path: '/languages'
-      fullPath: '/event-sourced/languages/'
-      preLoaderRoute: typeof EventSourcedLanguagesIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/experiences/': {
-      id: '/event-sourced/experiences/'
-      path: '/experiences'
-      fullPath: '/event-sourced/experiences/'
-      preLoaderRoute: typeof EventSourcedExperiencesIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/events/': {
-      id: '/event-sourced/events/'
-      path: '/events'
-      fullPath: '/event-sourced/events/'
-      preLoaderRoute: typeof EventSourcedEventsIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/education/': {
-      id: '/event-sourced/education/'
-      path: '/education'
-      fullPath: '/event-sourced/education/'
-      preLoaderRoute: typeof EventSourcedEducationIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/contacts/': {
-      id: '/event-sourced/contacts/'
-      path: '/contacts'
-      fullPath: '/event-sourced/contacts/'
-      preLoaderRoute: typeof EventSourcedContactsIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
-    '/event-sourced/certifications/': {
-      id: '/event-sourced/certifications/'
-      path: '/certifications'
-      fullPath: '/event-sourced/certifications/'
-      preLoaderRoute: typeof EventSourcedCertificationsIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
     }
     '/_dashboard/volunteers/': {
       id: '/_dashboard/volunteers/'
@@ -993,6 +691,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardProjectsIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_dashboard/notes/': {
+      id: '/_dashboard/notes/'
+      path: '/notes'
+      fullPath: '/notes/'
+      preLoaderRoute: typeof DashboardNotesIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/_dashboard/links/': {
       id: '/_dashboard/links/'
       path: '/links'
@@ -1012,6 +717,13 @@ declare module '@tanstack/react-router' {
       path: '/experiences'
       fullPath: '/experiences/'
       preLoaderRoute: typeof DashboardExperiencesIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/_dashboard/events/': {
+      id: '/_dashboard/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof DashboardEventsIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
     '/_dashboard/education/': {
@@ -1091,13 +803,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAgenticSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/event-sourced/resumes/$resumeId/': {
-      id: '/event-sourced/resumes/$resumeId/'
-      path: '/resumes/$resumeId'
-      fullPath: '/event-sourced/resumes/$resumeId/'
-      preLoaderRoute: typeof EventSourcedResumesResumeIdIndexRouteImport
-      parentRoute: typeof EventSourcedLayoutRoute
-    }
     '/_dashboard/resumes/$resumeId/': {
       id: '/_dashboard/resumes/$resumeId/'
       path: '/resumes/$resumeId'
@@ -1127,9 +832,11 @@ interface DashboardLayoutRouteChildren {
   DashboardCertificationsIndexRoute: typeof DashboardCertificationsIndexRoute
   DashboardContactsIndexRoute: typeof DashboardContactsIndexRoute
   DashboardEducationIndexRoute: typeof DashboardEducationIndexRoute
+  DashboardEventsIndexRoute: typeof DashboardEventsIndexRoute
   DashboardExperiencesIndexRoute: typeof DashboardExperiencesIndexRoute
   DashboardLanguagesIndexRoute: typeof DashboardLanguagesIndexRoute
   DashboardLinksIndexRoute: typeof DashboardLinksIndexRoute
+  DashboardNotesIndexRoute: typeof DashboardNotesIndexRoute
   DashboardProjectsIndexRoute: typeof DashboardProjectsIndexRoute
   DashboardReposIndexRoute: typeof DashboardReposIndexRoute
   DashboardResumeProjectsIndexRoute: typeof DashboardResumeProjectsIndexRoute
@@ -1148,9 +855,11 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardCertificationsIndexRoute: DashboardCertificationsIndexRoute,
   DashboardContactsIndexRoute: DashboardContactsIndexRoute,
   DashboardEducationIndexRoute: DashboardEducationIndexRoute,
+  DashboardEventsIndexRoute: DashboardEventsIndexRoute,
   DashboardExperiencesIndexRoute: DashboardExperiencesIndexRoute,
   DashboardLanguagesIndexRoute: DashboardLanguagesIndexRoute,
   DashboardLinksIndexRoute: DashboardLinksIndexRoute,
+  DashboardNotesIndexRoute: DashboardNotesIndexRoute,
   DashboardProjectsIndexRoute: DashboardProjectsIndexRoute,
   DashboardReposIndexRoute: DashboardReposIndexRoute,
   DashboardResumeProjectsIndexRoute: DashboardResumeProjectsIndexRoute,
@@ -1196,47 +905,6 @@ const AuthLayoutRouteWithChildren = AuthLayoutRoute._addFileChildren(
   AuthLayoutRouteChildren,
 )
 
-interface EventSourcedLayoutRouteChildren {
-  EventSourcedIndexRoute: typeof EventSourcedIndexRoute
-  EventSourcedCertificationsIndexRoute: typeof EventSourcedCertificationsIndexRoute
-  EventSourcedContactsIndexRoute: typeof EventSourcedContactsIndexRoute
-  EventSourcedEducationIndexRoute: typeof EventSourcedEducationIndexRoute
-  EventSourcedEventsIndexRoute: typeof EventSourcedEventsIndexRoute
-  EventSourcedExperiencesIndexRoute: typeof EventSourcedExperiencesIndexRoute
-  EventSourcedLanguagesIndexRoute: typeof EventSourcedLanguagesIndexRoute
-  EventSourcedLinksIndexRoute: typeof EventSourcedLinksIndexRoute
-  EventSourcedNotesIndexRoute: typeof EventSourcedNotesIndexRoute
-  EventSourcedResumeProjectsIndexRoute: typeof EventSourcedResumeProjectsIndexRoute
-  EventSourcedResumesIndexRoute: typeof EventSourcedResumesIndexRoute
-  EventSourcedSkillGroupsIndexRoute: typeof EventSourcedSkillGroupsIndexRoute
-  EventSourcedSummariesIndexRoute: typeof EventSourcedSummariesIndexRoute
-  EventSourcedTalksIndexRoute: typeof EventSourcedTalksIndexRoute
-  EventSourcedVolunteersIndexRoute: typeof EventSourcedVolunteersIndexRoute
-  EventSourcedResumesResumeIdIndexRoute: typeof EventSourcedResumesResumeIdIndexRoute
-}
-
-const EventSourcedLayoutRouteChildren: EventSourcedLayoutRouteChildren = {
-  EventSourcedIndexRoute: EventSourcedIndexRoute,
-  EventSourcedCertificationsIndexRoute: EventSourcedCertificationsIndexRoute,
-  EventSourcedContactsIndexRoute: EventSourcedContactsIndexRoute,
-  EventSourcedEducationIndexRoute: EventSourcedEducationIndexRoute,
-  EventSourcedEventsIndexRoute: EventSourcedEventsIndexRoute,
-  EventSourcedExperiencesIndexRoute: EventSourcedExperiencesIndexRoute,
-  EventSourcedLanguagesIndexRoute: EventSourcedLanguagesIndexRoute,
-  EventSourcedLinksIndexRoute: EventSourcedLinksIndexRoute,
-  EventSourcedNotesIndexRoute: EventSourcedNotesIndexRoute,
-  EventSourcedResumeProjectsIndexRoute: EventSourcedResumeProjectsIndexRoute,
-  EventSourcedResumesIndexRoute: EventSourcedResumesIndexRoute,
-  EventSourcedSkillGroupsIndexRoute: EventSourcedSkillGroupsIndexRoute,
-  EventSourcedSummariesIndexRoute: EventSourcedSummariesIndexRoute,
-  EventSourcedTalksIndexRoute: EventSourcedTalksIndexRoute,
-  EventSourcedVolunteersIndexRoute: EventSourcedVolunteersIndexRoute,
-  EventSourcedResumesResumeIdIndexRoute: EventSourcedResumesResumeIdIndexRoute,
-}
-
-const EventSourcedLayoutRouteWithChildren =
-  EventSourcedLayoutRoute._addFileChildren(EventSourcedLayoutRouteChildren)
-
 interface ApiAgenticOpenapiRouteChildren {
   ApiAgenticOpenapiJsonRoute: typeof ApiAgenticOpenapiJsonRoute
 }
@@ -1253,7 +921,6 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
   PublicLayoutRoute: PublicLayoutRouteWithChildren,
   AuthLayoutRoute: AuthLayoutRouteWithChildren,
-  EventSourcedLayoutRoute: EventSourcedLayoutRouteWithChildren,
   SearchRoute: SearchRoute,
   ApiMcpRoute: ApiMcpRoute,
   TestIndexRoute: TestIndexRoute,

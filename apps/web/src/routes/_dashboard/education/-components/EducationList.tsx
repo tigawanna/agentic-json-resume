@@ -1,111 +1,249 @@
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
+import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import type { listEducation } from "@/data-access-layer/resume/education/education.functions";
-import { deleteEducationMutationOptions } from "@/data-access-layer/resume/education/education.mutation-options";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import type { ResumeEducation } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { useMutation } from "@tanstack/react-query";
-import { GraduationCap, Loader2, Plus } from "lucide-react";
-import { useState, useTransition } from "react";
+import { count, useLiveQuery } from "@tanstack/react-db";
+import { GraduationCap, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
+import { LibraryEmpty } from "../../-components/LibraryEmpty";
+import {
+  ResponsiveEntityTable,
+  type ResponsiveColumn,
+} from "../../-components/ResponsiveEntityTable";
+import { RowActionButtons } from "../../-components/RowActionButtons";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
+import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
-import { EducationCreateFormDilaog } from "./EducationCreateForm";
-import { EducationListCard } from "./EducationListCard";
+import { EducationCreateForm, EducationCreateFormDialog } from "./EducationCreateForm";
+import { EducationEditForm } from "./EducationEditForm";
 
-type PageData = Awaited<ReturnType<typeof listEducation>>;
+const ROUTE_ID = "/_dashboard/education/" as const;
 
-interface EducationListProps {
-  data: PageData | undefined;
-  isLoading: boolean;
-}
+const columns: ResponsiveColumn<ResumeEducation>[] = [
+  {
+    id: "school",
+    header: "School",
+    cell: (row) => dashIfEmpty(row.school),
+  },
+  {
+    id: "degree",
+    header: "Qualification",
+    cell: (row) => dashIfEmpty(row.degree),
+  },
+  {
+    id: "field",
+    header: "Field",
+    cell: (row) => dashIfEmpty(row.field),
+  },
+  {
+    id: "startDate",
+    header: "Start",
+    cell: (row) => dashIfEmpty(row.startDate),
+  },
+  {
+    id: "endDate",
+    header: "End",
+    cell: (row) => dashIfEmpty(row.endDate),
+  },
+];
 
-export function EducationList({ data, isLoading }: EducationListProps) {
+export function EducationList() {
+  const db = useEventSourcedDb();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
+  const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
-  const [isCreateOpenPending, startCreateOpenTransition] = useTransition();
-  const deleteMutation = useMutation(deleteEducationMutationOptions);
-  const navigate = Route.useNavigate();
+  const [editing, setEditing] = useState<ResumeEducation | null>(null);
 
-  function openCreateDialog() {
-    startCreateOpenTransition(() => {
-      setCreateOpen(true);
-    });
+  const keyword = q.trim();
+  const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeEducation}
+      sortableColumns={createSortableColumns(db.collections.resumeEducation, [
+        { value: "school", label: "School" },
+        { value: "degree", label: "Qualification" },
+        { value: "field", label: "Field" },
+        { value: "startDate", label: "Start" },
+        { value: "endDate", label: "End" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
+
+  const { data: items, isLoading } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeEducation });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(
+              keyword,
+              row.school,
+              row.degree,
+              row.field,
+              row.startDate,
+              row.endDate,
+              row.description,
+              row.searchableText,
+            ),
+          )
+        : base;
+      return filtered
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
+        .limit(ADMIN_LIST_PER_PAGE)
+        .offset(offset);
+    },
+    [keyword, offset, sortBy, sortDir],
+  );
+
+  const { data: totals } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeEducation });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(
+              keyword,
+              row.school,
+              row.degree,
+              row.field,
+              row.startDate,
+              row.endDate,
+              row.description,
+              row.searchableText,
+            ),
+          )
+        : base;
+      return filtered.select(({ row }) => ({ total: count(row.id) }));
+    },
+    [keyword],
+  );
+
+  const totalItems = totals?.[0]?.total ?? 0;
+  const totalPages = totalPagesFromCount(totalItems);
+  const hasSearch = keyword.length > 0;
+
+  function handleDelete(id: string) {
+    try {
+      db.collections.resumeEducation.delete(id);
+      toast.success("Education deleted");
+    } catch (err: unknown) {
+      toast.error("Failed to delete", { description: unwrapUnknownError(err).message });
+    }
   }
+
+  const actions = (
+    <>
+      <ImportFromLegacyButton importer="education" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-education-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
+  );
 
   if (isLoading) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="education-list-page">
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Education"
+        description="Education entries in your local library."
+        searchPlaceholder="Search education…"
+        actions={actions}
+        filters={filters}
+        dataTest="education-list-page"
+      >
         <RouterPendingComponent />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
-  if (!data || data.items.length === 0) {
+
+  if (items.length === 0) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="education-list-page">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <GraduationCap className="text-muted-foreground size-12" />
-            </EmptyMedia>
-            <EmptyTitle>No Education Entries Yet</EmptyTitle>
-            <EmptyDescription>
-              You haven&apos;t added any education entries yet. Get started by adding your first
-              education entry.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent className="flex-row justify-center gap-2">
-            <Button
-              size="sm"
-              onClick={openCreateDialog}
-              disabled={isCreateOpenPending}
-              data-test="add-education-btn"
-            >
-              {isCreateOpenPending ? (
-                <Loader2 className="mr-1 size-4 animate-spin" />
-              ) : (
-                <Plus className="mr-1 size-4" />
-              )}
-              {isCreateOpenPending ? "Opening..." : "Create Education Entry"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                void navigate({
-                  to: ".",
-                  search: (prev) => {
-                    return {
-                      ...prev,
-                      sq: "",
-                    };
-                  },
-                  replace: true,
-                });
-              }}
-            >
-              Clear filters
-            </Button>
-          </EmptyContent>
-        </Empty>
-        <EducationCreateFormDilaog open={createOpen} setOpen={setCreateOpen} />
-      </div>
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Education"
+        description="Education entries in your local library."
+        searchPlaceholder="Search education…"
+        totalPages={0}
+        actions={actions}
+        filters={filters}
+        dataTest="education-list-page"
+      >
+        <LibraryEmpty
+          icon={GraduationCap}
+          title="No Education Yet"
+          description="You haven't added any education yet. Create your first entry to get started."
+          actionLabel="Create Education"
+          onAction={() => setCreateOpen(true)}
+          hasSearch={hasSearch}
+          onClearSearch={clearSearch}
+          dataTest="education-empty"
+        />
+        <EducationCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
+      </EventSourcedListScaffold>
     );
   }
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="education-list-page">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-test="education-list">
-        {data.items.map((item) => (
-          <EducationListCard
-            key={item.id}
-            education={item}
-            onDelete={(id) => deleteMutation.mutate(id)}
-          />
-        ))}
-      </div>
-    </div>
+    <EventSourcedListScaffold
+      routeID={ROUTE_ID}
+      title="Education"
+      description="Education entries in your local library."
+      searchPlaceholder="Search education…"
+      totalPages={totalPages}
+      actions={actions}
+      filters={filters}
+      dataTest="education-list-page"
+    >
+      <ResponsiveEntityTable
+        rows={items}
+        columns={columns}
+        mobileTitle={(row) => row.school}
+        mobileSubtitle={(row) => row.degree || undefined}
+        dataTest="education-table"
+        actions={(row) => (
+          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
+        )}
+      />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Education</DialogTitle>
+          </DialogHeader>
+          <EducationCreateForm onSuccess={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Education</DialogTitle>
+          </DialogHeader>
+          {editing ? <EducationEditForm item={editing} onSuccess={() => setEditing(null)} /> : null}
+        </DialogContent>
+      </Dialog>
+    </EventSourcedListScaffold>
   );
 }

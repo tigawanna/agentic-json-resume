@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -8,16 +9,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { createLink } from "@/data-access-layer/resume/resume.functions";
+
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
+import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
-  defaultValues: { resumeId: "", label: "", url: "", icon: "" },
+  defaultValues: { label: "", icon: "", url: "" },
 });
 
 interface LinkCreateFormProps {
@@ -25,33 +29,44 @@ interface LinkCreateFormProps {
 }
 
 export function LinkCreateForm({ onSuccess }: LinkCreateFormProps) {
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: async (values: typeof createOpts.defaultValues) =>
-      createLink({
-        data: {
-          resumeId: values.resumeId,
-          label: values.label,
-          url: values.url,
-          icon: values.icon || undefined,
-          sortOrder: 0,
-        },
-      }),
-    onSuccess() {
-      toast.success("Link created");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.links] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to create link", { description: unwrapUnknownError(err).message });
-    },
-  });
+  const db = useEventSourcedDb();
+  const { viewer } = useViewer();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
     ...createOpts,
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeLink,
+          value.label,
+          (row) => row.label,
+        );
+        if (existing) {
+          toast.success("Link already in library");
+          onSuccess?.();
+          return;
+        }
+        const base = libraryRowBase(viewer.user?.id);
+        const searchableText = joinSearchable(value.label, value.url, value.icon);
+        db.collections.resumeLink.insert({
+          ...base,
+          label: value.label,
+          icon: value.icon.trim() || null,
+          url: value.url,
+
+          searchableText,
+        });
+        toast.success("Link created");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to create link", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -60,28 +75,41 @@ export function LinkCreateForm({ onSuccess }: LinkCreateFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
     >
-      <form.AppField
-        name="label"
-        validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Label is required" : undefined),
-        }}
-      >
-        {(field) => (
-          <div>
-            <Label className="text-xs">Label</Label>
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-        )}
-      </form.AppField>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <form.AppField
+          name="label"
+          validators={{
+            onChange: ({ value }) => (!value?.trim() ? "Label is required" : undefined),
+          }}
+        >
+          {(field) => (
+            <div>
+              <Label className="text-xs">Label</Label>
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          )}
+        </form.AppField>
+        <form.AppField name="icon">
+          {(field) => (
+            <div>
+              <Label className="text-xs">Icon</Label>
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          )}
+        </form.AppField>
+      </div>
       <form.AppField
         name="url"
         validators={{
@@ -95,42 +123,25 @@ export function LinkCreateForm({ onSuccess }: LinkCreateFormProps) {
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               className="mt-1"
-              type="url"
-            />
-          </div>
-        )}
-      </form.AppField>
-      <form.AppField name="icon">
-        {(field) => (
-          <div>
-            <Label className="text-xs">Icon</Label>
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-              placeholder="e.g. github, linkedin, globe"
             />
           </div>
         )}
       </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
-          const hasRequired = Boolean(values.label.trim() && values.url.trim());
+          const hasRequired = Boolean(values.label.trim()) && Boolean(values.url.trim());
           return (
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
                 Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Creating…" : "Create"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Creating…" : "Create"}
               </Button>
             </DialogFooter>
           );
@@ -144,6 +155,7 @@ interface LinkCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 export function LinkCreateFormDialog({ open, setOpen }: LinkCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>

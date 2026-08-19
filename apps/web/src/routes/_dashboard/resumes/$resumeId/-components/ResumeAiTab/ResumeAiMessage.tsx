@@ -15,7 +15,7 @@ interface ResumeAiMessageProps {
   isReady: boolean;
   onEdit: ResumeAiMessageAction;
   onResend: ResumeAiMessageAction;
-  createdResumeTo?: "/resumes/$resumeId" | "/event-sourced/resumes/$resumeId";
+  createdResumeTo?: "/resumes/$resumeId";
 }
 
 function ChatAvatar({ role }: { role: ResumeAiRole }) {

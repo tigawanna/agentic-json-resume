@@ -1,4 +1,4 @@
-import { dashboard_routes } from "@/routes/_dashboard/-components/dashoboard-sidebar/dashboard_routes";
+import { dashboard_routes } from "@/routes/_dashboard/-components/dashboard_routes";
 import { Home, Store } from "lucide-react";
 
 export const routes = [

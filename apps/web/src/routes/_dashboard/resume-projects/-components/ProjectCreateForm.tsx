@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -9,22 +10,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { createProject } from "@/data-access-layer/resume/resume.functions";
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
+import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
-  defaultValues: {
-    resumeId: "",
-    name: "",
-    url: "",
-    homepageUrl: "",
-    description: "",
-  },
+  defaultValues: { name: "", url: "", homepageUrl: "", description: "", tech: "" },
 });
 
 interface ProjectCreateFormProps {
@@ -32,37 +29,61 @@ interface ProjectCreateFormProps {
 }
 
 export function ProjectCreateForm({ onSuccess }: ProjectCreateFormProps) {
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: async (values: typeof createOpts.defaultValues) =>
-      createProject({
-        data: {
-          resumeId: values.resumeId,
-          name: values.name,
-          url: values.url,
-          homepageUrl: values.homepageUrl,
-          description: values.description,
-          tech: [],
-          sortOrder: 0,
-        },
-      }),
-    onSuccess() {
-      toast.success("Project created");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumeProjects] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to create project", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+  const db = useEventSourcedDb();
+  const { viewer } = useViewer();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
     ...createOpts,
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const techRaw = value.tech.trim();
+        const tech = techRaw.startsWith("[")
+          ? techRaw
+          : JSON.stringify(
+              techRaw
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean),
+            );
+        const existing = findExistingByExactTitle(
+          db.collections.resumeProject,
+          value.name,
+          (row) => row.name,
+        );
+        if (existing) {
+          toast.success("Project already in library");
+          onSuccess?.();
+          return;
+        }
+        const base = libraryRowBase(viewer.user?.id);
+        const searchableText = joinSearchable(
+          value.name,
+          value.url,
+          value.homepageUrl,
+          value.description,
+          tech,
+        );
+        db.collections.resumeProject.insert({
+          ...base,
+          name: value.name,
+          url: value.url,
+          homepageUrl: value.homepageUrl,
+          description: value.description,
+          tech,
+
+          searchableText,
+        });
+        toast.success("Project created");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to create project", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -71,7 +92,6 @@ export function ProjectCreateForm({ onSuccess }: ProjectCreateFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -84,7 +104,7 @@ export function ProjectCreateForm({ onSuccess }: ProjectCreateFormProps) {
       >
         {(field) => (
           <div>
-            <Label className="text-xs">Project Name</Label>
+            <Label className="text-xs">Name</Label>
             <Input
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
@@ -93,24 +113,11 @@ export function ProjectCreateForm({ onSuccess }: ProjectCreateFormProps) {
           </div>
         )}
       </form.AppField>
-      <form.AppField name="description">
-        {(field) => (
-          <div>
-            <Label className="text-xs">Description</Label>
-            <Textarea
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-              rows={3}
-            />
-          </div>
-        )}
-      </form.AppField>
       <div className="grid gap-3 sm:grid-cols-2">
         <form.AppField name="url">
           {(field) => (
             <div>
-              <Label className="text-xs">Repository URL</Label>
+              <Label className="text-xs">Repo URL</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -122,7 +129,7 @@ export function ProjectCreateForm({ onSuccess }: ProjectCreateFormProps) {
         <form.AppField name="homepageUrl">
           {(field) => (
             <div>
-              <Label className="text-xs">Homepage URL</Label>
+              <Label className="text-xs">Homepage</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -132,6 +139,30 @@ export function ProjectCreateForm({ onSuccess }: ProjectCreateFormProps) {
           )}
         </form.AppField>
       </div>
+      <form.AppField name="description">
+        {(field) => (
+          <div>
+            <Label className="text-xs">Description</Label>
+            <Textarea
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="mt-1 min-h-24"
+            />
+          </div>
+        )}
+      </form.AppField>
+      <form.AppField name="tech">
+        {(field) => (
+          <div>
+            <Label className="text-xs">Tech (comma-separated)</Label>
+            <Input
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+        )}
+      </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
           const hasRequired = Boolean(values.name.trim());
@@ -141,15 +172,12 @@ export function ProjectCreateForm({ onSuccess }: ProjectCreateFormProps) {
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
                 Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Creating…" : "Create"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Creating…" : "Create"}
               </Button>
             </DialogFooter>
           );
@@ -163,6 +191,7 @@ interface ProjectCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 export function ProjectCreateFormDialog({ open, setOpen }: ProjectCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -25,7 +25,7 @@ import {
   libraryRowBase,
   newId,
   nowMs,
-} from "@/routes/event-sourced/-utils/row-helpers";
+} from "@/routes/_dashboard/-utils/row-helpers";
 
 function matchQuery(query: string, ...parts: Array<string | null | undefined>) {
   const needle = query.trim().toLowerCase();

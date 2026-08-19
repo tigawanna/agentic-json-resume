@@ -1,55 +1,75 @@
 import { Button } from "@/components/ui/button";
+
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { editTalk } from "@/data-access-layer/resume/resume.functions";
-import type { TalkListItemDTO } from "@/data-access-layer/resume/talks/talk.types";
+import type { ResumeTalk } from "@/data-access-layer/event-sourced/schemas";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { joinSearchable, touchUpdatedAt } from "../../-utils/row-helpers";
+import { parseTalkLinks, serializeTalkLinks, talkLinksSearchable } from "../-utils/talk-links";
+import { TalkLinksFields } from "./TalkLinksFields";
 
-const talkEditOpts = formOptions({
-  defaultValues: { title: "", event: "", date: "", description: "" },
+const editOpts = formOptions({
+  defaultValues: {
+    title: "",
+    event: "",
+    date: "",
+    description: "",
+    links: [] as Array<{ label: string; url: string }>,
+  },
 });
 
 interface TalkEditFormProps {
-  talk: TalkListItemDTO;
+  item: ResumeTalk;
   onSuccess?: () => void;
 }
 
-export function TalkEditForm({ talk, onSuccess }: TalkEditFormProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof talkEditOpts.defaultValues) =>
-      editTalk({ data: { id: talk.id, ...values } }),
-    onSuccess() {
-      toast.success("Talk saved");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.talks] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to save talk", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+export function TalkEditForm({ item, onSuccess }: TalkEditFormProps) {
+  const db = useEventSourcedDb();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
-    ...talkEditOpts,
+    ...editOpts,
     defaultValues: {
-      title: talk.title,
-      event: talk.event,
-      date: talk.date,
-      description: talk.description,
+      title: item.title ?? "",
+      event: item.event ?? "",
+      date: item.date ?? "",
+      description: item.description ?? "",
+      links: parseTalkLinks(item.links),
     },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        db.collections.resumeTalk.update(item.id, (draft) => {
+          draft.title = value.title;
+          draft.event = value.event;
+          draft.date = value.date;
+          draft.description = value.description;
+          draft.links = serializeTalkLinks(value.links);
+          draft.searchableText = joinSearchable(
+            value.title,
+            value.event,
+            value.date,
+            value.description,
+            talkLinksSearchable(value.links),
+          );
+          draft.updatedAt = touchUpdatedAt();
+        });
+        toast.success("Talk saved");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to save talk", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -58,7 +78,6 @@ export function TalkEditForm({ talk, onSuccess }: TalkEditFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -113,10 +132,18 @@ export function TalkEditForm({ talk, onSuccess }: TalkEditFormProps) {
             <Textarea
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-              rows={3}
+              className="mt-1 min-h-24"
             />
           </div>
+        )}
+      </form.AppField>
+      <form.AppField name="links">
+        {(field) => (
+          <TalkLinksFields
+            links={field.state.value}
+            onChange={field.handleChange}
+            disabled={pending}
+          />
         )}
       </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
@@ -128,15 +155,12 @@ export function TalkEditForm({ talk, onSuccess }: TalkEditFormProps) {
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
-                Cancel
+                Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Saving…" : "Save"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           );

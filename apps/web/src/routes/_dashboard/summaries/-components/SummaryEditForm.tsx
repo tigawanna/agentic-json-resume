@@ -1,49 +1,52 @@
 import { Button } from "@/components/ui/button";
+
 import { DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { editSummaryItem } from "@/data-access-layer/resume/resume.functions";
-import type { SummaryListItemDTO } from "@/data-access-layer/resume/summaries/summary.types";
+import type { ResumeSummary } from "@/data-access-layer/event-sourced/schemas";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { joinSearchable, touchUpdatedAt } from "../../-utils/row-helpers";
 
-const summaryEditOpts = formOptions({
+const editOpts = formOptions({
   defaultValues: { text: "" },
 });
 
 interface SummaryEditFormProps {
-  summary: SummaryListItemDTO;
+  item: ResumeSummary;
   onSuccess?: () => void;
 }
 
-export function SummaryEditForm({ summary, onSuccess }: SummaryEditFormProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof summaryEditOpts.defaultValues) =>
-      editSummaryItem({ data: { id: summary.id, ...values } }),
-    onSuccess() {
-      toast.success("Summary saved");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.summaries] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to save summary", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+export function SummaryEditForm({ item, onSuccess }: SummaryEditFormProps) {
+  const db = useEventSourcedDb();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
-    ...summaryEditOpts,
-    defaultValues: { text: summary.text },
+    ...editOpts,
+    defaultValues: {
+      text: item.text ?? "",
+    },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        db.collections.resumeSummary.update(item.id, (draft) => {
+          draft.text = value.text;
+          draft.searchableText = joinSearchable(value.text);
+          draft.updatedAt = touchUpdatedAt();
+        });
+        toast.success("Summary saved");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to save summary", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -52,7 +55,6 @@ export function SummaryEditForm({ summary, onSuccess }: SummaryEditFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -60,7 +62,7 @@ export function SummaryEditForm({ summary, onSuccess }: SummaryEditFormProps) {
       <form.AppField
         name="text"
         validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Summary text is required" : undefined),
+          onChange: ({ value }) => (!value?.trim() ? "Summary is required" : undefined),
         }}
       >
         {(field) => (
@@ -69,8 +71,7 @@ export function SummaryEditForm({ summary, onSuccess }: SummaryEditFormProps) {
             <Textarea
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1 min-h-30"
-              rows={5}
+              className="mt-1 min-h-24"
             />
           </div>
         )}
@@ -84,15 +85,12 @@ export function SummaryEditForm({ summary, onSuccess }: SummaryEditFormProps) {
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
-                Cancel
+                Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Saving…" : "Save"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           );

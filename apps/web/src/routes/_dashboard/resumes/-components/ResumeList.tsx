@@ -1,54 +1,240 @@
-import { cloneResumeMuationOptions } from "@/data-access-layer/resume/resume-mutatin-options";
-import type { listResumesPaginated } from "@/data-access-layer/resume/resume.functions";
-import { resumeCollection } from "@/data-access-layer/resume/resumes-query-collection";
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
+import { usePageSearchQuery } from "@/components/search/use-page-search-query";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import type { Resume } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { useLiveSuspenseQuery } from "@tanstack/react-db";
-import { useMutation } from "@tanstack/react-query";
-import { FileText } from "lucide-react";
+import { formatLocaleDate } from "@/utils/date-helpers";
+import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
+import { count, useLiveQuery } from "@tanstack/react-db";
+import { useNavigate } from "@tanstack/react-router";
+import { FileText, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
+import { LibraryEmpty } from "../../-components/LibraryEmpty";
+import { ResponsiveEntityTable } from "../../-components/ResponsiveEntityTable";
+import { RowActionButtons } from "../../-components/RowActionButtons";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
+import { ResumeCreateForm, ResumeCreateFormDialog } from "./ResumeCreateForm";
+import { ResumeEditForm } from "./ResumeEditForm";
 import { Route } from "..";
-import { ResumeListCard } from "./ResumeListCard";
 
-type PageData = Awaited<ReturnType<typeof listResumesPaginated>>;
+const ROUTE_ID = "/_dashboard/resumes/" as const;
 
-interface ResumeListPageProps {
-  data: PageData | undefined;
-  isLoading: boolean;
-}
+export function ResumeList() {
+  const db = useEventSourcedDb();
+  const navigate = useNavigate();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
+  const { clearSearch } = usePageSearchQuery(ROUTE_ID);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<Resume | null>(null);
 
-export function ResumeListPage({ data, isLoading }: ResumeListPageProps) {
-  useLiveSuspenseQuery((q) => q.from({ resume: resumeCollection }));
-  const cloneMutation = useMutation(cloneResumeMuationOptions);
+  const keyword = q.trim();
+  const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resume}
+      sortableColumns={createSortableColumns(db.collections.resume, [
+        { value: "name", label: "Name" },
+        { value: "headline", label: "Headline" },
+        { value: "fullName", label: "Full Name" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
+
+  const { data: items, isLoading } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resume });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(
+              keyword,
+              row.name,
+              row.fullName,
+              row.headline,
+              row.description,
+              row.searchableText,
+            ),
+          )
+        : base;
+      return filtered
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
+        .limit(ADMIN_LIST_PER_PAGE)
+        .offset(offset);
+    },
+    [keyword, offset, sortBy, sortDir],
+  );
+
+  const { data: totals } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resume });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(
+              keyword,
+              row.name,
+              row.fullName,
+              row.headline,
+              row.description,
+              row.searchableText,
+            ),
+          )
+        : base;
+      return filtered.select(({ row }) => ({ total: count(row.id) }));
+    },
+    [keyword],
+  );
+
+  const totalItems = totals?.[0]?.total ?? 0;
+  const totalPages = totalPagesFromCount(totalItems);
+  const hasSearch = keyword.length > 0;
+
+  function handleDelete(id: string) {
+    try {
+      db.collections.resume.delete(id);
+      toast.success("Résumé deleted");
+    } catch (err: unknown) {
+      toast.error("Failed to delete", { description: unwrapUnknownError(err).message });
+    }
+  }
+
+  const actions = (
+    <>
+      <ImportFromLegacyButton importer="resumes" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-resumes-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
+  );
 
   if (isLoading) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="resume-list-page">
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Résumés"
+        description="Local-first résumés stored in your event-sourced collection."
+        searchPlaceholder="Search résumés…"
+        actions={actions}
+        filters={filters}
+        dataTest="resumes-list-page"
+      >
         <RouterPendingComponent />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
-  if (!data || data.items.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="resume-list-page">
-        <div className="flex flex-col items-center justify-center gap-4 py-20 min-h-[min(380px,50dvh)]">
-          <FileText className="text-muted-foreground size-12" />
-          <p className="text-muted-foreground text-sm">No resumes yet. Create your first one!</p>
-        </div>
-      </div>
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Résumés"
+        description="Local-first résumés stored in your event-sourced collection."
+        searchPlaceholder="Search résumés…"
+        totalPages={0}
+        actions={actions}
+        filters={filters}
+        dataTest="resumes-list-page"
+      >
+        <LibraryEmpty
+          icon={FileText}
+          title="No Résumés Yet"
+          description="Create a résumé shell locally. Section library items (experience, education, …) live under Resume Data."
+          actionLabel="Create Résumé"
+          onAction={() => setCreateOpen(true)}
+          hasSearch={hasSearch}
+          onClearSearch={clearSearch}
+          dataTest="resumes-empty"
+        />
+        <ResumeCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
+      </EventSourcedListScaffold>
     );
   }
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="resume-list-page">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-test="resume-list">
-        {data.items.map((resume) => (
-          <ResumeListCard
-            key={resume.id}
-            resume={resume}
-            onClone={(id) => cloneMutation.mutate(id)}
+    <EventSourcedListScaffold
+      routeID={ROUTE_ID}
+      title="Résumés"
+      description="Local-first résumés stored in your event-sourced collection."
+      searchPlaceholder="Search résumés…"
+      totalPages={totalPages}
+      actions={actions}
+      filters={filters}
+      dataTest="resumes-list-page"
+    >
+      <ResponsiveEntityTable
+        rows={items}
+        columns={[
+          { id: "name", header: "Name", cell: (row) => row.name },
+          { id: "headline", header: "Headline", cell: (row) => dashIfEmpty(row.headline) },
+
+          {
+            id: "fullName",
+            header: "Full Name",
+            cell: (row) => dashIfEmpty(row.fullName),
+            hideOnMobile: true,
+          },
+          {
+            id: "updatedAt",
+            header: "Updated",
+            cell: (row) => formatLocaleDate(row.updatedAt),
+          },
+        ]}
+        mobileTitle={(row) => row.name}
+        mobileSubtitle={(row) => row.headline || undefined}
+        dataTest="resumes-table"
+        actions={(row) => (
+          <RowActionButtons
+            onEdit={() => setEditing(row)}
+            onDelete={() => handleDelete(row.id)}
+            onNavigateToDetails={() =>
+              void navigate({
+                to: "/resumes/$resumeId",
+                params: { resumeId: row.id },
+                search: { tab: "edit" },
+              })
+            }
           />
-        ))}
-      </div>
-    </div>
+        )}
+      />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Résumé</DialogTitle>
+          </DialogHeader>
+          <ResumeCreateForm onSuccess={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Résumé</DialogTitle>
+          </DialogHeader>
+          {editing ? <ResumeEditForm item={editing} onSuccess={() => setEditing(null)} /> : null}
+        </DialogContent>
+      </Dialog>
+    </EventSourcedListScaffold>
   );
 }

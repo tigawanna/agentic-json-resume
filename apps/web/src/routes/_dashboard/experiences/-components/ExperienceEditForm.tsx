@@ -1,95 +1,69 @@
 import { Button } from "@/components/ui/button";
+
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import type { ExperienceListItemDTO } from "@/data-access-layer/resume/experiences/experience.types";
-import {
-  editExperience,
-  updateExperienceBullets,
-} from "@/data-access-layer/resume/resume.functions";
+
+import type { ResumeExperience } from "@/data-access-layer/event-sourced/schemas";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { joinSearchable, touchUpdatedAt } from "../../-utils/row-helpers";
 
-const experienceEditOpts = formOptions({
-  defaultValues: {
-    role: "",
-    company: "",
-    startDate: "",
-    endDate: "",
-    location: "",
-    sortOrder: 0,
-  },
+const editOpts = formOptions({
+  defaultValues: { role: "", company: "", startDate: "", endDate: "", location: "" },
 });
 
 interface ExperienceEditFormProps {
-  experience: ExperienceListItemDTO;
+  item: ResumeExperience;
   onSuccess?: () => void;
-  onCancel?: () => void;
 }
 
-export function ExperienceEditForm({ experience, onSuccess, onCancel }: ExperienceEditFormProps) {
-  const queryClient = useQueryClient();
-  const [bullets, setBullets] = useState(() => experience.bullets.map((bullet) => bullet.text));
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof experienceEditOpts.defaultValues) => {
-      await editExperience({
-        data: { id: experience.id, ...values },
-      });
-      await updateExperienceBullets({
-        data: {
-          experienceId: experience.id,
-          bullets: bullets.map((bullet) => bullet.trim()).filter(Boolean),
-        },
-      });
-    },
-    onSuccess() {
-      toast.success("Experience saved");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.experiences] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to save experience", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+export function ExperienceEditForm({ item, onSuccess }: ExperienceEditFormProps) {
+  const db = useEventSourcedDb();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
-    ...experienceEditOpts,
+    ...editOpts,
     defaultValues: {
-      role: experience.role,
-      company: experience.company,
-      startDate: experience.startDate,
-      endDate: experience.endDate,
-      location: experience.location,
-      sortOrder: experience.sortOrder,
+      role: item.role ?? "",
+      company: item.company ?? "",
+      startDate: item.startDate ?? "",
+      endDate: item.endDate ?? "",
+      location: item.location ?? "",
     },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        db.collections.resumeExperience.update(item.id, (draft) => {
+          draft.role = value.role;
+          draft.company = value.company;
+          draft.startDate = value.startDate;
+          draft.endDate = value.endDate;
+          draft.location = value.location;
+          draft.searchableText = joinSearchable(
+            value.role,
+            value.company,
+            value.location,
+            value.startDate,
+            value.endDate,
+          );
+          draft.updatedAt = touchUpdatedAt();
+        });
+        toast.success("Experience saved");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to save experience", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
-
-  function addBullet() {
-    setBullets((current) => [...current, ""]);
-  }
-
-  function removeBullet(index: number) {
-    setBullets((current) => current.filter((_, bulletIndex) => bulletIndex !== index));
-  }
-
-  function updateBullet(index: number, text: string) {
-    setBullets((current) =>
-      current.map((bullet, bulletIndex) => (bulletIndex === index ? text : bullet)),
-    );
-  }
 
   return (
     <form
@@ -104,7 +78,7 @@ export function ExperienceEditForm({ experience, onSuccess, onCancel }: Experien
         <form.AppField
           name="role"
           validators={{
-            onChange: ({ value }) => (!value?.trim() ? "Job title is required" : undefined),
+            onChange: ({ value }) => (!value?.trim() ? "Job Title is required" : undefined),
           }}
         >
           {(field) => (
@@ -118,7 +92,6 @@ export function ExperienceEditForm({ experience, onSuccess, onCancel }: Experien
             </div>
           )}
         </form.AppField>
-
         <form.AppField
           name="company"
           validators={{
@@ -137,12 +110,11 @@ export function ExperienceEditForm({ experience, onSuccess, onCancel }: Experien
           )}
         </form.AppField>
       </div>
-
       <div className="grid gap-3 sm:grid-cols-2">
         <form.AppField name="startDate">
           {(field) => (
             <div>
-              <Label className="text-xs">Start Date</Label>
+              <Label className="text-xs">Start</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -151,11 +123,10 @@ export function ExperienceEditForm({ experience, onSuccess, onCancel }: Experien
             </div>
           )}
         </form.AppField>
-
         <form.AppField name="endDate">
           {(field) => (
             <div>
-              <Label className="text-xs">End Date</Label>
+              <Label className="text-xs">End</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -165,7 +136,6 @@ export function ExperienceEditForm({ experience, onSuccess, onCancel }: Experien
           )}
         </form.AppField>
       </div>
-
       <form.AppField name="location">
         {(field) => (
           <div>
@@ -178,85 +148,21 @@ export function ExperienceEditForm({ experience, onSuccess, onCancel }: Experien
           </div>
         )}
       </form.AppField>
-
-      <form.AppField
-        name="sortOrder"
-        validators={{
-          onChange: ({ value }) =>
-            !Number.isInteger(value) || value < 0 ? "Must be a non-negative integer" : undefined,
-        }}
-      >
-        {(field) => (
-          <div className="w-32">
-            <Label className="text-xs">Display Order</Label>
-            <Input
-              type="number"
-              min={0}
-              step={1}
-              value={field.state.value}
-              onChange={(e) => field.handleChange(Number(e.target.value))}
-              className="mt-1"
-            />
-            <p className="text-muted-foreground mt-1 text-xs">
-              Higher numbers appear first on the resume
-            </p>
-          </div>
-        )}
-      </form.AppField>
-
-      <div className="flex flex-col gap-2">
-        <Label className="text-xs font-medium">Bullets</Label>
-        {bullets.length > 0 ? (
-          bullets.map((bullet, index) => (
-            <div key={index} className="flex items-start gap-2">
-              <span className="text-muted-foreground mt-2 shrink-0 text-xs">•</span>
-              <Input
-                value={bullet}
-                onChange={(e) => updateBullet(index, e.target.value)}
-                className="text-sm"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-8 shrink-0"
-                onClick={() => removeBullet(index)}
-              >
-                <X className="size-3.5" />
-              </Button>
-            </div>
-          ))
-        ) : (
-          <p className="text-muted-foreground text-sm">No bullets yet.</p>
-        )}
-        <Button type="button" variant="outline" size="sm" className="w-fit" onClick={addBullet}>
-          <Plus className="mr-1 size-3.5" />
-          Add bullet
-        </Button>
-      </div>
-
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
-          const hasRequired = Boolean(values.role.trim() && values.company.trim());
+          const hasRequired = Boolean(values.role.trim()) && Boolean(values.company.trim());
           return (
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  form.reset();
-                  setBullets(experience.bullets.map((bullet) => bullet.text));
-                  onCancel?.();
-                }}
-                disabled={mutation.isPending}
+                onClick={() => form.reset()}
+                disabled={pending}
               >
-                Cancel
+                Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Saving…" : "Save"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           );

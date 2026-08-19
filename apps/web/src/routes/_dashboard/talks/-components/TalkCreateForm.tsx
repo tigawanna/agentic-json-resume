@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -9,16 +10,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { createTalk } from "@/data-access-layer/resume/resume.functions";
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
+import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
+import { serializeTalkLinks, talkLinksSearchable } from "../-utils/talk-links";
+import { TalkLinksFields } from "./TalkLinksFields";
 
 const createOpts = formOptions({
-  defaultValues: { resumeId: "", title: "", event: "", date: "", description: "" },
+  defaultValues: {
+    title: "",
+    event: "",
+    date: "",
+    description: "",
+    links: [] as Array<{ label: string; url: string }>,
+  },
 });
 
 interface TalkCreateFormProps {
@@ -26,34 +37,52 @@ interface TalkCreateFormProps {
 }
 
 export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: async (values: typeof createOpts.defaultValues) =>
-      createTalk({
-        data: {
-          resumeId: values.resumeId,
-          title: values.title,
-          event: values.event,
-          date: values.date,
-          description: values.description,
-          sortOrder: 0,
-        },
-      }),
-    onSuccess() {
-      toast.success("Talk created");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.talks] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to create talk", { description: unwrapUnknownError(err).message });
-    },
-  });
+  const db = useEventSourcedDb();
+  const { viewer } = useViewer();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
     ...createOpts,
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeTalk,
+          value.title,
+          (row) => row.title,
+        );
+        if (existing) {
+          toast.success("Talk already in library");
+          onSuccess?.();
+          return;
+        }
+        const base = libraryRowBase(viewer.user?.id);
+        const linksJson = serializeTalkLinks(value.links);
+        const searchableText = joinSearchable(
+          value.title,
+          value.event,
+          value.date,
+          value.description,
+          talkLinksSearchable(value.links),
+        );
+        db.collections.resumeTalk.insert({
+          ...base,
+          title: value.title,
+          event: value.event,
+          date: value.date,
+          description: value.description,
+          links: linksJson,
+          searchableText,
+        });
+        toast.success("Talk created");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to create talk", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -62,7 +91,6 @@ export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -117,10 +145,18 @@ export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
             <Textarea
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-              rows={3}
+              className="mt-1 min-h-24"
             />
           </div>
+        )}
+      </form.AppField>
+      <form.AppField name="links">
+        {(field) => (
+          <TalkLinksFields
+            links={field.state.value}
+            onChange={field.handleChange}
+            disabled={pending}
+          />
         )}
       </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
@@ -132,15 +168,12 @@ export function TalkCreateForm({ onSuccess }: TalkCreateFormProps) {
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
                 Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Creating…" : "Create"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Creating…" : "Create"}
               </Button>
             </DialogFooter>
           );
@@ -154,10 +187,11 @@ interface TalkCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 export function TalkCreateFormDialog({ open, setOpen }: TalkCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New Talk</DialogTitle>
         </DialogHeader>

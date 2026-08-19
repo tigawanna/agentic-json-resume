@@ -1,53 +1,57 @@
 import { Button } from "@/components/ui/button";
+
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import type { LinkListItemDTO } from "@/data-access-layer/resume/links/link.types";
-import { editLink } from "@/data-access-layer/resume/resume.functions";
+
+import type { ResumeLink } from "@/data-access-layer/event-sourced/schemas";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { joinSearchable, touchUpdatedAt } from "../../-utils/row-helpers";
 
-const linkEditOpts = formOptions({
-  defaultValues: { label: "", url: "", icon: "" },
+const editOpts = formOptions({
+  defaultValues: { label: "", icon: "", url: "" },
 });
 
 interface LinkEditFormProps {
-  link: LinkListItemDTO;
+  item: ResumeLink;
   onSuccess?: () => void;
 }
 
-export function LinkEditForm({ link, onSuccess }: LinkEditFormProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof linkEditOpts.defaultValues) =>
-      editLink({ data: { id: link.id, ...values } }),
-    onSuccess() {
-      toast.success("Link saved");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.links] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to save link", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+export function LinkEditForm({ item, onSuccess }: LinkEditFormProps) {
+  const db = useEventSourcedDb();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
-    ...linkEditOpts,
+    ...editOpts,
     defaultValues: {
-      label: link.label,
-      url: link.url,
-      icon: link.icon ?? "",
+      label: item.label ?? "",
+      icon: item.icon ?? "",
+      url: item.url ?? "",
     },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        db.collections.resumeLink.update(item.id, (draft) => {
+          draft.label = value.label;
+          draft.icon = value.icon.trim() || null;
+          draft.url = value.url;
+          draft.searchableText = joinSearchable(value.label, value.url, value.icon);
+          draft.updatedAt = touchUpdatedAt();
+        });
+        toast.success("Link saved");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to save link", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -56,28 +60,41 @@ export function LinkEditForm({ link, onSuccess }: LinkEditFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
     >
-      <form.AppField
-        name="label"
-        validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Label is required" : undefined),
-        }}
-      >
-        {(field) => (
-          <div>
-            <Label className="text-xs">Label</Label>
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-        )}
-      </form.AppField>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <form.AppField
+          name="label"
+          validators={{
+            onChange: ({ value }) => (!value?.trim() ? "Label is required" : undefined),
+          }}
+        >
+          {(field) => (
+            <div>
+              <Label className="text-xs">Label</Label>
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          )}
+        </form.AppField>
+        <form.AppField name="icon">
+          {(field) => (
+            <div>
+              <Label className="text-xs">Icon</Label>
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          )}
+        </form.AppField>
+      </div>
       <form.AppField
         name="url"
         validators={{
@@ -91,42 +108,25 @@ export function LinkEditForm({ link, onSuccess }: LinkEditFormProps) {
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               className="mt-1"
-              type="url"
-            />
-          </div>
-        )}
-      </form.AppField>
-      <form.AppField name="icon">
-        {(field) => (
-          <div>
-            <Label className="text-xs">Icon</Label>
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-              placeholder="e.g. github, linkedin, globe"
             />
           </div>
         )}
       </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
-          const hasRequired = Boolean(values.label.trim() && values.url.trim());
+          const hasRequired = Boolean(values.label.trim()) && Boolean(values.url.trim());
           return (
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
-                Cancel
+                Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Saving…" : "Save"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           );

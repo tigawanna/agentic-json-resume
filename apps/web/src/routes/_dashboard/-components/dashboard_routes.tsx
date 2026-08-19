@@ -10,9 +10,11 @@ import {
   Globe,
   GraduationCap,
   Heart,
+  Inbox,
   LayoutDashboard,
   Link,
   Mic,
+  Notebook,
   Settings,
   StickyNote,
   Wrench,
@@ -44,10 +46,12 @@ export function getDashboardPrimaryRoutes(): SidebarItem[] {
         { title: "Contacts", href: "/contacts", icon: Contact },
         { title: "Links", href: "/links", icon: Link },
         { title: "Summaries", href: "/summaries", icon: StickyNote },
+        { title: "Notes", href: "/notes", icon: Notebook },
       ],
     },
     { title: "Repositories", href: "/repos", icon: Github },
     { title: "Saved Projects", href: "/saved-projects", icon: FolderGit2 },
+    { title: "Events", href: "/events", icon: Inbox },
   ];
 }
 

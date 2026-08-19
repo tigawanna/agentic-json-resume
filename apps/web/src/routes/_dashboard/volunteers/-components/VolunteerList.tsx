@@ -1,107 +1,241 @@
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
+import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import type { listVolunteers } from "@/data-access-layer/resume/volunteers/volunteer.functions";
-import { deleteVolunteerMutationOptions } from "@/data-access-layer/resume/volunteers/volunteer.mutation-options";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import type { ResumeVolunteer } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { useMutation } from "@tanstack/react-query";
-import { Heart, Loader2, Plus } from "lucide-react";
-import { useState, useTransition } from "react";
+import { count, useLiveQuery } from "@tanstack/react-db";
+import { Heart, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
+import { LibraryEmpty } from "../../-components/LibraryEmpty";
+import {
+  ResponsiveEntityTable,
+  type ResponsiveColumn,
+} from "../../-components/ResponsiveEntityTable";
+import { RowActionButtons } from "../../-components/RowActionButtons";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
+import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
-import { VolunteerCreateFormDialog } from "./VolunteerCreateForm";
-import { VolunteerListCard } from "./VolunteerListCard";
+import { VolunteerCreateForm, VolunteerCreateFormDialog } from "./VolunteerCreateForm";
+import { VolunteerEditForm } from "./VolunteerEditForm";
 
-type PageData = Awaited<ReturnType<typeof listVolunteers>>;
+const ROUTE_ID = "/_dashboard/volunteers/" as const;
 
-interface VolunteerListProps {
-  data: PageData | undefined;
-  isLoading: boolean;
-}
+const columns: ResponsiveColumn<ResumeVolunteer>[] = [
+  {
+    id: "organization",
+    header: "Organization",
+    cell: (row) => dashIfEmpty(row.organization),
+  },
+  {
+    id: "role",
+    header: "Role",
+    cell: (row) => dashIfEmpty(row.role),
+  },
+  {
+    id: "startDate",
+    header: "Start",
+    cell: (row) => dashIfEmpty(row.startDate),
+  },
+  {
+    id: "endDate",
+    header: "End",
+    cell: (row) => dashIfEmpty(row.endDate),
+  },
+];
 
-export function VolunteerList({ data, isLoading }: VolunteerListProps) {
+export function VolunteerList() {
+  const db = useEventSourcedDb();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
+  const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
-  const [isCreateOpenPending, startCreateOpenTransition] = useTransition();
-  const navigate = Route.useNavigate();
-  const deleteMutation = useMutation(deleteVolunteerMutationOptions);
+  const [editing, setEditing] = useState<ResumeVolunteer | null>(null);
 
-  function openCreateDialog() {
-    startCreateOpenTransition(() => {
-      setCreateOpen(true);
-    });
+  const keyword = q.trim();
+  const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeVolunteer}
+      sortableColumns={createSortableColumns(db.collections.resumeVolunteer, [
+        { value: "organization", label: "Organization" },
+        { value: "role", label: "Role" },
+        { value: "startDate", label: "Start" },
+        { value: "endDate", label: "End" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
+
+  const { data: items, isLoading } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeVolunteer });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(
+              keyword,
+              row.organization,
+              row.role,
+              row.startDate,
+              row.endDate,
+              row.description,
+              row.searchableText,
+            ),
+          )
+        : base;
+      return filtered
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
+        .limit(ADMIN_LIST_PER_PAGE)
+        .offset(offset);
+    },
+    [keyword, offset, sortBy, sortDir],
+  );
+
+  const { data: totals } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeVolunteer });
+      const filtered = keyword
+        ? base.where(({ row }) =>
+            orIlike(
+              keyword,
+              row.organization,
+              row.role,
+              row.startDate,
+              row.endDate,
+              row.description,
+              row.searchableText,
+            ),
+          )
+        : base;
+      return filtered.select(({ row }) => ({ total: count(row.id) }));
+    },
+    [keyword],
+  );
+
+  const totalItems = totals?.[0]?.total ?? 0;
+  const totalPages = totalPagesFromCount(totalItems);
+  const hasSearch = keyword.length > 0;
+
+  function handleDelete(id: string) {
+    try {
+      db.collections.resumeVolunteer.delete(id);
+      toast.success("Volunteer deleted");
+    } catch (err: unknown) {
+      toast.error("Failed to delete", { description: unwrapUnknownError(err).message });
+    }
   }
+
+  const actions = (
+    <>
+      <ImportFromLegacyButton importer="volunteers" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-volunteers-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
+  );
 
   if (isLoading) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="volunteer-list-page">
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Volunteers"
+        description="Volunteer roles in your local library."
+        searchPlaceholder="Search volunteer roles…"
+        actions={actions}
+        filters={filters}
+        dataTest="volunteers-list-page"
+      >
         <RouterPendingComponent />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
-  if (!data || data.items.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="volunteer-list-page">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Heart className="text-muted-foreground size-12" />
-            </EmptyMedia>
-            <EmptyTitle>No Volunteer Entries Yet</EmptyTitle>
-            <EmptyDescription>
-              You haven&apos;t added any volunteer experiences yet. Get started by adding your first
-              volunteer entry.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent className="flex-row justify-center gap-2">
-            <Button
-              size="sm"
-              onClick={openCreateDialog}
-              disabled={isCreateOpenPending}
-              data-test="add-volunteer-btn"
-            >
-              {isCreateOpenPending ? (
-                <Loader2 className="mr-1 size-4 animate-spin" />
-              ) : (
-                <Plus className="mr-1 size-4" />
-              )}
-              {isCreateOpenPending ? "Opening..." : "Create Volunteer Entry"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                void navigate({
-                  to: ".",
-                  search: (prev) => ({ ...prev, sq: "" }),
-                  replace: true,
-                });
-              }}
-            >
-              Clear filters
-            </Button>
-          </EmptyContent>
-        </Empty>
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Volunteers"
+        description="Volunteer roles in your local library."
+        searchPlaceholder="Search volunteer roles…"
+        totalPages={0}
+        actions={actions}
+        filters={filters}
+        dataTest="volunteers-list-page"
+      >
+        <LibraryEmpty
+          icon={Heart}
+          title="No Volunteers Yet"
+          description="You haven't added any volunteers yet. Create your first entry to get started."
+          actionLabel="Create Volunteer"
+          onAction={() => setCreateOpen(true)}
+          hasSearch={hasSearch}
+          onClearSearch={clearSearch}
+          dataTest="volunteers-empty"
+        />
         <VolunteerCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="volunteer-list-page">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-test="volunteer-list">
-        {data.items.map((item) => (
-          <VolunteerListCard
-            key={item.id}
-            volunteer={item}
-            onDelete={(id) => deleteMutation.mutate(id)}
-          />
-        ))}
-      </div>
-    </div>
+    <EventSourcedListScaffold
+      routeID={ROUTE_ID}
+      title="Volunteers"
+      description="Volunteer roles in your local library."
+      searchPlaceholder="Search volunteer roles…"
+      totalPages={totalPages}
+      actions={actions}
+      filters={filters}
+      dataTest="volunteers-list-page"
+    >
+      <ResponsiveEntityTable
+        rows={items}
+        columns={columns}
+        mobileTitle={(row) => row.organization}
+        mobileSubtitle={(row) => row.role || undefined}
+        dataTest="volunteers-table"
+        actions={(row) => (
+          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
+        )}
+      />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Volunteer</DialogTitle>
+          </DialogHeader>
+          <VolunteerCreateForm onSuccess={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Volunteer</DialogTitle>
+          </DialogHeader>
+          {editing ? <VolunteerEditForm item={editing} onSuccess={() => setEditing(null)} /> : null}
+        </DialogContent>
+      </Dialog>
+    </EventSourcedListScaffold>
   );
 }

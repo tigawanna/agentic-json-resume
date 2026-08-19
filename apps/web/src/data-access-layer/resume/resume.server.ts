@@ -342,18 +342,27 @@ export async function getResumeDetail(
     .where(eq(resumeSummaryItem.resumeId, resumeId))
     .orderBy(asc(resumeSummaryItem.sortOrder));
 
-  const notes = await db
-    .select({
-      id: resumeNote.id,
-      resumeId: resumeNoteItem.resumeId,
-      label: resumeNote.label,
-      text: resumeNote.text,
-      sortOrder: resumeNoteItem.sortOrder,
-    })
-    .from(resumeNoteItem)
-    .innerJoin(resumeNote, eq(resumeNoteItem.noteId, resumeNote.id))
-    .where(eq(resumeNoteItem.resumeId, resumeId))
-    .orderBy(asc(resumeNoteItem.sortOrder));
+  let notes: ResumeDetailDTO["notes"] = [];
+  try {
+    notes = await db
+      .select({
+        id: resumeNote.id,
+        resumeId: resumeNoteItem.resumeId,
+        label: resumeNote.label,
+        text: resumeNote.text,
+        sortOrder: resumeNoteItem.sortOrder,
+      })
+      .from(resumeNoteItem)
+      .innerJoin(resumeNote, eq(resumeNoteItem.noteId, resumeNote.id))
+      .where(eq(resumeNoteItem.resumeId, resumeId))
+      .orderBy(asc(resumeNoteItem.sortOrder));
+  } catch (err: unknown) {
+    console.error(
+      "[getResumeDetail] notes query failed; continuing without notes",
+      { resumeId },
+      err,
+    );
+  }
 
   const experienceRows = await db
     .select({

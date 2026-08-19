@@ -1,106 +1,207 @@
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
+import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import { Button } from "@/components/ui/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import type { listSummaries } from "@/data-access-layer/resume/summaries/summary.functions";
-import { deleteSummaryMutationOptions } from "@/data-access-layer/resume/summaries/summary.mutation-options";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import type { ResumeSummary } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { useMutation } from "@tanstack/react-query";
-import { FileText, Loader2, Plus } from "lucide-react";
-import { useState, useTransition } from "react";
+import { count, useLiveQuery } from "@tanstack/react-db";
+import { StickyNote, Plus } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
+import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
+import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
+import { LibraryEmpty } from "../../-components/LibraryEmpty";
+import {
+  ResponsiveEntityTable,
+  type ResponsiveColumn,
+} from "../../-components/ResponsiveEntityTable";
+import { RowActionButtons } from "../../-components/RowActionButtons";
+import {
+  listOffset,
+  listOrderByRef,
+  listSortDirection,
+  orIlike,
+  totalPagesFromCount,
+} from "../../-utils/list-query";
+import { unwrapUnknownError } from "@/utils/errors";
+import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
-import { SummaryCreateFormDialog } from "./SummaryCreateForm";
-import { SummaryListCard } from "./SummaryListCard";
+import { SummaryCreateForm, SummaryCreateFormDialog } from "./SummaryCreateForm";
+import { SummaryEditForm } from "./SummaryEditForm";
 
-type PageData = Awaited<ReturnType<typeof listSummaries>>;
+const ROUTE_ID = "/_dashboard/summaries/" as const;
 
-interface SummaryListProps {
-  data: PageData | undefined;
-  isLoading: boolean;
-}
+const columns: ResponsiveColumn<ResumeSummary>[] = [
+  {
+    id: "text",
+    header: "Summary",
+    cell: (row) => (
+      <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
+        {dashIfEmpty(row.text)}
+      </span>
+    ),
+  },
+];
 
-export function SummaryList({ data, isLoading }: SummaryListProps) {
+export function SummaryList() {
+  const db = useEventSourcedDb();
+  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
+  const { clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [createOpen, setCreateOpen] = useState(false);
-  const [isCreateOpenPending, startCreateOpenTransition] = useTransition();
-  const navigate = Route.useNavigate();
-  const deleteMutation = useMutation(deleteSummaryMutationOptions);
+  const [editing, setEditing] = useState<ResumeSummary | null>(null);
 
-  function openCreateDialog() {
-    startCreateOpenTransition(() => {
-      setCreateOpen(true);
-    });
+  const keyword = q.trim();
+  const offset = listOffset(page);
+
+  const sortDir = listSortDirection(sortDirection);
+  const filters = (
+    <EventSourcedSortToolbar
+      collection={db.collections.resumeSummary}
+      sortableColumns={createSortableColumns(db.collections.resumeSummary, [
+        { value: "text", label: "Text" },
+        { value: "updatedAt", label: "Updated" },
+      ])}
+      defaultSortBy="updatedAt"
+    />
+  );
+
+  const { data: items, isLoading } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeSummary });
+      const filtered = keyword
+        ? base.where(({ row }) => orIlike(keyword, row.text, row.searchableText))
+        : base;
+      return filtered
+        .orderBy(({ row }) => listOrderByRef(row, sortBy, "updatedAt"), sortDir)
+        .limit(ADMIN_LIST_PER_PAGE)
+        .offset(offset);
+    },
+    [keyword, offset, sortBy, sortDir],
+  );
+
+  const { data: totals } = useLiveQuery(
+    (query) => {
+      const base = query.from({ row: db.collections.resumeSummary });
+      const filtered = keyword
+        ? base.where(({ row }) => orIlike(keyword, row.text, row.searchableText))
+        : base;
+      return filtered.select(({ row }) => ({ total: count(row.id) }));
+    },
+    [keyword],
+  );
+
+  const totalItems = totals?.[0]?.total ?? 0;
+  const totalPages = totalPagesFromCount(totalItems);
+  const hasSearch = keyword.length > 0;
+
+  function handleDelete(id: string) {
+    try {
+      db.collections.resumeSummary.delete(id);
+      toast.success("Summary deleted");
+    } catch (err: unknown) {
+      toast.error("Failed to delete", { description: unwrapUnknownError(err).message });
+    }
   }
+
+  const actions = (
+    <>
+      <ImportFromLegacyButton importer="summaries" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setCreateOpen(true)}
+        data-test="add-summaries-btn"
+      >
+        <Plus className="mr-1 size-4" /> Add
+      </Button>
+    </>
+  );
 
   if (isLoading) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="summary-list-page">
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Summaries"
+        description="Professional summaries in your local library."
+        searchPlaceholder="Search summaries…"
+        actions={actions}
+        filters={filters}
+        dataTest="summaries-list-page"
+      >
         <RouterPendingComponent />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
-  if (!data || data.items.length === 0) {
+  if (items.length === 0) {
     return (
-      <div className="flex w-full flex-col gap-6" data-test="summary-list-page">
-        <Empty>
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <FileText className="text-muted-foreground size-12" />
-            </EmptyMedia>
-            <EmptyTitle>No Summaries Yet</EmptyTitle>
-            <EmptyDescription>
-              You haven&apos;t added any summaries yet. Get started by adding your first summary.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent className="flex-row justify-center gap-2">
-            <Button
-              size="sm"
-              onClick={openCreateDialog}
-              disabled={isCreateOpenPending}
-              data-test="add-summary-btn"
-            >
-              {isCreateOpenPending ? (
-                <Loader2 className="mr-1 size-4 animate-spin" />
-              ) : (
-                <Plus className="mr-1 size-4" />
-              )}
-              {isCreateOpenPending ? "Opening..." : "Create Summary"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                void navigate({
-                  to: ".",
-                  search: (prev) => ({ ...prev, sq: "" }),
-                  replace: true,
-                });
-              }}
-            >
-              Clear filters
-            </Button>
-          </EmptyContent>
-        </Empty>
+      <EventSourcedListScaffold
+        routeID={ROUTE_ID}
+        title="Summaries"
+        description="Professional summaries in your local library."
+        searchPlaceholder="Search summaries…"
+        totalPages={0}
+        actions={actions}
+        filters={filters}
+        dataTest="summaries-list-page"
+      >
+        <LibraryEmpty
+          icon={StickyNote}
+          title="No Summaries Yet"
+          description="You haven't added any summaries yet. Create your first entry to get started."
+          actionLabel="Create Summary"
+          onAction={() => setCreateOpen(true)}
+          hasSearch={hasSearch}
+          onClearSearch={clearSearch}
+          dataTest="summaries-empty"
+        />
         <SummaryCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
-      </div>
+      </EventSourcedListScaffold>
     );
   }
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="summary-list-page">
-      <div className="grid gap-4 lg:grid-cols-2" data-test="summary-list">
-        {data.items.map((item) => (
-          <SummaryListCard
-            key={item.id}
-            summary={item}
-            onDelete={(id) => deleteMutation.mutate(id)}
-          />
-        ))}
-      </div>
-    </div>
+    <EventSourcedListScaffold
+      routeID={ROUTE_ID}
+      title="Summaries"
+      description="Professional summaries in your local library."
+      searchPlaceholder="Search summaries…"
+      totalPages={totalPages}
+      actions={actions}
+      filters={filters}
+      dataTest="summaries-list-page"
+    >
+      <ResponsiveEntityTable
+        rows={items}
+        columns={columns}
+        mobileTitle={(row) => row.text}
+
+        dataTest="summaries-table"
+        actions={(row) => (
+          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
+        )}
+      />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Summary</DialogTitle>
+          </DialogHeader>
+          <SummaryCreateForm onSuccess={() => setCreateOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Summary</DialogTitle>
+          </DialogHeader>
+          {editing ? <SummaryEditForm item={editing} onSuccess={() => setEditing(null)} /> : null}
+        </DialogContent>
+      </Dialog>
+    </EventSourcedListScaffold>
   );
 }

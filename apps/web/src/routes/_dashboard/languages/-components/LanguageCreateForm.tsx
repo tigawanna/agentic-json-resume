@@ -15,19 +15,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { createLanguage } from "@/data-access-layer/resume/resume.functions";
+
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
-
-const PROFICIENCY_OPTIONS = ["Native", "Fluent", "Professional", "Conversational", "Basic"];
+import { findExistingByExactTitle } from "../../-utils/find-existing";
+import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
-  defaultValues: { resumeId: "", name: "", proficiency: "" },
+  defaultValues: { name: "", proficiency: "" },
 });
 
 interface LanguageCreateFormProps {
@@ -35,36 +35,46 @@ interface LanguageCreateFormProps {
 }
 
 export function LanguageCreateForm({ onSuccess }: LanguageCreateFormProps) {
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: async (values: typeof createOpts.defaultValues) =>
-      createLanguage({
-        data: {
-          resumeId: values.resumeId,
-          name: values.name,
-          proficiency: values.proficiency,
-          sortOrder: 0,
-        },
-      }),
-    onSuccess() {
-      toast.success("Language created");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.languages] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to create language", { description: unwrapUnknownError(err).message });
-    },
-  });
+  const db = useEventSourcedDb();
+  const { viewer } = useViewer();
+  const [pending, setPending] = useState(false);
+  const containerRef = useRef<HTMLFormElement>(null);
 
   const form = useAppForm({
     ...createOpts,
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeLanguage,
+          value.name,
+          (row) => row.name,
+        );
+        if (existing) {
+          toast.success("Language already in library");
+          onSuccess?.();
+          return;
+        }
+        const base = libraryRowBase(viewer.user?.id);
+        const searchableText = joinSearchable(value.name, value.proficiency);
+        db.collections.resumeLanguage.insert({
+          ...base,
+          name: value.name,
+          proficiency: value.proficiency,
+
+          searchableText,
+        });
+        toast.success("Language created");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to create language", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
-
-  const containerRef = useRef<HTMLFormElement>(null);
 
   return (
     <form
@@ -72,7 +82,6 @@ export function LanguageCreateForm({ onSuccess }: LanguageCreateFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -80,7 +89,7 @@ export function LanguageCreateForm({ onSuccess }: LanguageCreateFormProps) {
       <form.AppField
         name="name"
         validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Language name is required" : undefined),
+          onChange: ({ value }) => (!value?.trim() ? "Language is required" : undefined),
         }}
       >
         {(field) => (
@@ -102,15 +111,10 @@ export function LanguageCreateForm({ onSuccess }: LanguageCreateFormProps) {
               value={field.state.value}
               onValueChange={(value) => field.handleChange(value ?? "")}
             >
-              <ComboboxInput
-                placeholder="Select or type..."
-                showTrigger
-                showClear
-                disabled={false}
-              />
+              <ComboboxInput placeholder="Select or type…" showTrigger showClear disabled={false} />
               <ComboboxContent container={containerRef}>
                 <ComboboxList>
-                  {PROFICIENCY_OPTIONS.map((option) => (
+                  {["Native", "Fluent", "Professional", "Conversational", "Basic"].map((option) => (
                     <ComboboxItem key={option} value={option}>
                       {option}
                     </ComboboxItem>
@@ -130,15 +134,12 @@ export function LanguageCreateForm({ onSuccess }: LanguageCreateFormProps) {
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
                 Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Creating…" : "Create"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Creating…" : "Create"}
               </Button>
             </DialogFooter>
           );
@@ -152,6 +153,7 @@ interface LanguageCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 export function LanguageCreateFormDialog({ open, setOpen }: LanguageCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>

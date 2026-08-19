@@ -9,59 +9,58 @@ import {
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import type { ContactListItemDTO } from "@/data-access-layer/resume/contacts/contact.types";
-import { editContact } from "@/data-access-layer/resume/resume.functions";
+
+import type { ResumeContact } from "@/data-access-layer/event-sourced/schemas";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { joinSearchable, touchUpdatedAt } from "../../-utils/row-helpers";
 
-const CONTACT_TYPE_OPTIONS = ["email", "phone", "location", "address", "website"];
-
-const contactEditOpts = formOptions({
-  defaultValues: { type: "", value: "", label: "" },
+const editOpts = formOptions({
+  defaultValues: { type: "", label: "", value: "" },
 });
 
 interface ContactEditFormProps {
-  contact: ContactListItemDTO;
+  item: ResumeContact;
   onSuccess?: () => void;
 }
 
-export function ContactEditForm({ contact, onSuccess }: ContactEditFormProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof contactEditOpts.defaultValues) =>
-      editContact({ data: { id: contact.id, ...values } }),
-    onSuccess() {
-      toast.success("Contact saved");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.contacts] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to save contact", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+export function ContactEditForm({ item, onSuccess }: ContactEditFormProps) {
+  const db = useEventSourcedDb();
+  const [pending, setPending] = useState(false);
+  const containerRef = useRef<HTMLFormElement>(null);
 
   const form = useAppForm({
-    ...contactEditOpts,
+    ...editOpts,
     defaultValues: {
-      type: contact.type,
-      value: contact.value,
-      label: contact.label,
+      type: item.type ?? "",
+      label: item.label ?? "",
+      value: item.value ?? "",
     },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        db.collections.resumeContact.update(item.id, (draft) => {
+          draft.type = value.type;
+          draft.label = value.label;
+          draft.value = value.value;
+          draft.searchableText = joinSearchable(value.type, value.value, value.label);
+          draft.updatedAt = touchUpdatedAt();
+        });
+        toast.success("Contact saved");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to save contact", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
-
-  const containerRef = useRef<HTMLFormElement>(null);
 
   return (
     <form
@@ -69,43 +68,56 @@ export function ContactEditForm({ contact, onSuccess }: ContactEditFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
     >
-      <form.AppField
-        name="type"
-        validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Type is required" : undefined),
-        }}
-      >
-        {(field) => (
-          <div>
-            <Label className="text-xs">Type</Label>
-            <Combobox
-              value={field.state.value}
-              onValueChange={(value) => field.handleChange(value ?? "")}
-            >
-              <ComboboxInput
-                placeholder="Select or type..."
-                showTrigger
-                showClear
-                disabled={false}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <form.AppField
+          name="type"
+          validators={{
+            onChange: ({ value }) => (!value?.trim() ? "Type is required" : undefined),
+          }}
+        >
+          {(field) => (
+            <div>
+              <Label className="text-xs">Type</Label>
+              <Combobox
+                value={field.state.value}
+                onValueChange={(value) => field.handleChange(value ?? "")}
+              >
+                <ComboboxInput
+                  placeholder="Select or type…"
+                  showTrigger
+                  showClear
+                  disabled={false}
+                />
+                <ComboboxContent container={containerRef}>
+                  <ComboboxList>
+                    {["email", "phone", "location", "address", "website"].map((option) => (
+                      <ComboboxItem key={option} value={option}>
+                        {option}
+                      </ComboboxItem>
+                    ))}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
+          )}
+        </form.AppField>
+        <form.AppField name="label">
+          {(field) => (
+            <div>
+              <Label className="text-xs">Label</Label>
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="mt-1"
               />
-              <ComboboxContent container={containerRef}>
-                <ComboboxList>
-                  {CONTACT_TYPE_OPTIONS.map((option) => (
-                    <ComboboxItem key={option} value={option}>
-                      {option}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </div>
-        )}
-      </form.AppField>
+            </div>
+          )}
+        </form.AppField>
+      </div>
       <form.AppField
         name="value"
         validators={{
@@ -123,37 +135,21 @@ export function ContactEditForm({ contact, onSuccess }: ContactEditFormProps) {
           </div>
         )}
       </form.AppField>
-      <form.AppField name="label">
-        {(field) => (
-          <div>
-            <Label className="text-xs">Label</Label>
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-              placeholder="Optional display label"
-            />
-          </div>
-        )}
-      </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
-          const hasRequired = Boolean(values.type.trim() && values.value.trim());
+          const hasRequired = Boolean(values.type.trim()) && Boolean(values.value.trim());
           return (
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
-                Cancel
+                Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Saving…" : "Save"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           );

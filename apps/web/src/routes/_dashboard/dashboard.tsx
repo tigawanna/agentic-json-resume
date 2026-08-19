@@ -1,299 +1,215 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { listEducation } from "@/data-access-layer/resume/education/education.functions";
-import { listExperiences } from "@/data-access-layer/resume/experiences/experience.functions";
-import { listResumeProjects } from "@/data-access-layer/resume/resume-projects/resume-project.functions";
-import { listResumes } from "@/data-access-layer/resume/resume.functions";
-import { listSkillGroups } from "@/data-access-layer/resume/skill-groups/skill-group.functions";
-import { getSavedProjects } from "@/data-access-layer/saved-project/saved-project.functions";
-import { openPersonaWriter } from "./-components/persona-chat/persona-chat-events";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
-import type { ComponentType } from "react";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import { count, useLiveQuery } from "@tanstack/react-db";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  ArrowRight,
+  Award,
   Briefcase,
+  Contact,
   FileText,
-  FolderGit2,
+  FolderKanban,
+  Globe,
   GraduationCap,
-  Layers3,
-  Sparkles,
+  Heart,
+  Link as LinkIcon,
+  Loader,
+  Mic,
+  Notebook,
+  StickyNote,
   Wrench,
 } from "lucide-react";
 
-const dashboardResumesQueryOptions = queryOptions({
-  queryKey: [queryKeyPrefixes.resumes, "dashboard"],
-  queryFn: () => listResumes(),
-});
-
-const dashboardExperienceQueryOptions = queryOptions({
-  queryKey: [queryKeyPrefixes.experiences, "page", undefined, "after", ""],
-  queryFn: () => listExperiences({ data: { direction: "after", keyword: "" } }),
-});
-
-const dashboardEducationQueryOptions = queryOptions({
-  queryKey: [queryKeyPrefixes.education, "page", undefined, "after", ""],
-  queryFn: () => listEducation({ data: { direction: "after", keyword: "" } }),
-});
-
-const dashboardProjectsQueryOptions = queryOptions({
-  queryKey: [queryKeyPrefixes.resumeProjects, "page", undefined, "after", ""],
-  queryFn: () => listResumeProjects({ data: { direction: "after", keyword: "" } }),
-});
-
-const dashboardSkillsQueryOptions = queryOptions({
-  queryKey: [queryKeyPrefixes.skillGroups, "page", undefined, "after", ""],
-  queryFn: () => listSkillGroups({ data: { direction: "after", keyword: "" } }),
-});
-
-const dashboardSavedProjectsQueryOptions = queryOptions({
-  queryKey: [queryKeyPrefixes.savedProjects, "dashboard"],
-  queryFn: () => getSavedProjects(),
-});
-
 export const Route = createFileRoute("/_dashboard/dashboard")({
-  component: DashboardPage,
+  component: RouteComponent,
+  ssr: false,
+  head: () => ({
+    meta: [
+      {
+        title: "Dashboard",
+        description: "Your local-first résumé library",
+      },
+    ],
+  }),
 });
 
-function DashboardPage() {
-  const { data: resumes } = useSuspenseQuery(dashboardResumesQueryOptions);
-  const { data: experiences } = useSuspenseQuery(dashboardExperienceQueryOptions);
-  const { data: education } = useSuspenseQuery(dashboardEducationQueryOptions);
-  const { data: projects } = useSuspenseQuery(dashboardProjectsQueryOptions);
-  const { data: skills } = useSuspenseQuery(dashboardSkillsQueryOptions);
-  const { data: savedProjects } = useSuspenseQuery(dashboardSavedProjectsQueryOptions);
+const libraryLinks = [
+  { title: "Résumés", href: "/resumes", icon: FileText, countKey: "resume" as const },
+  {
+    title: "Experiences",
+    href: "/experiences",
+    icon: Briefcase,
+    countKey: "resumeExperience" as const,
+  },
+  {
+    title: "Education",
+    href: "/education",
+    icon: GraduationCap,
+    countKey: "resumeEducation" as const,
+  },
+  {
+    title: "Projects",
+    href: "/resume-projects",
+    icon: FolderKanban,
+    countKey: "resumeProject" as const,
+  },
+  {
+    title: "Skills",
+    href: "/skill-groups",
+    icon: Wrench,
+    countKey: "resumeSkillGroup" as const,
+  },
+  {
+    title: "Certifications",
+    href: "/certifications",
+    icon: Award,
+    countKey: "resumeCertification" as const,
+  },
+  { title: "Talks", href: "/talks", icon: Mic, countKey: "resumeTalk" as const },
+  {
+    title: "Volunteers",
+    href: "/volunteers",
+    icon: Heart,
+    countKey: "resumeVolunteer" as const,
+  },
+  {
+    title: "Languages",
+    href: "/languages",
+    icon: Globe,
+    countKey: "resumeLanguage" as const,
+  },
+  {
+    title: "Contacts",
+    href: "/contacts",
+    icon: Contact,
+    countKey: "resumeContact" as const,
+  },
+  { title: "Links", href: "/links", icon: LinkIcon, countKey: "resumeLink" as const },
+  {
+    title: "Summaries",
+    href: "/summaries",
+    icon: StickyNote,
+    countKey: "resumeSummary" as const,
+  },
+  {
+    title: "Notes",
+    href: "/notes",
+    icon: Notebook,
+    countKey: "resumeNote" as const,
+  },
+] as const;
 
-  const latestResume = resumes[0];
-  const contentCount =
-    (experiences.items?.length ?? 0) +
-    (education.items?.length ?? 0) +
-    (projects.items?.length ?? 0) +
-    (skills.items?.length ?? 0);
-  const readinessItems = [
-    {
-      label: "Resumes",
-      count: resumes.length,
-      href: "/resumes?dir=after",
-      icon: FileText,
-    },
-    {
-      label: "Experience",
-      count: experiences.items?.length ?? 0,
-      href: "/experiences",
-      icon: Briefcase,
-    },
-    {
-      label: "Projects",
-      count: projects.items?.length ?? 0,
-      href: "/resume-projects",
-      icon: FolderGit2,
-    },
-    {
-      label: "Skills",
-      count: skills.items?.length ?? 0,
-      href: "/skill-groups",
-      icon: Wrench,
-    },
-  ] as const;
+function RouteComponent() {
+  const db = useEventSourcedDb();
+  const { data: resumeTotals, isLoading: resumesLoading } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resume }).select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: experienceTotals } = useLiveQuery((q) =>
+    q
+      .from({ row: db.collections.resumeExperience })
+      .select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: educationTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeEducation }).select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: projectTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeProject }).select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: skillGroupTotals } = useLiveQuery((q) =>
+    q
+      .from({ row: db.collections.resumeSkillGroup })
+      .select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: certificationTotals } = useLiveQuery((q) =>
+    q
+      .from({ row: db.collections.resumeCertification })
+      .select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: talkTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeTalk }).select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: volunteerTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeVolunteer }).select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: languageTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeLanguage }).select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: contactTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeContact }).select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: linkTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeLink }).select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: summaryTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeSummary }).select(({ row }) => ({ total: count(row.id) })),
+  );
+  const { data: noteTotals } = useLiveQuery((q) =>
+    q.from({ row: db.collections.resumeNote }).select(({ row }) => ({ total: count(row.id) })),
+  );
+
+  const counts = {
+    resume: resumeTotals?.[0]?.total ?? 0,
+    resumeExperience: experienceTotals?.[0]?.total ?? 0,
+    resumeEducation: educationTotals?.[0]?.total ?? 0,
+    resumeProject: projectTotals?.[0]?.total ?? 0,
+    resumeSkillGroup: skillGroupTotals?.[0]?.total ?? 0,
+    resumeCertification: certificationTotals?.[0]?.total ?? 0,
+    resumeTalk: talkTotals?.[0]?.total ?? 0,
+    resumeVolunteer: volunteerTotals?.[0]?.total ?? 0,
+    resumeLanguage: languageTotals?.[0]?.total ?? 0,
+    resumeContact: contactTotals?.[0]?.total ?? 0,
+    resumeLink: linkTotals?.[0]?.total ?? 0,
+    resumeSummary: summaryTotals?.[0]?.total ?? 0,
+    resumeNote: noteTotals?.[0]?.total ?? 0,
+  };
+
+  if (resumesLoading) {
+    return (
+      <div className="flex h-full min-h-64 w-full items-center justify-center">
+        <Loader className="size-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex w-full flex-col gap-6" data-test="dashboard-page">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div className="flex w-full flex-col gap-8" data-test="event-sourced-dashboard">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-base-content/60 mt-1 text-sm">
-            Your resume workspace for tailoring content, collecting projects, and shipping the next
-            version.
+          <h1 className="text-2xl font-bold tracking-tight">Local library</h1>
+          <p className="text-muted-foreground mt-1 max-w-xl text-sm">
+            CRUD the résumé building blocks against your event-sourced collections. Sync is off for
+            now — everything stays on this device.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={openPersonaWriter}
-            data-test="dashboard-open-persona-writer"
-          >
-            <Sparkles className="size-4" />
-            Persona Writer
-          </Button>
-          <Button asChild data-test="dashboard-primary-action">
-            <Link to="/resumes" search={{ dir: "after" }}>
-              Open resumes
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
-        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/resumes">
+            <FileText className="mr-1 size-4" />
+            Open résumés
+          </Link>
+        </Button>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard icon={FileText} label="Resumes" value={resumes.length} helper="Tailored docs" />
-        <MetricCard
-          icon={Layers3}
-          label="Content blocks"
-          value={contentCount}
-          helper="Reusable resume data"
-        />
-        <MetricCard
-          icon={FolderGit2}
-          label="Saved projects"
-          value={savedProjects.length}
-          helper="GitHub shortlist"
-        />
-        <MetricCard
-          icon={Sparkles}
-          label="Ready signals"
-          value={readinessItems.filter((item) => item.count > 0).length}
-          helper="Sections with content"
-        />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
-        <Card data-test="dashboard-readiness">
-          <CardHeader>
-            <CardTitle>Workspace readiness</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            {readinessItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="rounded-md border p-4 transition-colors hover:bg-muted/50"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Icon className="size-5 text-primary" />
-                      <span className="font-medium">{item.label}</span>
-                    </div>
-                    <Badge variant={item.count > 0 ? "secondary" : "outline"}>{item.count}</Badge>
-                  </div>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {item.count > 0
-                      ? "Content is available for tailoring."
-                      : "Add this section next."}
-                  </p>
-                </a>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        <Card data-test="dashboard-next-actions">
-          <CardHeader>
-            <CardTitle>Next actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ActionLink
-              to="/repos"
-              icon={FolderGit2}
-              title="Find GitHub projects"
-              description="Search source repositories and save the best ones."
-            />
-            <ActionLink
-              to="/experiences"
-              icon={Briefcase}
-              title="Strengthen experience"
-              description="Add recent roles and measurable impact bullets."
-            />
-            <ActionLink
-              to="/education"
-              icon={GraduationCap}
-              title="Review education"
-              description="Keep schools, credentials, and supporting details current."
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card data-test="dashboard-latest-resume">
-        <CardHeader>
-          <CardTitle>Latest resume</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {latestResume ? (
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="font-semibold">{latestResume.name}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {latestResume.headline || latestResume.description || "No headline yet"}
-                </p>
-              </div>
-              <Button asChild variant="outline">
-                <Link
-                  to="/resumes/$resumeId"
-                  params={{ resumeId: latestResume.id }}
-                  search={{ tab: "edit" }}
-                >
-                  Continue editing
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <p className="text-sm text-muted-foreground">
-                Create your first resume, then use the content library to tailor it for each role.
-              </p>
-              <Button asChild>
-                <Link to="/resumes" search={{ dir: "after" }}>
-                  Start a resume
-                </Link>
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {libraryLinks.map((item) => {
+          const Icon = item.icon;
+          return (
+            <li key={item.href}>
+              <Link
+                to={item.href}
+                className="border-border hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors"
+                data-test={`library-link-${item.countKey}`}
+              >
+                <span className="flex min-w-0 items-center gap-3">
+                  <Icon className="text-muted-foreground size-4 shrink-0" />
+                  <span className="truncate text-sm font-medium">{item.title}</span>
+                </span>
+                <span className="text-muted-foreground tabular-nums text-sm">
+                  {counts[item.countKey]}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
-  );
-}
-
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  helper,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  value: number;
-  helper: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-4 p-4">
-        <div className="rounded-md bg-primary/10 p-3 text-primary">
-          <Icon className="size-5" />
-        </div>
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold">{value}</p>
-          <p className="text-xs text-muted-foreground">{helper}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ActionLink({
-  to,
-  icon: Icon,
-  title,
-  description,
-}: {
-  to: string;
-  icon: ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-}) {
-  return (
-    <a href={to} className="flex items-start gap-3 rounded-md border p-3 hover:bg-muted/50">
-      <Icon className="mt-0.5 size-5 text-primary" />
-      <span>
-        <span className="block font-medium">{title}</span>
-        <span className="text-sm text-muted-foreground">{description}</span>
-      </span>
-    </a>
   );
 }

@@ -16,7 +16,7 @@ interface ResumeAiConversationCardProps extends Omit<
   messages: UIMessage[];
   onEditPastPrompt: ResumeAiMessageAction;
   onResendPastPrompt: ResumeAiMessageAction;
-  createdResumeTo?: "/resumes/$resumeId" | "/event-sourced/resumes/$resumeId";
+  createdResumeTo?: "/resumes/$resumeId";
 }
 
 export function ResumeAiConversationCard({

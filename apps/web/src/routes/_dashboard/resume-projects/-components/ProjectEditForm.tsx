@@ -1,95 +1,91 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import type { ResumeProjectListItemDTO } from "@/data-access-layer/resume/resume-projects/resume-project.types";
-import { editProject } from "@/data-access-layer/resume/resume.functions";
+import type { ResumeProject } from "@/data-access-layer/event-sourced/schemas";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { joinSearchable, touchUpdatedAt } from "../../-utils/row-helpers";
 
-function parseTechTags(tech: string): string[] {
-  try {
-    const parsed: unknown = JSON.parse(tech);
-    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-const projectEditOpts = formOptions({
-  defaultValues: {
-    name: "",
-    url: "",
-    homepageUrl: "",
-    description: "",
-  },
+const editOpts = formOptions({
+  defaultValues: { name: "", url: "", homepageUrl: "", description: "", tech: "[]" },
 });
 
 interface ProjectEditFormProps {
-  project: ResumeProjectListItemDTO;
+  item: ResumeProject;
   onSuccess?: () => void;
 }
 
-export function ProjectEditForm({ project, onSuccess }: ProjectEditFormProps) {
-  const queryClient = useQueryClient();
-  const [techTags, setTechTags] = useState(() => parseTechTags(project.tech));
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof projectEditOpts.defaultValues) =>
-      editProject({
-        data: { id: project.id, ...values, tech: techTags },
-      }),
-    onSuccess() {
-      toast.success("Project saved");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumeProjects] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to save project", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+export function ProjectEditForm({ item, onSuccess }: ProjectEditFormProps) {
+  const db = useEventSourcedDb();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
-    ...projectEditOpts,
+    ...editOpts,
     defaultValues: {
-      name: project.name,
-      url: project.url,
-      homepageUrl: project.homepageUrl,
-      description: project.description,
+      name: item.name ?? "",
+      url: item.url ?? "",
+      homepageUrl: item.homepageUrl ?? "",
+      description: item.description ?? "",
+      tech: (() => {
+        try {
+          const parsed = JSON.parse(item.tech) as unknown;
+          return Array.isArray(parsed) ? parsed.join(", ") : item.tech;
+        } catch {
+          return item.tech;
+        }
+      })(),
     },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const techRaw = value.tech.trim();
+        const tech = techRaw.startsWith("[")
+          ? techRaw
+          : JSON.stringify(
+              techRaw
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean),
+            );
+        db.collections.resumeProject.update(item.id, (draft) => {
+          draft.name = value.name;
+          draft.url = value.url;
+          draft.homepageUrl = value.homepageUrl;
+          draft.description = value.description;
+          draft.tech = tech;
+          draft.searchableText = joinSearchable(
+            value.name,
+            value.url,
+            value.homepageUrl,
+            value.description,
+            tech,
+          );
+          draft.updatedAt = touchUpdatedAt();
+        });
+        toast.success("Project saved");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to save project", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
-
-  function handleTechKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      const val = e.currentTarget.value.trim();
-      if (val && !techTags.includes(val)) {
-        setTechTags((prev) => [...prev, val]);
-        e.currentTarget.value = "";
-      }
-    }
-  }
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -97,12 +93,12 @@ export function ProjectEditForm({ project, onSuccess }: ProjectEditFormProps) {
       <form.AppField
         name="name"
         validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Project name is required" : undefined),
+          onChange: ({ value }) => (!value?.trim() ? "Name is required" : undefined),
         }}
       >
         {(field) => (
           <div>
-            <Label className="text-xs">Project Name</Label>
+            <Label className="text-xs">Name</Label>
             <Input
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
@@ -111,12 +107,11 @@ export function ProjectEditForm({ project, onSuccess }: ProjectEditFormProps) {
           </div>
         )}
       </form.AppField>
-
       <div className="grid gap-3 sm:grid-cols-2">
         <form.AppField name="url">
           {(field) => (
             <div>
-              <Label className="text-xs">Repository URL</Label>
+              <Label className="text-xs">Repo URL</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -125,11 +120,10 @@ export function ProjectEditForm({ project, onSuccess }: ProjectEditFormProps) {
             </div>
           )}
         </form.AppField>
-
         <form.AppField name="homepageUrl">
           {(field) => (
             <div>
-              <Label className="text-xs">Homepage URL</Label>
+              <Label className="text-xs">Homepage</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -139,7 +133,6 @@ export function ProjectEditForm({ project, onSuccess }: ProjectEditFormProps) {
           )}
         </form.AppField>
       </div>
-
       <form.AppField name="description">
         {(field) => (
           <div>
@@ -147,40 +140,23 @@ export function ProjectEditForm({ project, onSuccess }: ProjectEditFormProps) {
             <Textarea
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-              rows={3}
+              className="mt-1 min-h-24"
             />
           </div>
         )}
       </form.AppField>
-
-      <div>
-        <Label className="text-xs">Technologies (press Enter to add)</Label>
-        <Input
-          onKeyDown={handleTechKeyDown}
-          placeholder="e.g. React"
-          className="mt-1"
-          disabled={mutation.isPending}
-        />
-        {techTags.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {techTags.map((t) => (
-              <Badge key={t} variant="secondary" className="text-xs">
-                {t}
-                <button
-                  type="button"
-                  className="ml-1"
-                  onClick={() => setTechTags((prev) => prev.filter((x) => x !== t))}
-                  disabled={mutation.isPending}
-                >
-                  <X className="size-3" />
-                </button>
-              </Badge>
-            ))}
+      <form.AppField name="tech">
+        {(field) => (
+          <div>
+            <Label className="text-xs">Tech (comma-separated)</Label>
+            <Input
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="mt-1"
+            />
           </div>
         )}
-      </div>
-
+      </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
           const hasRequired = Boolean(values.name.trim());
@@ -189,19 +165,13 @@ export function ProjectEditForm({ project, onSuccess }: ProjectEditFormProps) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  form.reset();
-                  setTechTags(parseTechTags(project.tech));
-                }}
-                disabled={mutation.isPending}
+                onClick={() => form.reset()}
+                disabled={pending}
               >
-                Cancel
+                Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Saving…" : "Save"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           );

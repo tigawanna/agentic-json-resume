@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -8,16 +9,18 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { createSummaryItem } from "@/data-access-layer/resume/resume.functions";
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
+import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
-  defaultValues: { resumeId: "", text: "" },
+  defaultValues: { text: "" },
 });
 
 interface SummaryCreateFormProps {
@@ -25,27 +28,42 @@ interface SummaryCreateFormProps {
 }
 
 export function SummaryCreateForm({ onSuccess }: SummaryCreateFormProps) {
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: async (values: typeof createOpts.defaultValues) =>
-      createSummaryItem({
-        data: { resumeId: values.resumeId, text: values.text, sortOrder: 0 },
-      }),
-    onSuccess() {
-      toast.success("Summary created");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.summaries] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to create summary", { description: unwrapUnknownError(err).message });
-    },
-  });
+  const db = useEventSourcedDb();
+  const { viewer } = useViewer();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
     ...createOpts,
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeSummary,
+          value.text,
+          (row) => row.text,
+        );
+        if (existing) {
+          toast.success("Summary already in library");
+          onSuccess?.();
+          return;
+        }
+        const base = libraryRowBase(viewer.user?.id);
+        const searchableText = joinSearchable(value.text);
+        db.collections.resumeSummary.insert({
+          ...base,
+          text: value.text,
+
+          searchableText,
+        });
+        toast.success("Summary created");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to create summary", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -54,7 +72,6 @@ export function SummaryCreateForm({ onSuccess }: SummaryCreateFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -62,7 +79,7 @@ export function SummaryCreateForm({ onSuccess }: SummaryCreateFormProps) {
       <form.AppField
         name="text"
         validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Summary text is required" : undefined),
+          onChange: ({ value }) => (!value?.trim() ? "Summary is required" : undefined),
         }}
       >
         {(field) => (
@@ -71,8 +88,7 @@ export function SummaryCreateForm({ onSuccess }: SummaryCreateFormProps) {
             <Textarea
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1 min-h-30"
-              rows={5}
+              className="mt-1 min-h-24"
             />
           </div>
         )}
@@ -86,15 +102,12 @@ export function SummaryCreateForm({ onSuccess }: SummaryCreateFormProps) {
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
                 Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Creating…" : "Create"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Creating…" : "Create"}
               </Button>
             </DialogFooter>
           );
@@ -108,6 +121,7 @@ interface SummaryCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 export function SummaryCreateFormDialog({ open, setOpen }: SummaryCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>

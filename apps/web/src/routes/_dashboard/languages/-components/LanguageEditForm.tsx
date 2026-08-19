@@ -9,58 +9,56 @@ import {
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import type { LanguageListItemDTO } from "@/data-access-layer/resume/languages/language.types";
-import { editLanguage } from "@/data-access-layer/resume/resume.functions";
+
+import type { ResumeLanguage } from "@/data-access-layer/event-sourced/schemas";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { joinSearchable, touchUpdatedAt } from "../../-utils/row-helpers";
 
-const PROFICIENCY_OPTIONS = ["Native", "Fluent", "Professional", "Conversational", "Basic"];
-
-const languageEditOpts = formOptions({
+const editOpts = formOptions({
   defaultValues: { name: "", proficiency: "" },
 });
 
 interface LanguageEditFormProps {
-  language: LanguageListItemDTO;
+  item: ResumeLanguage;
   onSuccess?: () => void;
 }
 
-export function LanguageEditForm({ language, onSuccess }: LanguageEditFormProps) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: async (values: typeof languageEditOpts.defaultValues) =>
-      editLanguage({ data: { id: language.id, ...values } }),
-    onSuccess() {
-      toast.success("Language saved");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.languages] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to save language", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+export function LanguageEditForm({ item, onSuccess }: LanguageEditFormProps) {
+  const db = useEventSourcedDb();
+  const [pending, setPending] = useState(false);
+  const containerRef = useRef<HTMLFormElement>(null);
 
   const form = useAppForm({
-    ...languageEditOpts,
+    ...editOpts,
     defaultValues: {
-      name: language.name,
-      proficiency: language.proficiency,
+      name: item.name ?? "",
+      proficiency: item.proficiency ?? "",
     },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        db.collections.resumeLanguage.update(item.id, (draft) => {
+          draft.name = value.name;
+          draft.proficiency = value.proficiency;
+          draft.searchableText = joinSearchable(value.name, value.proficiency);
+          draft.updatedAt = touchUpdatedAt();
+        });
+        toast.success("Language saved");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to save language", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
-
-  const containerRef = useRef<HTMLFormElement>(null);
 
   return (
     <form
@@ -68,7 +66,6 @@ export function LanguageEditForm({ language, onSuccess }: LanguageEditFormProps)
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -76,7 +73,7 @@ export function LanguageEditForm({ language, onSuccess }: LanguageEditFormProps)
       <form.AppField
         name="name"
         validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Language name is required" : undefined),
+          onChange: ({ value }) => (!value?.trim() ? "Language is required" : undefined),
         }}
       >
         {(field) => (
@@ -98,15 +95,10 @@ export function LanguageEditForm({ language, onSuccess }: LanguageEditFormProps)
               value={field.state.value}
               onValueChange={(value) => field.handleChange(value ?? "")}
             >
-              <ComboboxInput
-                placeholder="Select or type..."
-                showTrigger
-                showClear
-                disabled={false}
-              />
+              <ComboboxInput placeholder="Select or type…" showTrigger showClear disabled={false} />
               <ComboboxContent container={containerRef}>
                 <ComboboxList>
-                  {PROFICIENCY_OPTIONS.map((option) => (
+                  {["Native", "Fluent", "Professional", "Conversational", "Basic"].map((option) => (
                     <ComboboxItem key={option} value={option}>
                       {option}
                     </ComboboxItem>
@@ -126,15 +118,12 @@ export function LanguageEditForm({ language, onSuccess }: LanguageEditFormProps)
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
-                Cancel
+                Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Saving…" : "Save"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
           );

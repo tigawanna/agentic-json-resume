@@ -1,4 +1,4 @@
-import { nowMs } from "@/routes/event-sourced/-utils/row-helpers";
+import { nowMs } from "@/routes/_dashboard/-utils/row-helpers";
 import type { AppDb } from "./collection";
 import type { Resume } from "./schemas";
 

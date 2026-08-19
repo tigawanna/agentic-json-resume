@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -8,24 +9,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { createEducation } from "@/data-access-layer/resume/resume.functions";
+import { Textarea } from "@/components/ui/textarea";
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
+import { findExistingByExactTitle } from "../../-utils/find-existing";
+import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
-  defaultValues: {
-    resumeId: "",
-    school: "",
-    degree: "",
-    field: "",
-    startDate: "",
-    endDate: "",
-    description: "",
-  },
+  defaultValues: { school: "", degree: "", field: "", startDate: "", endDate: "", description: "" },
 });
 
 interface EducationCreateFormProps {
@@ -33,38 +29,54 @@ interface EducationCreateFormProps {
 }
 
 export function EducationCreateForm({ onSuccess }: EducationCreateFormProps) {
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: async (values: typeof createOpts.defaultValues) =>
-      createEducation({
-        data: {
-          resumeId: values.resumeId,
-          school: values.school,
-          degree: values.degree,
-          field: values.field,
-          startDate: values.startDate,
-          endDate: values.endDate,
-          description: values.description,
-          sortOrder: 0,
-        },
-      }),
-    onSuccess() {
-      toast.success("Education created");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.education] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to create education", {
-        description: unwrapUnknownError(err).message,
-      });
-    },
-  });
+  const db = useEventSourcedDb();
+  const { viewer } = useViewer();
+  const [pending, setPending] = useState(false);
 
   const form = useAppForm({
     ...createOpts,
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeEducation,
+          `${value.school} ${value.degree}`,
+          (row) => `${row.school} ${row.degree}`,
+        );
+        if (existing) {
+          toast.success("Education already in library");
+          onSuccess?.();
+          return;
+        }
+        const base = libraryRowBase(viewer.user?.id);
+        const searchableText = joinSearchable(
+          value.school,
+          value.degree,
+          value.field,
+          value.startDate,
+          value.endDate,
+          value.description,
+        );
+        db.collections.resumeEducation.insert({
+          ...base,
+          school: value.school,
+          degree: value.degree,
+          field: value.field,
+          startDate: value.startDate,
+          endDate: value.endDate,
+          description: value.description,
+
+          searchableText,
+        });
+        toast.success("Education created");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to create education", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
 
@@ -73,7 +85,6 @@ export function EducationCreateForm({ onSuccess }: EducationCreateFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
@@ -130,7 +141,7 @@ export function EducationCreateForm({ onSuccess }: EducationCreateFormProps) {
         <form.AppField name="startDate">
           {(field) => (
             <div>
-              <Label className="text-xs">Start Date</Label>
+              <Label className="text-xs">Start</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -142,7 +153,7 @@ export function EducationCreateForm({ onSuccess }: EducationCreateFormProps) {
         <form.AppField name="endDate">
           {(field) => (
             <div>
-              <Label className="text-xs">End Date</Label>
+              <Label className="text-xs">End</Label>
               <Input
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -152,24 +163,33 @@ export function EducationCreateForm({ onSuccess }: EducationCreateFormProps) {
           )}
         </form.AppField>
       </div>
+      <form.AppField name="description">
+        {(field) => (
+          <div>
+            <Label className="text-xs">Description</Label>
+            <Textarea
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="mt-1 min-h-24"
+            />
+          </div>
+        )}
+      </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
-          const hasRequired = Boolean(values.school.trim() && values.degree.trim());
+          const hasRequired = Boolean(values.school.trim()) && Boolean(values.degree.trim());
           return (
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
                 Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Creating…" : "Create"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Creating…" : "Create"}
               </Button>
             </DialogFooter>
           );
@@ -179,11 +199,12 @@ export function EducationCreateForm({ onSuccess }: EducationCreateFormProps) {
   );
 }
 
-interface EducationCreateFormDilaogProps {
+interface EducationCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
-export function EducationCreateFormDilaog({ open, setOpen }: EducationCreateFormDilaogProps) {
+
+export function EducationCreateFormDialog({ open, setOpen }: EducationCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-lg">

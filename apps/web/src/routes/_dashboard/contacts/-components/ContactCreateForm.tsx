@@ -15,19 +15,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
-import { createContact } from "@/data-access-layer/resume/resume.functions";
+
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { useAppForm } from "@/lib/tanstack/form";
 import { unwrapUnknownError } from "@/utils/errors";
 import { formOptions } from "@tanstack/react-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
-
-const CONTACT_TYPE_OPTIONS = ["email", "phone", "location", "address", "website"];
+import { findExistingByExactTitle } from "../../-utils/find-existing";
+import { joinSearchable, libraryRowBase } from "../../-utils/row-helpers";
 
 const createOpts = formOptions({
-  defaultValues: { resumeId: "", type: "", value: "", label: "" },
+  defaultValues: { type: "", label: "", value: "" },
 });
 
 interface ContactCreateFormProps {
@@ -35,37 +35,47 @@ interface ContactCreateFormProps {
 }
 
 export function ContactCreateForm({ onSuccess }: ContactCreateFormProps) {
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: async (values: typeof createOpts.defaultValues) =>
-      createContact({
-        data: {
-          resumeId: values.resumeId,
-          type: values.type,
-          value: values.value,
-          label: values.label,
-          sortOrder: 0,
-        },
-      }),
-    onSuccess() {
-      toast.success("Contact created");
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.contacts] });
-      void queryClient.invalidateQueries({ queryKey: [queryKeyPrefixes.resumes] });
-      onSuccess?.();
-    },
-    onError(err: unknown) {
-      toast.error("Failed to create contact", { description: unwrapUnknownError(err).message });
-    },
-  });
+  const db = useEventSourcedDb();
+  const { viewer } = useViewer();
+  const [pending, setPending] = useState(false);
+  const containerRef = useRef<HTMLFormElement>(null);
 
   const form = useAppForm({
     ...createOpts,
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
+      setPending(true);
+      try {
+        const existing = findExistingByExactTitle(
+          db.collections.resumeContact,
+          `${value.type} ${value.value}`,
+          (row) => `${row.type} ${row.value}`,
+        );
+        if (existing) {
+          toast.success("Contact already in library");
+          onSuccess?.();
+          return;
+        }
+        const base = libraryRowBase(viewer.user?.id);
+        const searchableText = joinSearchable(value.type, value.value, value.label);
+        db.collections.resumeContact.insert({
+          ...base,
+          type: value.type,
+          label: value.label,
+          value: value.value,
+
+          searchableText,
+        });
+        toast.success("Contact created");
+        onSuccess?.();
+      } catch (err: unknown) {
+        toast.error("Failed to create contact", {
+          description: unwrapUnknownError(err).message,
+        });
+      } finally {
+        setPending(false);
+      }
     },
   });
-
-  const containerRef = useRef<HTMLFormElement>(null);
 
   return (
     <form
@@ -73,43 +83,56 @@ export function ContactCreateForm({ onSuccess }: ContactCreateFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         void form.handleSubmit();
       }}
       className="flex flex-col gap-3"
     >
-      <form.AppField
-        name="type"
-        validators={{
-          onChange: ({ value }) => (!value?.trim() ? "Type is required" : undefined),
-        }}
-      >
-        {(field) => (
-          <div>
-            <Label className="text-xs">Type</Label>
-            <Combobox
-              value={field.state.value}
-              onValueChange={(value) => field.handleChange(value ?? "")}
-            >
-              <ComboboxInput
-                placeholder="Select or type..."
-                showTrigger
-                showClear
-                disabled={false}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <form.AppField
+          name="type"
+          validators={{
+            onChange: ({ value }) => (!value?.trim() ? "Type is required" : undefined),
+          }}
+        >
+          {(field) => (
+            <div>
+              <Label className="text-xs">Type</Label>
+              <Combobox
+                value={field.state.value}
+                onValueChange={(value) => field.handleChange(value ?? "")}
+              >
+                <ComboboxInput
+                  placeholder="Select or type…"
+                  showTrigger
+                  showClear
+                  disabled={false}
+                />
+                <ComboboxContent container={containerRef}>
+                  <ComboboxList>
+                    {["email", "phone", "location", "address", "website"].map((option) => (
+                      <ComboboxItem key={option} value={option}>
+                        {option}
+                      </ComboboxItem>
+                    ))}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
+          )}
+        </form.AppField>
+        <form.AppField name="label">
+          {(field) => (
+            <div>
+              <Label className="text-xs">Label</Label>
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                className="mt-1"
               />
-              <ComboboxContent container={containerRef}>
-                <ComboboxList>
-                  {CONTACT_TYPE_OPTIONS.map((option) => (
-                    <ComboboxItem key={option} value={option}>
-                      {option}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          </div>
-        )}
-      </form.AppField>
+            </div>
+          )}
+        </form.AppField>
+      </div>
       <form.AppField
         name="value"
         validators={{
@@ -127,37 +150,21 @@ export function ContactCreateForm({ onSuccess }: ContactCreateFormProps) {
           </div>
         )}
       </form.AppField>
-      <form.AppField name="label">
-        {(field) => (
-          <div>
-            <Label className="text-xs">Label</Label>
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              className="mt-1"
-              placeholder="Optional display label"
-            />
-          </div>
-        )}
-      </form.AppField>
       <form.Subscribe selector={(s) => s.values}>
         {(values) => {
-          const hasRequired = Boolean(values.type.trim() && values.value.trim());
+          const hasRequired = Boolean(values.type.trim()) && Boolean(values.value.trim());
           return (
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => form.reset()}
-                disabled={mutation.isPending}
+                disabled={pending}
               >
                 Reset
               </Button>
-              <Button
-                type="submit"
-                disabled={mutation.isPending || !hasRequired || !form.state.isFormValid}
-              >
-                {mutation.isPending ? "Creating…" : "Create"}
+              <Button type="submit" disabled={pending || !hasRequired || !form.state.isFormValid}>
+                {pending ? "Creating…" : "Create"}
               </Button>
             </DialogFooter>
           );
@@ -171,6 +178,7 @@ interface ContactCreateFormDialogProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
+
 export function ContactCreateFormDialog({ open, setOpen }: ContactCreateFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
