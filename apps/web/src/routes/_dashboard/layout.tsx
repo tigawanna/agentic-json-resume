@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_dashboard")({
 function DashboardShell() {
   const primaryRoutes = getDashboardPrimaryRoutes();
   return (
-    <EventSourcedDbProvider>
+    <EventSourcedDbProvider fallback={<RouterPendingComponent />}>
       <DashboardLayout
         sidebarRoutes={primaryRoutes}
         sidebarLabel="Menu"

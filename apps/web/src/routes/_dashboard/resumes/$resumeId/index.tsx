@@ -23,14 +23,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { asTemplateId } from "@/data-access-layer/event-sourced/assemble-resume-detail";
 import { createEventSourcedResumeWorkspace } from "@/data-access-layer/event-sourced/event-sourced-resume-workspace";
 import { resumeDetailToDocument } from "@/data-access-layer/resume/resume-converters";
+import { useViewer } from "@/data-access-layer/auth/viewer";
 import { safeParseResumeJson, type TemplateId } from "@/features/resume/resume-schema";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { unwrapUnknownError } from "@/utils/errors";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { ArrowLeft, FileUp, FileX, Save } from "lucide-react";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { ArrowLeft, FileUp, FileX, GitFork, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { cloneLocalResume } from "../../-ai/local-resume-tools";
 import { EventSourcedResumeAiTab } from "../../-ai/EventSourcedResumeAiTab";
 import { ResumePreviewView } from "./-components/ResumePreviewTab";
 import { useEventSourcedResumeDetail } from "./-hooks/use-event-sourced-resume-detail";
@@ -54,7 +56,9 @@ function RouteComponent() {
 
 function EventSourcedResumeWorkbench({ resumeId }: { resumeId: string }) {
   const { db, detail, snapshots, isLoading } = useEventSourcedResumeDetail(resumeId);
+  const { viewer } = useViewer();
   const router = useRouter();
+  const navigate = useNavigate();
   const { tab } = Route.useSearch();
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId | null>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -139,6 +143,30 @@ function EventSourcedResumeWorkbench({ resumeId }: { resumeId: string }) {
     }
   }
 
+  function handleClone() {
+    const userId = viewer.user?.id;
+    if (!userId) {
+      toast.error("You must be signed in to clone a résumé");
+      return;
+    }
+    try {
+      const result = cloneLocalResume(
+        { db, resumeId, userId, navigateToResume: () => undefined },
+        {},
+      );
+      toast.success("Résumé cloned");
+      void navigate({
+        to: "/resumes/$resumeId",
+        params: { resumeId: result.resumeId },
+        search: { tab: "edit" },
+      });
+    } catch (err: unknown) {
+      toast.error("Failed to clone résumé", {
+        description: unwrapUnknownError(err).message,
+      });
+    }
+  }
+
   return (
     <ResumeWorkspaceProvider value={workspace}>
       <div className="flex w-full flex-col gap-6 pb-24" data-test="resume-workbench">
@@ -156,6 +184,16 @@ function EventSourcedResumeWorkbench({ resumeId }: { resumeId: string }) {
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => handleClone()}
+              data-test="clone-resume-btn"
+            >
+              <GitFork className="size-4" />
+              Clone
+            </Button>
             <Button
               variant="outline"
               size="sm"

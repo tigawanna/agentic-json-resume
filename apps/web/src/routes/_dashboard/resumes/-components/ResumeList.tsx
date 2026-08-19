@@ -7,19 +7,22 @@ import type { Resume } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { formatLocaleDate } from "@/utils/date-helpers";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { count, useLiveQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
-import { FileText, Plus } from "lucide-react";
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { FileText, FileUp, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { cloneLocalResume } from "../../-ai/local-resume-tools";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import { ResponsiveEntityTable } from "../../-components/ResponsiveEntityTable";
 import { RowActionButtons } from "../../-components/RowActionButtons";
+import { TruncatedWithTooltip } from "../../-components/TruncatedWithTooltip";
+import { ImportResumeJsonDialog } from "./ImportResumeJsonDialog";
 import {
   listOffset,
   listOrderByRef,
@@ -27,6 +30,7 @@ import {
   orIlike,
   totalPagesFromCount,
 } from "../../-utils/list-query";
+import { usePersistedListTablePrefs } from "../../-utils/use-persisted-list-table-prefs";
 import { ResumeCreateForm, ResumeCreateFormDialog } from "./ResumeCreateForm";
 import { ResumeEditForm } from "./ResumeEditForm";
 import { Route } from "..";
@@ -35,10 +39,14 @@ const ROUTE_ID = "/_dashboard/resumes/" as const;
 
 export function ResumeList() {
   const db = useEventSourcedDb();
+  const { viewer } = useViewer();
   const navigate = useNavigate();
-  const { page = 1, q = "", sortBy, sortDirection } = Route.useSearch();
+  const search = Route.useSearch();
+  const { page = 1, q = "", sortBy, sortDirection } = search;
   const { clearSearch } = usePageSearchQuery(ROUTE_ID);
+  usePersistedListTablePrefs(db, "resumes", search);
   const [createOpen, setCreateOpen] = useState(false);
+  const [importJsonOpen, setImportJsonOpen] = useState(false);
   const [editing, setEditing] = useState<Resume | null>(null);
 
   const keyword = q.trim();
@@ -114,9 +122,39 @@ export function ResumeList() {
     }
   }
 
+  function handleClone(sourceId: string) {
+    const userId = viewer.user?.id;
+    if (!userId) {
+      toast.error("You must be signed in to clone a résumé");
+      return;
+    }
+    try {
+      const result = cloneLocalResume(
+        { db, resumeId: sourceId, userId, navigateToResume: () => undefined },
+        {},
+      );
+      toast.success("Résumé cloned");
+      void navigate({
+        to: "/resumes/$resumeId",
+        params: { resumeId: result.resumeId },
+        search: { tab: "edit" },
+      });
+    } catch (err: unknown) {
+      toast.error("Failed to clone résumé", { description: unwrapUnknownError(err).message });
+    }
+  }
+
   const actions = (
     <>
       <ImportFromLegacyButton importer="resumes" />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setImportJsonOpen(true)}
+        data-test="import-resume-json-btn"
+      >
+        <FileUp className="mr-1 size-4" /> JSON
+      </Button>
       <Button
         variant="outline"
         size="sm"
@@ -126,6 +164,10 @@ export function ResumeList() {
         <Plus className="mr-1 size-4" /> Add
       </Button>
     </>
+  );
+
+  const jsonDialog = (
+    <ImportResumeJsonDialog open={importJsonOpen} onOpenChange={setImportJsonOpen} />
   );
 
   if (isLoading) {
@@ -140,6 +182,7 @@ export function ResumeList() {
         dataTest="resumes-list-page"
       >
         <RouterPendingComponent />
+        {jsonDialog}
       </EventSourcedListScaffold>
     );
   }
@@ -167,6 +210,7 @@ export function ResumeList() {
           dataTest="resumes-empty"
         />
         <ResumeCreateFormDialog open={createOpen} setOpen={setCreateOpen} />
+        {jsonDialog}
       </EventSourcedListScaffold>
     );
   }
@@ -184,19 +228,33 @@ export function ResumeList() {
     >
       <ResponsiveEntityTable
         rows={items}
+        tableClassName="table-fixed"
         columns={[
-          { id: "name", header: "Name", cell: (row) => row.name },
-          { id: "headline", header: "Headline", cell: (row) => dashIfEmpty(row.headline) },
-
+          {
+            id: "name",
+            header: "Name",
+            headClassName: "w-[42%] lg:w-[30%]",
+            className: "max-w-0 w-[42%] lg:w-[30%]",
+            cell: (row) => <TruncatedWithTooltip text={row.name} />,
+          },
+          {
+            id: "headline",
+            header: "Headline",
+            headClassName: "w-[42%] lg:w-[30%]",
+            className: "max-w-0 w-[42%] lg:w-[30%]",
+            cell: (row) => <TruncatedWithTooltip text={row.headline} />,
+          },
           {
             id: "fullName",
             header: "Full Name",
-            cell: (row) => dashIfEmpty(row.fullName),
+            className: "w-[16%] whitespace-nowrap",
+            cell: (row) => <TruncatedWithTooltip text={row.fullName} />,
             hideOnMobile: true,
           },
           {
             id: "updatedAt",
             header: "Updated",
+            className: "w-[12%] whitespace-nowrap",
             cell: (row) => formatLocaleDate(row.updatedAt),
           },
         ]}
@@ -207,6 +265,7 @@ export function ResumeList() {
           <RowActionButtons
             onEdit={() => setEditing(row)}
             onDelete={() => handleDelete(row.id)}
+            onClone={() => handleClone(row.id)}
             onNavigateToDetails={() =>
               void navigate({
                 to: "/resumes/$resumeId",
@@ -217,6 +276,8 @@ export function ResumeList() {
           />
         )}
       />
+
+      {jsonDialog}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

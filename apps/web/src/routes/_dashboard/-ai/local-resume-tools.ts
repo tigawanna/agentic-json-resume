@@ -207,9 +207,15 @@ export function searchLocalResumeBlocks(
 
 export function cloneLocalResume(
   ctx: EventSourcedResumeAiContext,
-  input: { name?: string; description?: string; jobDescription?: string },
+  input: {
+    name?: string;
+    description?: string;
+    jobDescription?: string;
+    sourceResumeId?: string;
+  },
 ): CloneResumeToolOutput {
-  const { detail } = requireDetail(ctx.db, ctx.resumeId);
+  const sourceResumeId = input.sourceResumeId ?? ctx.resumeId;
+  const { detail } = requireDetail(ctx.db, sourceResumeId);
   const base = libraryRowBase(ctx.userId);
   const name = input.name?.trim() || `${detail.name} (copy)`;
   const description = input.description ?? detail.description;
@@ -235,22 +241,22 @@ export function cloneLocalResume(
     updatedAt: base.updatedAt,
   });
 
-  copyResumeScopedRows(ctx.db.collections.resumeSection, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeContactItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeLinkItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeSummaryItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeNoteItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeExperienceItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeEducationItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeProjectItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeSkillGroupItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeTalkItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeCertificationItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeVolunteerItem, ctx.resumeId, base.id);
-  copyResumeScopedRows(ctx.db.collections.resumeLanguageItem, ctx.resumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeSection, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeContactItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeLinkItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeSummaryItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeNoteItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeExperienceItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeEducationItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeProjectItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeSkillGroupItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeTalkItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeCertificationItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeVolunteerItem, sourceResumeId, base.id);
+  copyResumeScopedRows(ctx.db.collections.resumeLanguageItem, sourceResumeId, base.id);
 
   return {
-    sourceResumeId: ctx.resumeId,
+    sourceResumeId,
     resumeId: base.id,
     name,
   };

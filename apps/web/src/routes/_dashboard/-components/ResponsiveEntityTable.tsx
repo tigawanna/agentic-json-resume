@@ -52,6 +52,7 @@ type ResponsiveEntityTableProps<T extends { id: string }> = {
   /** Collection field used when the URL has no `sortBy`. */
   defaultSortBy?: string;
   defaultSortDirection?: "asc" | "desc";
+  tableClassName?: string;
 };
 
 function parseHiddenIds(hidden: unknown) {
@@ -78,6 +79,7 @@ export function ResponsiveEntityTable<T extends { id: string }>({
   empty,
   defaultSortBy = "updatedAt",
   defaultSortDirection = "desc",
+  tableClassName,
 }: ResponsiveEntityTableProps<T>) {
   const search = useSearch({ strict: false });
   const navigate = useNavigate();
@@ -172,7 +174,7 @@ export function ResponsiveEntityTable<T extends { id: string }>({
       </div>
 
       <div className="border-border hidden overflow-hidden rounded-lg border md:block">
-        <Table>
+        <Table className={tableClassName}>
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
               {displayColumns.map((col) => {
@@ -224,7 +226,7 @@ export function ResponsiveEntityTable<T extends { id: string }>({
                 className="hover:bg-primary/30 cursor-pointer"
               >
                 {displayColumns.map((col) => (
-                  <TableCell key={col.id} className={cn("max-w-md truncate", col.className)}>
+                  <TableCell key={col.id} className={cn("max-w-md overflow-hidden", col.className)}>
                     {col.cell(row)}
                   </TableCell>
                 ))}

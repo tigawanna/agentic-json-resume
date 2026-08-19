@@ -20,6 +20,13 @@ export const embeddableSchema = z.object({
   embeddingModel: z.string().nullable().optional(),
 });
 
+export const listTablePrefsSchema = z.object({
+  hidden: z.string().optional(),
+  sortBy: z.string().optional(),
+  sortDirection: z.enum(["asc", "desc"]).optional(),
+});
+export type ListTablePrefs = z.infer<typeof listTablePrefsSchema>;
+
 /** Persisted app prefs for the event-sourced DB (not a Drizzle table). */
 export const appSettingsSchema = z.object({
   id: z.string(),
@@ -29,6 +36,8 @@ export const appSettingsSchema = z.object({
   aiModel: z.string().optional(),
   aiApiKey: z.string().optional(),
   aiSystemPrompt: z.string().optional(),
+  /** Column visibility + sort per list route (e.g. `resumes`). */
+  listTablePrefs: z.record(z.string(), listTablePrefsSchema).optional(),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 
