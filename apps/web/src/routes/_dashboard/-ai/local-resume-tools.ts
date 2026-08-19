@@ -229,6 +229,7 @@ export function cloneLocalResume(
     headline: detail.headline,
     description,
     jobDescription,
+    jobId: detail.jobId ?? null,
     templateId: asTemplateId(detail.templateId),
     experienceOrder: detail.experiences.map((experience) => experience.id),
     educationOrder: detail.education.map((education) => education.id),
@@ -280,6 +281,7 @@ export async function createLocalResumeFromDocument(
     headline: input.document.header.headline ?? "",
     description: input.description ?? "",
     jobDescription: input.jobDescription ?? "",
+    jobId: null,
     templateId: asTemplateId(input.document.meta.templateId),
     ...emptyResumeItemOrder,
     searchableText: joinSearchable(

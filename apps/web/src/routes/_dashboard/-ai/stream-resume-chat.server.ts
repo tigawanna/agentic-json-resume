@@ -11,6 +11,9 @@ import {
   refreshResumePreviewToolDefinition,
   searchCurrentResumeBlocksToolDefinition,
   updateCurrentResumeDocumentToolDefinition,
+  saveJobToolDefinition,
+  listJobsToolDefinition,
+  attachJobToCurrentResumeToolDefinition,
 } from "@/features/agentic-tools/resume-chat-tool-definitions";
 import { buildEventSourcedSystemPrompt } from "./system-prompt";
 
@@ -22,6 +25,9 @@ const eventSourcedResumeAiToolDefinitions = [
   updateCurrentResumeDocumentToolDefinition,
   refreshResumePreviewToolDefinition,
   navigateToResumeToolDefinition,
+  saveJobToolDefinition,
+  listJobsToolDefinition,
+  attachJobToCurrentResumeToolDefinition,
 ] as const;
 
 function buildTextAdapter(apiKey: string | undefined, model: string | undefined): AnyTextAdapter {

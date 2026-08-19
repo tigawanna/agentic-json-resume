@@ -6,6 +6,9 @@ import {
   refreshResumePreviewToolDefinition,
   searchCurrentResumeBlocksToolDefinition,
   updateCurrentResumeDocumentToolDefinition,
+  saveJobToolDefinition,
+  listJobsToolDefinition,
+  attachJobToCurrentResumeToolDefinition,
 } from "@/features/agentic-tools/resume-chat-tool-definitions";
 import {
   cloneLocalResume,
@@ -15,6 +18,7 @@ import {
   updateLocalResumeDocument,
   type EventSourcedResumeAiContext,
 } from "./local-resume-tools";
+import { attachLocalJobToCurrentResume, listLocalJobs, saveLocalJob } from "./local-job-tools";
 
 type ClientToolCtx = { context: EventSourcedResumeAiContext };
 
@@ -68,6 +72,31 @@ export const navigateToResumeClientTool = navigateToResumeToolDefinition.client(
   },
 );
 
+export const saveJobClientTool = saveJobToolDefinition.client((input, ctx: ClientToolCtx) =>
+  saveLocalJob(ctx.context, {
+    description: input.description,
+    company: input.company,
+    title: input.title,
+    url: input.url,
+    location: input.location,
+    status: input.status,
+    notes: input.notes,
+    attachToCurrentResume: input.attachToCurrentResume,
+  }),
+);
+
+export const listJobsClientTool = listJobsToolDefinition.client((input, ctx: ClientToolCtx) =>
+  listLocalJobs(ctx.context, {
+    keyword: input.keyword,
+    status: input.status,
+    limit: typeof input.limit === "number" ? input.limit : undefined,
+  }),
+);
+
+export const attachJobToCurrentResumeClientTool = attachJobToCurrentResumeToolDefinition.client(
+  (input, ctx: ClientToolCtx) => attachLocalJobToCurrentResume(ctx.context, input.jobId),
+);
+
 export const eventSourcedResumeAiClientTools = [
   getCurrentResumeDocumentClientTool,
   searchCurrentResumeBlocksClientTool,
@@ -76,4 +105,7 @@ export const eventSourcedResumeAiClientTools = [
   updateCurrentResumeDocumentClientTool,
   refreshResumePreviewClientTool,
   navigateToResumeClientTool,
+  saveJobClientTool,
+  listJobsClientTool,
+  attachJobToCurrentResumeClientTool,
 ];

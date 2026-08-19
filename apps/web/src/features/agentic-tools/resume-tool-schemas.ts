@@ -203,6 +203,64 @@ export const navigateToResumeToolOutputSchema = z.object({
   tab: z.enum(["edit", "preview", "json", "prompt", "ai"]),
 });
 
+export const jobStatusToolSchema = z.enum([
+  "saved",
+  "applied",
+  "interviewing",
+  "offer",
+  "rejected",
+  "archived",
+]);
+
+export const saveJobToolInputSchema = z.object({
+  description: z.string().trim().min(1).max(40_000),
+  company: z.string().trim().max(200).optional(),
+  title: z.string().trim().max(200).optional(),
+  url: z.string().trim().max(2_000).optional(),
+  location: z.string().trim().max(200).optional(),
+  status: jobStatusToolSchema.optional(),
+  notes: z.string().trim().max(4_000).optional(),
+  attachToCurrentResume: z.boolean().optional(),
+});
+
+export const listJobsToolInputSchema = z.object({
+  keyword: z.string().trim().min(1).optional(),
+  status: jobStatusToolSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export const jobToolRowSchema = z.object({
+  id: z.string(),
+  company: z.string(),
+  title: z.string(),
+  location: z.string(),
+  status: jobStatusToolSchema,
+  url: z.string(),
+  descriptionPreview: z.string(),
+  attachedToCurrentResume: z.boolean(),
+});
+
+export const saveJobToolOutputSchema = z.object({
+  job: jobToolRowSchema,
+  created: z.boolean(),
+  attachedToCurrentResume: z.boolean(),
+});
+
+export const listJobsToolOutputSchema = z.object({
+  jobs: z.array(jobToolRowSchema),
+});
+
+export const attachJobToCurrentResumeToolInputSchema = z.object({
+  jobId: z.string().trim().min(1),
+});
+
+export const attachJobToCurrentResumeToolOutputSchema = z.object({
+  resumeId: z.string(),
+  jobId: z.string(),
+  company: z.string(),
+  title: z.string(),
+});
+
 export type ResumeBlockType = z.infer<typeof resumeBlockTypeSchema>;
 export type ListResumesToolInput = z.infer<typeof listResumesToolInputSchema>;
 export type GetResumeDocumentToolInput = z.infer<typeof getResumeDocumentToolInputSchema>;
@@ -232,3 +290,9 @@ export type UpdateCurrentResumeDocumentToolInput = z.infer<
 >;
 export type UpdateResumeDocumentToolInput = z.infer<typeof updateResumeDocumentToolInputSchema>;
 export type UpdateResumeDocumentToolOutput = z.infer<typeof updateResumeDocumentToolOutputSchema>;
+export type SaveJobToolInput = z.infer<typeof saveJobToolInputSchema>;
+export type SaveJobToolOutput = z.infer<typeof saveJobToolOutputSchema>;
+export type ListJobsToolOutput = z.infer<typeof listJobsToolOutputSchema>;
+export type AttachJobToCurrentResumeToolOutput = z.infer<
+  typeof attachJobToCurrentResumeToolOutputSchema
+>;
