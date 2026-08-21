@@ -14,10 +14,7 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,25 +24,11 @@ import {
   totalPagesFromCount,
 } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { LanguageCreateForm, LanguageCreateFormDialog } from "./LanguageCreateForm";
 import { LanguageEditForm } from "./LanguageEditForm";
 
 const ROUTE_ID = "/_dashboard/languages/" as const;
-
-const columns: ResponsiveColumn<ResumeLanguage>[] = [
-  {
-    id: "name",
-    header: "Language",
-    cell: (row) => dashIfEmpty(row.name),
-  },
-  {
-    id: "proficiency",
-    header: "Proficiency",
-    cell: (row) => dashIfEmpty(row.proficiency),
-  },
-];
 
 export function LanguageList() {
   const db = useEventSourcedDb();
@@ -176,16 +159,25 @@ export function LanguageList() {
       filters={filters}
       dataTest="languages-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.name}
-        mobileSubtitle={(row) => row.proficiency || undefined}
-        dataTest="languages-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="languages-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={Globe}
+            title={row.name}
+            subtitle={row.proficiency}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

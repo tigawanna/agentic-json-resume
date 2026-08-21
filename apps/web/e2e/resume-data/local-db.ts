@@ -149,7 +149,7 @@ export async function expectPagination(page: Page, current: number, total: numbe
 }
 
 export async function expectDesktopRowCount(page: Page, tableTestId: string, count: number) {
-  await expect(page.getByTestId(tableTestId).locator("tbody tr")).toHaveCount(count);
+  await expect(page.getByTestId(tableTestId).locator('[data-test^="row-"]')).toHaveCount(count);
 }
 
 export async function clickTableRowAction(
@@ -160,7 +160,6 @@ export async function clickTableRowAction(
   const testId = action === "edit" ? "row-edit-btn" : "row-delete-btn";
   await page
     .getByTestId(tableTestId)
-    .locator("table")
     .getByTestId(testId)
     .first()
     .evaluate((el: HTMLButtonElement) => {

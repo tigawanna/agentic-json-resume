@@ -15,9 +15,10 @@ import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolb
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+  formatLibraryDateRange,
+  LibraryEntityCard,
+  LibraryEntityCardGrid,
+} from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,35 +28,11 @@ import {
   totalPagesFromCount,
 } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { VolunteerCreateForm, VolunteerCreateFormDialog } from "./VolunteerCreateForm";
 import { VolunteerEditForm } from "./VolunteerEditForm";
 
 const ROUTE_ID = "/_dashboard/volunteers/" as const;
-
-const columns: ResponsiveColumn<ResumeVolunteer>[] = [
-  {
-    id: "organization",
-    header: "Organization",
-    cell: (row) => dashIfEmpty(row.organization),
-  },
-  {
-    id: "role",
-    header: "Role",
-    cell: (row) => dashIfEmpty(row.role),
-  },
-  {
-    id: "startDate",
-    header: "Start",
-    cell: (row) => dashIfEmpty(row.startDate),
-  },
-  {
-    id: "endDate",
-    header: "End",
-    cell: (row) => dashIfEmpty(row.endDate),
-  },
-];
 
 export function VolunteerList() {
   const db = useEventSourcedDb();
@@ -208,16 +185,26 @@ export function VolunteerList() {
       filters={filters}
       dataTest="volunteers-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.organization}
-        mobileSubtitle={(row) => row.role || undefined}
-        dataTest="volunteers-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="volunteers-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={Heart}
+            title={row.role}
+            subtitle={row.organization}
+            dateRange={formatLibraryDateRange(row.startDate, row.endDate)}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

@@ -14,10 +14,7 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,24 +24,11 @@ import {
   totalPagesFromCount,
 } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { SummaryCreateForm, SummaryCreateFormDialog } from "./SummaryCreateForm";
 import { SummaryEditForm } from "./SummaryEditForm";
 
 const ROUTE_ID = "/_dashboard/summaries/" as const;
-
-const columns: ResponsiveColumn<ResumeSummary>[] = [
-  {
-    id: "text",
-    header: "Summary",
-    cell: (row) => (
-      <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-        {dashIfEmpty(row.text)}
-      </span>
-    ),
-  },
-];
 
 export function SummaryList() {
   const db = useEventSourcedDb();
@@ -174,16 +158,25 @@ export function SummaryList() {
       filters={filters}
       dataTest="summaries-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.text}
-
-        dataTest="summaries-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="summaries-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={StickyNote}
+            title="Summary"
+            subtitle={row.text}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

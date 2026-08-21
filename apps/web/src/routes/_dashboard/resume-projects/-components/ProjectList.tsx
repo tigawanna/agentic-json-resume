@@ -14,10 +14,7 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,35 +24,25 @@ import {
   totalPagesFromCount,
 } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { ProjectCreateForm, ProjectCreateFormDialog } from "./ProjectCreateForm";
 import { ProjectEditForm } from "./ProjectEditForm";
 
 const ROUTE_ID = "/_dashboard/resume-projects/" as const;
 
-const columns: ResponsiveColumn<ResumeProject>[] = [
-  {
-    id: "name",
-    header: "Name",
-    cell: (row) => dashIfEmpty(row.name),
-  },
-  {
-    id: "description",
-    header: "Description",
-    cell: (row) => (
-      <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-        {dashIfEmpty(row.description)}
-      </span>
-    ),
-  },
-  {
-    id: "tech",
-    header: "Tech",
-    cell: (row) => dashIfEmpty(row.tech),
-    hideOnMobile: true,
-  },
-];
+function parseTechTags(tech: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(tech);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return tech
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+}
 
 export function ProjectList() {
   const db = useEventSourcedDb();
@@ -207,16 +194,29 @@ export function ProjectList() {
       filters={filters}
       dataTest="resume-projects-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.name}
-        mobileSubtitle={(row) => row.description || undefined}
-        dataTest="resume-projects-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="resume-projects-table">
+        {items.map((row) => {
+          const tags = parseTechTags(row.tech);
+          return (
+            <LibraryEntityCard
+              key={row.id}
+              id={row.id}
+              icon={FolderKanban}
+              title={row.name}
+              subtitle={row.description}
+              body={tags.length > 0 ? tags.join(" · ") : undefined}
+              sortOrder={row.sortOrder}
+              updatedAt={row.updatedAt}
+              actions={
+                <RowActionButtons
+                  onEdit={() => setEditing(row)}
+                  onDelete={() => handleDelete(row.id)}
+                />
+              }
+            />
+          );
+        })}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

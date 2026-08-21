@@ -6,7 +6,6 @@ import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import type { ResumeNote } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { count, useLiveQuery } from "@tanstack/react-db";
 import { Notebook, Plus } from "lucide-react";
 import { useState } from "react";
@@ -16,10 +15,7 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -33,23 +29,6 @@ import { NoteCreateForm, NoteCreateFormDialog } from "./NoteCreateForm";
 import { NoteEditForm } from "./NoteEditForm";
 
 const ROUTE_ID = "/_dashboard/notes/" as const;
-
-const columns: ResponsiveColumn<ResumeNote>[] = [
-  {
-    id: "label",
-    header: "Heading",
-    cell: (row) => <span className="font-medium">{row.label || "Notes"}</span>,
-  },
-  {
-    id: "text",
-    header: "Body",
-    cell: (row) => (
-      <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-        {dashIfEmpty(row.text)}
-      </span>
-    ),
-  },
-];
 
 export function NoteList() {
   const db = useEventSourcedDb();
@@ -180,15 +159,25 @@ export function NoteList() {
       filters={filters}
       dataTest="notes-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.label || "Notes"}
-        dataTest="notes-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="notes-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={Notebook}
+            title={row.label || "Notes"}
+            subtitle={row.text}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

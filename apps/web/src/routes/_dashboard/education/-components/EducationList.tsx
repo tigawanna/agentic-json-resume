@@ -15,9 +15,10 @@ import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolb
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+  formatLibraryDateRange,
+  LibraryEntityCard,
+  LibraryEntityCardGrid,
+} from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,40 +28,11 @@ import {
   totalPagesFromCount,
 } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { EducationCreateForm, EducationCreateFormDialog } from "./EducationCreateForm";
 import { EducationEditForm } from "./EducationEditForm";
 
 const ROUTE_ID = "/_dashboard/education/" as const;
-
-const columns: ResponsiveColumn<ResumeEducation>[] = [
-  {
-    id: "school",
-    header: "School",
-    cell: (row) => dashIfEmpty(row.school),
-  },
-  {
-    id: "degree",
-    header: "Qualification",
-    cell: (row) => dashIfEmpty(row.degree),
-  },
-  {
-    id: "field",
-    header: "Field",
-    cell: (row) => dashIfEmpty(row.field),
-  },
-  {
-    id: "startDate",
-    header: "Start",
-    cell: (row) => dashIfEmpty(row.startDate),
-  },
-  {
-    id: "endDate",
-    header: "End",
-    cell: (row) => dashIfEmpty(row.endDate),
-  },
-];
 
 export function EducationList() {
   const db = useEventSourcedDb();
@@ -216,16 +188,26 @@ export function EducationList() {
       filters={filters}
       dataTest="education-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.school}
-        mobileSubtitle={(row) => row.degree || undefined}
-        dataTest="education-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="education-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={GraduationCap}
+            title={row.school}
+            subtitle={[row.degree, row.field].filter(Boolean).join(" in ")}
+            dateRange={formatLibraryDateRange(row.startDate, row.endDate)}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

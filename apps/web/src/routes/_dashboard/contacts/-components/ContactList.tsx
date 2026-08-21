@@ -14,10 +14,7 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,30 +24,11 @@ import {
   totalPagesFromCount,
 } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { ContactCreateForm, ContactCreateFormDialog } from "./ContactCreateForm";
 import { ContactEditForm } from "./ContactEditForm";
 
 const ROUTE_ID = "/_dashboard/contacts/" as const;
-
-const columns: ResponsiveColumn<ResumeContact>[] = [
-  {
-    id: "value",
-    header: "Value",
-    cell: (row) => dashIfEmpty(row.value),
-  },
-  {
-    id: "type",
-    header: "Type",
-    cell: (row) => dashIfEmpty(row.type),
-  },
-  {
-    id: "label",
-    header: "Label",
-    cell: (row) => dashIfEmpty(row.label),
-  },
-];
 
 export function ContactList() {
   const db = useEventSourcedDb();
@@ -186,16 +164,26 @@ export function ContactList() {
       filters={filters}
       dataTest="contacts-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.value}
-        mobileSubtitle={(row) => row.type || undefined}
-        dataTest="contacts-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="contacts-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={Contact}
+            title={row.value}
+            subtitle={row.type}
+            body={row.label}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

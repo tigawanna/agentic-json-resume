@@ -26,7 +26,9 @@ test("paginates, searches, and CRUDs local experiences without overflowing", asy
 
   await expectDesktopRowCount(page, "experiences-table", PAGE_SIZE);
   await expectPagination(page, 1, totalPages);
-  await expect(page.getByTestId("experiences-table").locator("tbody tr").first()).toBeVisible();
+  await expect(
+    page.getByTestId("experiences-table").locator('[data-test^="row-"]').first(),
+  ).toBeVisible();
 
   const firstPageText = await page.getByTestId("experiences-table").innerText();
   expect(firstPageText.length).toBeGreaterThan(40);

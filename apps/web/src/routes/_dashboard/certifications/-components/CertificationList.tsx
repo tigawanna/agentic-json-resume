@@ -14,10 +14,7 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,30 +24,11 @@ import {
   totalPagesFromCount,
 } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { CertificationCreateForm, CertificationCreateFormDialog } from "./CertificationCreateForm";
 import { CertificationEditForm } from "./CertificationEditForm";
 
 const ROUTE_ID = "/_dashboard/certifications/" as const;
-
-const columns: ResponsiveColumn<ResumeCertification>[] = [
-  {
-    id: "name",
-    header: "Name",
-    cell: (row) => dashIfEmpty(row.name),
-  },
-  {
-    id: "issuer",
-    header: "Issuer",
-    cell: (row) => dashIfEmpty(row.issuer),
-  },
-  {
-    id: "date",
-    header: "Date",
-    cell: (row) => dashIfEmpty(row.date),
-  },
-];
 
 export function CertificationList() {
   const db = useEventSourcedDb();
@@ -186,16 +164,26 @@ export function CertificationList() {
       filters={filters}
       dataTest="certifications-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.name}
-        mobileSubtitle={(row) => row.issuer || undefined}
-        dataTest="certifications-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="certifications-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={Award}
+            title={row.name}
+            subtitle={row.issuer}
+            dateRange={row.date}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

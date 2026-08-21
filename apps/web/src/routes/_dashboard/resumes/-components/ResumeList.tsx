@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import type { Resume } from "@/data-access-layer/event-sourced/schemas";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
-import { formatLocaleDate } from "@/utils/date-helpers";
+import { getResumeCardDisplayName } from "@/utils/resume-display-name";
 import { unwrapUnknownError } from "@/utils/errors";
 import { count, useLiveQuery } from "@tanstack/react-db";
 import { useNavigate } from "@tanstack/react-router";
@@ -19,9 +19,8 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import { ResponsiveEntityTable } from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
-import { TruncatedWithTooltip } from "../../-components/TruncatedWithTooltip";
 import { ImportResumeJsonDialog } from "./ImportResumeJsonDialog";
 import {
   listOffset,
@@ -226,56 +225,40 @@ export function ResumeList() {
       filters={filters}
       dataTest="resumes-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        tableClassName="table-fixed"
-        columns={[
-          {
-            id: "name",
-            header: "Name",
-            headClassName: "w-[42%] lg:w-[30%]",
-            className: "max-w-0 w-[42%] lg:w-[30%]",
-            cell: (row) => <TruncatedWithTooltip text={row.name} />,
-          },
-          {
-            id: "headline",
-            header: "Headline",
-            headClassName: "w-[42%] lg:w-[30%]",
-            className: "max-w-0 w-[42%] lg:w-[30%]",
-            cell: (row) => <TruncatedWithTooltip text={row.headline} />,
-          },
-          {
-            id: "fullName",
-            header: "Full Name",
-            className: "w-[16%] whitespace-nowrap",
-            cell: (row) => <TruncatedWithTooltip text={row.fullName} />,
-            hideOnMobile: true,
-          },
-          {
-            id: "updatedAt",
-            header: "Updated",
-            className: "w-[12%] whitespace-nowrap",
-            cell: (row) => formatLocaleDate(row.updatedAt),
-          },
-        ]}
-        mobileTitle={(row) => row.name}
-        mobileSubtitle={(row) => row.headline || undefined}
-        dataTest="resumes-table"
-        actions={(row) => (
-          <RowActionButtons
-            onEdit={() => setEditing(row)}
-            onDelete={() => handleDelete(row.id)}
-            onClone={() => handleClone(row.id)}
-            onNavigateToDetails={() =>
+      <LibraryEntityCardGrid dataTest="resumes-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={FileText}
+            title={getResumeCardDisplayName(row)}
+            subtitle={row.headline}
+            body={row.fullName}
+            updatedAt={row.updatedAt}
+            onClick={() =>
               void navigate({
                 to: "/resumes/$resumeId",
                 params: { resumeId: row.id },
                 search: { tab: "edit" },
               })
             }
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+                onClone={() => handleClone(row.id)}
+                onNavigateToDetails={() =>
+                  void navigate({
+                    to: "/resumes/$resumeId",
+                    params: { resumeId: row.id },
+                    search: { tab: "edit" },
+                  })
+                }
+              />
+            }
           />
-        )}
-      />
+        ))}
+      </LibraryEntityCardGrid>
 
       {jsonDialog}
 

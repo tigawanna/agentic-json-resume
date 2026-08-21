@@ -45,7 +45,6 @@ test("workbench add/edit/sort/pick-existing/skills persist into preview and back
 
   await page
     .getByTestId("resumes-table")
-    .locator("table")
     .getByTestId("row-details-btn")
     .evaluate((el: HTMLButtonElement) => el.click());
   await expect(page.getByTestId("resume-workbench")).toBeVisible();

@@ -15,7 +15,7 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import { ResponsiveEntityTable } from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -177,44 +177,28 @@ export function SkillGroupList() {
       filters={filters}
       dataTest="skill-groups-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={[
-          {
-            id: "name",
-            header: "Group",
-            cell: (row) => row.name,
-          },
-          {
-            id: "skills",
-            header: "Skills",
-            sortable: false,
-            cell: (row) =>
-              row.skills.length > 0 ? (
-                <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-                  {row.skills.map((skill) => skill.name).join(", ")}
-                </span>
-              ) : (
-                "—"
-              ),
-          },
-          {
-            id: "count",
-            header: "Count",
-            cell: (row) => String(row.skills.length),
-            hideOnMobile: true,
-            sortable: false,
-          },
-        ]}
-        mobileTitle={(row) => row.name}
-        mobileSubtitle={(row) =>
-          row.skills.length > 0 ? row.skills.map((skill) => skill.name).join(", ") : undefined
-        }
-        dataTest="skill-groups-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="skill-groups-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={Wrench}
+            title={row.name}
+            subtitle={
+              row.skills.length > 0 ? row.skills.map((skill) => skill.name).join(", ") : undefined
+            }
+            body={`${row.skills.length} skill${row.skills.length === 1 ? "" : "s"}`}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

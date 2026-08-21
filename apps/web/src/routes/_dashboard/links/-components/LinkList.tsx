@@ -14,10 +14,7 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,31 +24,11 @@ import {
   totalPagesFromCount,
 } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { LinkCreateForm, LinkCreateFormDialog } from "./LinkCreateForm";
 import { LinkEditForm } from "./LinkEditForm";
 
 const ROUTE_ID = "/_dashboard/links/" as const;
-
-const columns: ResponsiveColumn<ResumeLink>[] = [
-  {
-    id: "label",
-    header: "Label",
-    cell: (row) => dashIfEmpty(row.label),
-  },
-  {
-    id: "url",
-    header: "URL",
-    cell: (row) => dashIfEmpty(row.url),
-  },
-  {
-    id: "icon",
-    header: "Icon",
-    cell: (row) => dashIfEmpty(row.icon),
-    hideOnMobile: true,
-  },
-];
 
 export function LinkList() {
   const db = useEventSourcedDb();
@@ -187,16 +164,25 @@ export function LinkList() {
       filters={filters}
       dataTest="links-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.label}
-        mobileSubtitle={(row) => row.url || undefined}
-        dataTest="links-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="links-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={Link}
+            title={row.label}
+            subtitle={row.url}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">

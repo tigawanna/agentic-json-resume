@@ -13,10 +13,7 @@ import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaf
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
-import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+import { LibraryEntityCard, LibraryEntityCardGrid } from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,67 +24,12 @@ import {
 } from "../../-utils/list-query";
 import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { parseTalkLinks } from "../-utils/talk-links";
 import { Route } from "..";
 import { TalkCreateForm, TalkCreateFormDialog } from "./TalkCreateForm";
 import { TalkEditForm } from "./TalkEditForm";
 
 const ROUTE_ID = "/_dashboard/talks/" as const;
-
-const columns: ResponsiveColumn<ResumeTalk>[] = [
-  {
-    id: "title",
-    header: "Title",
-    cell: (row) => dashIfEmpty(row.title),
-  },
-  {
-    id: "event",
-    header: "Event",
-    cell: (row) => dashIfEmpty(row.event),
-  },
-  {
-    id: "date",
-    header: "Date",
-    cell: (row) => dashIfEmpty(row.date),
-  },
-  {
-    id: "description",
-    header: "Description",
-    cell: (row) => (
-      <span className="text-muted-foreground line-clamp-2 max-w-md whitespace-normal">
-        {dashIfEmpty(row.description)}
-      </span>
-    ),
-    hideOnMobile: true,
-  },
-  {
-    id: "links",
-    header: "Links",
-    cell: (row) => {
-      const links = parseTalkLinks(row.links);
-      if (links.length === 0) return "—";
-      return (
-        <div className="flex max-w-xs flex-wrap gap-x-2 gap-y-1">
-          {links.map((link) => (
-            <a
-              key={`${link.label}-${link.url}`}
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-      );
-    },
-    className: "whitespace-normal",
-    sortable: false,
-  },
-];
 
 export function TalkList() {
   const db = useEventSourcedDb();
@@ -223,16 +165,39 @@ export function TalkList() {
       filters={filters}
       dataTest="talks-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.title}
-        mobileSubtitle={(row) => row.event || undefined}
-        dataTest="talks-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="talks-table">
+        {items.map((row) => {
+          const links = parseTalkLinks(row.links);
+          return (
+            <LibraryEntityCard
+              key={row.id}
+              id={row.id}
+              icon={Mic}
+              title={row.title}
+              subtitle={row.event}
+              dateRange={row.date}
+              body={
+                row.description || links.length > 0 ? (
+                  <>
+                    {row.description ? <p className="line-clamp-2">{row.description}</p> : null}
+                    {links.length > 0 ? (
+                      <p className="mt-1 truncate">{links.map((link) => link.label).join(" · ")}</p>
+                    ) : null}
+                  </>
+                ) : undefined
+              }
+              sortOrder={row.sortOrder}
+              updatedAt={row.updatedAt}
+              actions={
+                <RowActionButtons
+                  onEdit={() => setEditing(row)}
+                  onDelete={() => handleDelete(row.id)}
+                />
+              }
+            />
+          );
+        })}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

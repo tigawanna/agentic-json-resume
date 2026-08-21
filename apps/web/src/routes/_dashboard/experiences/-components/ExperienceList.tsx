@@ -15,9 +15,10 @@ import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolb
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";
 import { LibraryEmpty } from "../../-components/LibraryEmpty";
 import {
-  ResponsiveEntityTable,
-  type ResponsiveColumn,
-} from "../../-components/ResponsiveEntityTable";
+  formatLibraryDateRange,
+  LibraryEntityCard,
+  LibraryEntityCardGrid,
+} from "../../-components/LibraryEntityCard";
 import { RowActionButtons } from "../../-components/RowActionButtons";
 import {
   listOffset,
@@ -27,40 +28,11 @@ import {
   totalPagesFromCount,
 } from "../../-utils/list-query";
 import { unwrapUnknownError } from "@/utils/errors";
-import { dashIfEmpty } from "@/utils/string";
 import { Route } from "..";
 import { ExperienceCreateForm, ExperienceCreateFormDialog } from "./ExperienceCreateForm";
 import { ExperienceEditForm } from "./ExperienceEditForm";
 
 const ROUTE_ID = "/_dashboard/experiences/" as const;
-
-const columns: ResponsiveColumn<ResumeExperience>[] = [
-  {
-    id: "role",
-    header: "Role",
-    cell: (row) => dashIfEmpty(row.role),
-  },
-  {
-    id: "company",
-    header: "Company",
-    cell: (row) => dashIfEmpty(row.company),
-  },
-  {
-    id: "location",
-    header: "Location",
-    cell: (row) => dashIfEmpty(row.location),
-  },
-  {
-    id: "startDate",
-    header: "Start",
-    cell: (row) => dashIfEmpty(row.startDate),
-  },
-  {
-    id: "endDate",
-    header: "End",
-    cell: (row) => dashIfEmpty(row.endDate),
-  },
-];
 
 export function ExperienceList() {
   const db = useEventSourcedDb();
@@ -214,16 +186,27 @@ export function ExperienceList() {
       filters={filters}
       dataTest="experiences-list-page"
     >
-      <ResponsiveEntityTable
-        rows={items}
-        columns={columns}
-        mobileTitle={(row) => row.role}
-        mobileSubtitle={(row) => row.company || undefined}
-        dataTest="experiences-table"
-        actions={(row) => (
-          <RowActionButtons onEdit={() => setEditing(row)} onDelete={() => handleDelete(row.id)} />
-        )}
-      />
+      <LibraryEntityCardGrid dataTest="experiences-table">
+        {items.map((row) => (
+          <LibraryEntityCard
+            key={row.id}
+            id={row.id}
+            icon={Briefcase}
+            title={row.role}
+            subtitle={row.company}
+            dateRange={formatLibraryDateRange(row.startDate, row.endDate)}
+            location={row.location}
+            sortOrder={row.sortOrder}
+            updatedAt={row.updatedAt}
+            actions={
+              <RowActionButtons
+                onEdit={() => setEditing(row)}
+                onDelete={() => handleDelete(row.id)}
+              />
+            }
+          />
+        ))}
+      </LibraryEntityCardGrid>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-lg">
