@@ -2,9 +2,8 @@ import { RouterNotFoundComponent } from "@/lib/tanstack/router/RouterNotFoundCom
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { RouterErrorComponent } from "@/lib/tanstack/router/routerErrorComponent";
 import { AppConfig } from "@/utils/system";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { DashboardLayout } from "@/components/dashoboard-sidebar/DashboardLayout";
-import { viewerMiddleware } from "@/data-access-layer/auth/viewer";
 import { EventSourcedDbProvider } from "@/data-access-layer/event-sourced/provider";
 import {
   dashboard_account_routes,
@@ -16,15 +15,7 @@ export const Route = createFileRoute("/_dashboard")({
   pendingComponent: () => <RouterPendingComponent />,
   notFoundComponent: () => <RouterNotFoundComponent />,
   errorComponent: ({ error }) => <RouterErrorComponent error={error} />,
-  server: {
-    middleware: [viewerMiddleware],
-  },
   component: DashboardShell,
-  beforeLoad: async ({ context, serverContext }) => {
-    if (!serverContext?.isServer && !context.viewer?.user) {
-      throw redirect({ to: "/auth", search: { returnTo: location.pathname } });
-    }
-  },
   head: () => ({
     meta: [
       {

@@ -16,8 +16,9 @@ import {
 import { Helmet } from "@/components/wrappers/custom-helmet";
 import { AppConfig } from "@/utils/system";
 import { TSRBreadCrumbs } from "@/lib/tanstack/router/TSRBreadCrumbs";
-import { Outlet } from "@tanstack/react-router";
+import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { QueryActivityNprogress } from "@/components/navigation/nprogress/QueryActivityNprogress";
+import { useViewer } from "@/data-access-layer/auth/viewer";
 import { DashboardSidebarFooter } from "./DashboardSidebarFooter";
 import { DashboardSidebarHeader } from "./DashboardSidebarHeader";
 // import { FloatingPersonaChat } from "../persona-chat/FloatingPersonaChat";
@@ -90,10 +91,38 @@ export function DashboardLayout({
           </div>
         </header>
         <div className="@container/main flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-auto p-6">
+          <LocalOnlyBanner />
           <Outlet />
         </div>
       </SidebarInset>
       {/* <FloatingPersonaChat /> */}
     </SidebarProvider>
+  );
+}
+
+function LocalOnlyBanner() {
+  const { viewer } = useViewer();
+  const pathname = useLocation({ select: (location) => location.pathname });
+
+  if (viewer.user) return null;
+
+  return (
+    <div
+      className="bg-muted text-foreground mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm"
+      data-test="local-only-banner"
+      role="status"
+    >
+      <p className="max-w-prose text-pretty">
+        You are not signed in. Everything you do stays on this computer until you enable sync.
+      </p>
+      <Link
+        to="/auth"
+        search={{ returnTo: pathname }}
+        className="btn btn-primary btn-sm shrink-0"
+        data-test="local-only-banner-signin"
+      >
+        Sign in to sync
+      </Link>
+    </div>
   );
 }

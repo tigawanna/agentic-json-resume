@@ -36,7 +36,7 @@ export function useViewer() {
     mutationFn: async () => {
       await authClient.signOut();
       void qc.invalidateQueries(viewerqueryOptions);
-      throw redirect({ to: "/auth", search: { returnTo: "/" } });
+      throw redirect({ to: "/dashboard" });
     },
   });
   const viewerQuery = useSuspenseQuery(viewerqueryOptions);

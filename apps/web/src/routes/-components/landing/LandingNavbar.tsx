@@ -1,6 +1,6 @@
 import { useTheme } from "@/lib/tanstack/router/use-theme";
 import { AppConfig } from "@/utils/system";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 
@@ -13,7 +13,6 @@ const NAV_LINKS = [
 
 export function LandingNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { pathname } = useLocation();
   const { theme, updateTheme } = useTheme();
 
   function toggleTheme() {
@@ -74,11 +73,10 @@ export function LandingNavbar() {
           <Suspense
             fallback={
               <Link
-                to="/auth"
-                search={{ returnTo: pathname }}
+                to="/dashboard"
                 className="flex h-full items-center bg-primary px-6 font-mono text-xs uppercase tracking-widest text-primary-content transition-opacity hover:opacity-90"
               >
-                Get Started →
+                Dashboard →
               </Link>
             }
           >
@@ -127,12 +125,11 @@ export function LandingNavbar() {
             [ Sign up ]
           </Link>
           <Link
-            to="/auth"
-            search={{ returnTo: pathname }}
+            to="/dashboard"
             onClick={() => setMobileOpen(false)}
             className="mt-3 block bg-primary px-4 py-2 text-center uppercase tracking-widest text-primary-content"
           >
-            Get Started →
+            Dashboard →
           </Link>
         </div>
       )}

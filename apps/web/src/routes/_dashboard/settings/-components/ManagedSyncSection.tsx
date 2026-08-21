@@ -13,6 +13,7 @@ import {
   useEventSourcedDb,
 } from "@/data-access-layer/event-sourced/provider";
 import { unwrapUnknownError } from "@/utils/errors";
+import { Link } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -85,6 +86,19 @@ function ManagedSyncControls() {
             data-test="managed-sync-toggle"
           />
         </div>
+        {!isAuthenticated ? (
+          <p className="text-muted-foreground text-sm">
+            Sign in to turn this on and push your local outbox to the server.{" "}
+            <Link
+              to="/auth"
+              search={{ returnTo: "/settings" }}
+              className="text-primary font-medium underline-offset-4 hover:underline"
+              data-test="managed-sync-signin"
+            >
+              Sign in
+            </Link>
+          </p>
+        ) : null}
         <Button
           type="button"
           variant="outline"

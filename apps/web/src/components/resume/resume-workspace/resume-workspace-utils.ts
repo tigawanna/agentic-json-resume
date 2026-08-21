@@ -2,8 +2,6 @@ import { documentToInsertData } from "@/data-access-layer/resume/resume-converte
 import type { ResumeDetailDTO } from "@/data-access-layer/resume/resume.types";
 import type { ResumeDocumentV1 } from "@/features/resume/resume-schema";
 
-export const LOCAL_ANONYMOUS_USER_ID = "local:anonymous";
-
 export function nowIso() {
   return new Date().toISOString();
 }
@@ -74,21 +72,5 @@ export function resumeDocumentToDetail({
     certifications: [],
     volunteers: [],
     languages: [],
-  };
-}
-
-export function createLocalResumeDetail(doc: ResumeDocumentV1): ResumeDetailDTO {
-  const createdAt = nowIso();
-  return {
-    ...resumeDocumentToDetail({
-      id: crypto.randomUUID(),
-      userId: LOCAL_ANONYMOUS_USER_ID,
-      name: "Local Resume",
-      description: "Stored only in this browser",
-      jobDescription: "",
-      createdAt,
-      doc,
-    }),
-    createdAt,
   };
 }

@@ -72,8 +72,22 @@ export function DashboardSidebarUser() {
     });
   };
 
-  if (!viewer) {
-    return null;
+  if (!viewer.user) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" asChild>
+            <Link
+              to="/auth"
+              search={{ returnTo: location.pathname || "/dashboard" }}
+              data-test="dashboard-sidebar-signin"
+            >
+              <span className="truncate font-medium">Sign in</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
   }
 
   const avatarUrl = viewer.user?.image ?? "/blank-user.png";
@@ -188,7 +202,7 @@ export function DashboardSidebarUser() {
             <DropdownMenuItem
               onClick={() => {
                 logoutMutation.mutate();
-                void tsrNavigate({ to: "/auth", search: { returnTo: "/" } });
+                void tsrNavigate({ to: "/dashboard" });
               }}
             >
               <LogOut />

@@ -50,18 +50,17 @@ export function LandingHero() {
 
           <div className="mt-4 flex flex-wrap gap-4 animate-fade-in z-30">
             <Link
-              to="/auth"
-              search={{ returnTo: "/dashboard" }}
+              to="/dashboard"
               className="bg-primary px-6 py-3 font-mono font-medium text-primary-content transition-opacity hover:opacity-90"
             >
-              Get Started →
+              Open the editor →
             </Link>
             <Link
-              to="/preview"
-              search={{ tab: "edit" }}
+              to="/auth"
+              search={{ returnTo: "/dashboard" }}
               className="border border-border px-6 py-3 font-mono text-base-content transition-colors hover:bg-neutral"
             >
-              Try the Editor
+              Sign in to sync
             </Link>
           </div>
         </div>
