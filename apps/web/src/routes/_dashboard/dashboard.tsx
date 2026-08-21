@@ -18,6 +18,7 @@ import {
   StickyNote,
   Wrench,
 } from "lucide-react";
+import { ImportAllFromLegacyButton } from "./-components/ImportAllFromLegacyButton";
 
 export const Route = createFileRoute("/_dashboard/dashboard")({
   component: RouteComponent,
@@ -180,12 +181,15 @@ function RouteComponent() {
             now — everything stays on this device.
           </p>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link to="/resumes">
-            <FileText className="mr-1 size-4" />
-            Open résumés
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ImportAllFromLegacyButton />
+          <Button asChild variant="outline" size="sm">
+            <Link to="/resumes">
+              <FileText className="mr-1 size-4" />
+              Open résumés
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -800,3 +800,67 @@ export const legacyImporters = {
 } as const;
 
 export type LegacyImporterKey = keyof typeof legacyImporters;
+
+/** Library entities first, résumés last (purge + re-attach junctions). */
+export const legacyImportSequence = [
+  "talks",
+  "links",
+  "projects",
+  "certifications",
+  "languages",
+  "skill-groups",
+  "experiences",
+  "education",
+  "volunteers",
+  "contacts",
+  "summaries",
+  "notes",
+  "resumes",
+] as const satisfies readonly LegacyImporterKey[];
+
+export type ImportAllProgress = {
+  key: LegacyImporterKey;
+  noun: string;
+  index: number;
+  total: number;
+  stats: ImportStats;
+};
+
+export type ImportAllResult = {
+  byKey: Partial<Record<LegacyImporterKey, ImportStats>>;
+  totals: ImportStats;
+};
+
+export async function importAllFromLegacy(
+  ctx: SeedCtx,
+  onProgress?: (progress: ImportAllProgress) => void,
+): Promise<ImportAllResult> {
+  const byKey: Partial<Record<LegacyImporterKey, ImportStats>> = {};
+  const totals = emptyStats(0);
+
+  for (let index = 0; index < legacyImportSequence.length; index++) {
+    const key = legacyImportSequence[index];
+    const spec = legacyImporters[key];
+    console.info(`[import all] ${index + 1}/${legacyImportSequence.length} starting ${key}`);
+    const stats = await spec.run(ctx);
+    byKey[key] = stats;
+    totals.fetched += stats.fetched;
+    totals.inserted += stats.inserted;
+    totals.skipped += stats.skipped;
+    totals.failed += stats.failed;
+    onProgress?.({
+      key,
+      noun: spec.noun,
+      index: index + 1,
+      total: legacyImportSequence.length,
+      stats,
+    });
+    // Yield so the UI can paint progress between tables.
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+  }
+
+  logImportSummary("all", totals);
+  return { byKey, totals };
+}
