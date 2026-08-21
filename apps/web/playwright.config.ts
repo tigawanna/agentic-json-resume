@@ -46,6 +46,7 @@ export default defineConfig({
         FRONTEND_URL: baseURL,
         VITE_API_URL: baseURL,
         TEST_DB_RESET: "true",
+        VITE_E2E: "true",
       },
     },
   ],

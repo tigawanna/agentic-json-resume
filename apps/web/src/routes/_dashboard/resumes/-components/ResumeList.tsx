@@ -14,7 +14,7 @@ import { FileText, FileUp, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
-import { cloneLocalResume } from "../../-ai/local-resume-tools";
+import { cloneLocalResume } from "../../-ai/-utils/local-resume-tools";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
 import { ImportFromLegacyButton } from "../../-components/ImportFromLegacyButton";

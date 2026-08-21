@@ -1,8 +1,8 @@
 import { chatParamsFromRequestBody, toServerSentEventsResponse } from "@tanstack/ai";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
-import { streamEventSourcedResumeAgentChat } from "@/routes/_dashboard/-ai/stream-resume-chat.server";
-import { EVENT_SOURCED_SYSTEM_PROMPT_MAX_CHARS } from "@/routes/_dashboard/-ai/system-prompt";
+import { streamEventSourcedResumeAgentChat } from "@/routes/_dashboard/-ai/-utils/stream-resume-chat.server";
+import { EVENT_SOURCED_SYSTEM_PROMPT_MAX_CHARS } from "@/routes/_dashboard/-ai/-utils/system-prompt";
 import { auth } from "@/lib/auth";
 import { serverEnv } from "@/lib/server-env";
 

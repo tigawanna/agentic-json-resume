@@ -10,7 +10,7 @@ import { useEffect, useRef } from "react";
 import {
   DEFAULT_EVENT_SOURCED_SYSTEM_PROMPT,
   EVENT_SOURCED_SYSTEM_PROMPT_MAX_CHARS,
-} from "./system-prompt";
+} from "../-utils/system-prompt";
 
 const LEGACY_STORAGE_TYPE_KEY = "ai_storage_type";
 const LEGACY_CREDENTIALS_KEY = "ai_credentials";

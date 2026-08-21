@@ -23,6 +23,7 @@ export function SearchBox({ isDebouncing, setKeyword, keyword, inputProps }: Sea
             setKeyword(e.target.value);
           }}
           {...inputProps}
+          data-test="list-search-input"
         />
         {keyword && keyword.length > 0 && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-2">

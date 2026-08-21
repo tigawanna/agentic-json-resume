@@ -1,6 +1,6 @@
 import type { AppDb } from "@/data-access-layer/event-sourced/collection";
 import type { ChatClientPersistence, ChatPersistedState } from "@tanstack/ai-client";
-import { nowMs } from "../-utils/row-helpers";
+import { nowMs } from "../../-utils/row-helpers";
 
 function isPersistedState(value: unknown): value is ChatPersistedState {
   return (

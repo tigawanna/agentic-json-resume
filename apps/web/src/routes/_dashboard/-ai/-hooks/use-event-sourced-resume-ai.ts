@@ -3,9 +3,9 @@ import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
 import { fetchServerSentEvents, useChat, type UIMessage } from "@tanstack/ai-react";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { eventSourcedResumeAiClientTools } from "./client-tools";
-import { createEventSourcedChatPersistence } from "./event-sourced-chat-persistence";
-import type { EventSourcedResumeAiContext } from "./local-resume-tools";
+import { eventSourcedResumeAiClientTools } from "../-utils/client-tools";
+import { createEventSourcedChatPersistence } from "../-utils/event-sourced-chat-persistence";
+import type { EventSourcedResumeAiContext } from "../-utils/local-resume-tools";
 import { useEventSourcedAiSettings } from "./use-event-sourced-ai-settings";
 import { isLocalMode } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/resume-ai-types";
 import {

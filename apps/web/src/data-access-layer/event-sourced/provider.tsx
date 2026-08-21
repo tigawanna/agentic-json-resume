@@ -3,6 +3,13 @@ import { useViewer } from "@/data-access-layer/auth/viewer";
 import { applyManagedSyncGate } from "./app-settings";
 import { db as dbProxy, ensureDb, type AppDb } from "./collection";
 
+declare global {
+  interface Window {
+    /** Playwright-only handle to the in-browser event-sourced DB. */
+    __e2eEventSourcedDb?: AppDb;
+  }
+}
+
 type EventSourcedDbContextValue = {
   db: AppDb;
 };
@@ -50,6 +57,9 @@ export function EventSourcedDbProvider({
       .then(() => {
         if (cancelled) return;
         applyManagedSyncGate(dbProxy, isAuthenticated);
+        if (import.meta.env.DEV || import.meta.env.VITE_E2E === "true") {
+          window.__e2eEventSourcedDb = dbProxy;
+        }
         setReady(true);
         setError(null);
       })

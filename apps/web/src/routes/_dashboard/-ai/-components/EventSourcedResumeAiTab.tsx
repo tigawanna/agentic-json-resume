@@ -1,6 +1,6 @@
 import { ResumeAiConversationCard } from "@/routes/_dashboard/resumes/$resumeId/-components/ResumeAiTab/ResumeAiConversationCard";
+import { useEventSourcedResumeAiChat } from "../-hooks/use-event-sourced-resume-ai";
 import { EventSourcedAiChrome } from "./EventSourcedAiChrome";
-import { useEventSourcedResumeAiChat } from "./use-event-sourced-resume-ai";
 
 export function EventSourcedResumeAiTab({
   resumeId,

@@ -18,7 +18,7 @@ import { isLocalMode } from "@/routes/_dashboard/resumes/$resumeId/-components/R
 import {
   EVENT_SOURCED_SYSTEM_PROMPT_MAX_CHARS,
   DEFAULT_EVENT_SOURCED_SYSTEM_PROMPT,
-} from "./system-prompt";
+} from "../-utils/system-prompt";
 
 const DEFAULT_MODEL = "deepseek/deepseek-chat-v3-0324";
 

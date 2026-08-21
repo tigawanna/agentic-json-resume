@@ -32,8 +32,8 @@ import { ArrowLeft, FileUp, FileX, GitFork, Save } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { cloneLocalResume } from "../../-ai/local-resume-tools";
-import { EventSourcedResumeAiTab } from "../../-ai/EventSourcedResumeAiTab";
+import { EventSourcedResumeAiTab } from "../../-ai/-components/EventSourcedResumeAiTab";
+import { cloneLocalResume } from "../../-ai/-utils/local-resume-tools";
 import { ResumePreviewView } from "./-components/ResumePreviewTab";
 import { useEventSourcedResumeDetail } from "./-hooks/use-event-sourced-resume-detail";
 

@@ -16,7 +16,7 @@ import type {
   SearchResumeBlocksToolOutput,
   UpdateResumeDocumentToolOutput,
 } from "@/features/agentic-tools/resume-tool-schemas";
-import { joinSearchable, libraryRowBase, newId, nowMs } from "../-utils/row-helpers";
+import { joinSearchable, libraryRowBase, newId, nowMs } from "../../-utils/row-helpers";
 
 export type EventSourcedResumeAiContext = {
   db: AppDb;

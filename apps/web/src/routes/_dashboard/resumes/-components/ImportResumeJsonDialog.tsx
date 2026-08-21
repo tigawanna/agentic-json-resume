@@ -15,7 +15,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { FileUp } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { createLocalResumeFromDocument } from "../../-ai/local-resume-tools";
+import { createLocalResumeFromDocument } from "../../-ai/-utils/local-resume-tools";
 
 function importedResumeNameFromDoc(doc: ResumeDocumentV1): string {
   const fullName = doc.header.fullName.trim();
