@@ -16,7 +16,7 @@ export const Route = createFileRoute("/auth/signup")({
     meta: [
       {
         title: `${AppConfig.name} | Sign up`,
-        description: "Create an account to store and export your JSON résumé",
+        description: "Create an account to sync your JSON résumé across devices",
       },
     ],
   }),

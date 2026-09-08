@@ -100,7 +100,7 @@ function SettingsPage() {
           <CardContent>
             <Button asChild>
               <Link to="/auth" search={{ returnTo: "/settings" }}>
-                Sign in
+                Sign in to sync
               </Link>
             </Button>
           </CardContent>

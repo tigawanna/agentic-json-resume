@@ -233,7 +233,7 @@ export function ResumeList() {
             icon={FileText}
             title={getResumeCardDisplayName(row)}
             subtitle={row.headline}
-            body={row.fullName}
+            identity={row.fullName}
             updatedAt={row.updatedAt}
             onClick={() =>
               void navigate({

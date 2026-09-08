@@ -19,6 +19,8 @@ import {
   Wrench,
 } from "lucide-react";
 import { ImportAllFromLegacyButton } from "./-components/ImportAllFromLegacyButton";
+import { LibraryActivityHeatmap } from "./-components/LibraryActivityHeatmap";
+import { LibraryQuickLinks } from "./-components/LibraryQuickLinks";
 
 export const Route = createFileRoute("/_dashboard/dashboard")({
   component: RouteComponent,
@@ -192,28 +194,18 @@ function RouteComponent() {
         </div>
       </div>
 
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {libraryLinks.map((item) => {
-          const Icon = item.icon;
-          return (
-            <li key={item.href}>
-              <Link
-                to={item.href}
-                className="border-border hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg border px-4 py-3 transition-colors"
-                data-test={`library-link-${item.countKey}`}
-              >
-                <span className="flex min-w-0 items-center gap-3">
-                  <Icon className="text-muted-foreground size-4 shrink-0" />
-                  <span className="truncate text-sm font-medium">{item.title}</span>
-                </span>
-                <span className="text-muted-foreground tabular-nums text-sm">
-                  {counts[item.countKey]}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.95fr)]">
+        <LibraryQuickLinks
+          items={libraryLinks.map((item) => ({
+            title: item.title,
+            href: item.href,
+            icon: item.icon,
+            countKey: item.countKey,
+            count: counts[item.countKey],
+          }))}
+        />
+        <LibraryActivityHeatmap />
+      </div>
     </div>
   );
 }

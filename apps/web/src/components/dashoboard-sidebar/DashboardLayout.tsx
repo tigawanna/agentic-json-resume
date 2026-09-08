@@ -106,6 +106,9 @@ function LocalOnlyBanner() {
 
   if (viewer.user) return null;
 
+  const showBanner = pathname === "/events" || pathname.startsWith("/events/") || pathname === "/settings" || pathname.startsWith("/settings/");
+  if (!showBanner) return null;
+
   return (
     <div
       className="bg-muted text-foreground mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm"

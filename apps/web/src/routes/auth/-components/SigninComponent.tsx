@@ -9,6 +9,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Route } from "../index";
+import { AuthBrandPanel, AuthLocalKicker } from "./AuthBrandPanel";
 
 interface SigninComponentProps {
   onBackToSessions?: () => void;
@@ -110,7 +111,10 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
 
   return (
     <div className="flex h-full w-full items-center justify-evenly gap-2 p-5">
-      <img src="/logo.svg" alt="logo" className="hidden w-[30%] object-cover md:flex" />
+      <AuthBrandPanel
+        kicker="This computer"
+        caption="Your library stays here until you enable sync."
+      />
       <form
         autoComplete="on"
         onSubmit={(e) => {
@@ -132,6 +136,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
               Back to accounts
             </button>
           )}
+          <AuthLocalKicker label="This computer · local until sync" />
           <h1 className="text-foreground text-4xl font-bold">Sign in</h1>
 
           <form.AppField
@@ -179,7 +184,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
         </div>
 
         <form.AppForm>
-          <form.SubmitButton label="Sign in" className="w-full" />
+          <form.SubmitButton label="Sign in to sync" className="w-full" />
         </form.AppForm>
 
         <div className="flex w-full items-center gap-3">
@@ -206,7 +211,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
               search={{ returnTo, callbackURL }}
               className="link link-primary font-semibold"
             >
-              Sign up
+              Sign up to sync
             </Link>
           </div>
         </div>

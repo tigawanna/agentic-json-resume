@@ -30,7 +30,7 @@ export const Route = createFileRoute("/auth/")({
     meta: [
       {
         title: `${AppConfig.name} | Sign in`,
-        description: "Sign in to manage your JSON résumé and exports",
+        description: "Sign in to sync your JSON résumé across devices",
       },
     ],
   }),

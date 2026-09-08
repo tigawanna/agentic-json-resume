@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -23,7 +24,7 @@ import { useViewer, viewerqueryOptions } from "@/data-access-layer/auth/viewer";
 import { unwrapUnknownError } from "@/utils/errors";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
-import { ChevronsUpDown, LogOut, Settings, Sparkles, UserPlus } from "lucide-react";
+import { ChevronsUpDown, LogOut, RefreshCwOff, Settings, Sparkles, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 function getInitials(name: string): string {
@@ -73,18 +74,62 @@ export function DashboardSidebarUser() {
   };
 
   if (!viewer.user) {
+    const returnTo = location.pathname || "/dashboard";
+
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton size="lg" asChild>
-            <Link
-              to="/auth"
-              search={{ returnTo: location.pathname || "/dashboard" }}
-              data-test="dashboard-sidebar-signin"
+          <HoverCard openDelay={150} closeDelay={120}>
+            <HoverCardTrigger asChild>
+              <SidebarMenuButton size="lg" asChild>
+                <Link
+                  to="/auth"
+                  search={{ returnTo }}
+                  data-test="dashboard-sidebar-signin"
+                >
+                  <RefreshCwOff className="size-4 shrink-0" aria-hidden />
+                  {isExpanded ? (
+                    <span className="truncate font-medium">Sign in</span>
+                  ) : (
+                    <span className="sr-only">Sign in</span>
+                  )}
+                </Link>
+              </SidebarMenuButton>
+            </HoverCardTrigger>
+            <HoverCardContent
+              side={isMobile ? "top" : "right"}
+              align="end"
+              sideOffset={8}
+              className="w-72"
+              data-test="dashboard-sidebar-signin-hover"
             >
-              <span className="truncate font-medium">Sign in</span>
-            </Link>
-          </SidebarMenuButton>
+              <div className="flex gap-3">
+                <RefreshCwOff className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden />
+                <div className="grid gap-3">
+                  <p className="text-sm text-pretty">
+                    You are not signed in. Everything you do stays on this computer until you
+                    enable sync.
+                  </p>
+                  <div className="flex flex-col gap-1.5 text-sm">
+                    <Link
+                      to="/auth"
+                      search={{ returnTo }}
+                      className="text-primary font-medium underline-offset-4 hover:underline"
+                    >
+                      Sign in to sync
+                    </Link>
+                    <Link
+                      to="/auth/signup"
+                      search={{ returnTo }}
+                      className="text-muted-foreground font-medium underline-offset-4 hover:underline hover:text-foreground"
+                    >
+                      Create an account to sync
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </HoverCardContent>
+          </HoverCard>
         </SidebarMenuItem>
       </SidebarMenu>
     );

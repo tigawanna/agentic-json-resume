@@ -24,6 +24,7 @@ type LibraryEntityCardProps = {
   dateRange?: ReactNode;
   location?: ReactNode;
   body?: ReactNode;
+  identity?: ReactNode;
   sortOrder?: number;
   updatedAt?: number;
   actions?: ReactNode;
@@ -38,6 +39,7 @@ export function LibraryEntityCard({
   dateRange,
   location,
   body,
+  identity,
   sortOrder,
   updatedAt,
   actions,
@@ -86,16 +88,21 @@ export function LibraryEntityCard({
           </CardContent>
         ) : null}
 
-        <CardFooter className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-4">
-          {typeof sortOrder === "number" ? (
-            <Badge variant="secondary" className="text-xs" title="Library sort order">
-              <ListOrdered className="mr-1 size-3" />#{sortOrder}
-            </Badge>
-          ) : (
-            <span />
-          )}
+        <CardFooter className="mt-auto flex flex-wrap items-end justify-between gap-2 border-t pt-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            {identity ? (
+              <p className="text-foreground/80 truncate text-sm">{identity}</p>
+            ) : null}
+            {typeof sortOrder === "number" ? (
+              <Badge variant="secondary" className="w-fit text-xs" title="Library sort order">
+                <ListOrdered className="mr-1 size-3" />#{sortOrder}
+              </Badge>
+            ) : null}
+          </div>
           {updatedAt != null ? (
-            <p className="text-muted-foreground text-xs">Updated {formatLocaleDate(updatedAt)}</p>
+            <p className="text-muted-foreground shrink-0 text-xs">
+              Updated {formatLocaleDate(updatedAt)}
+            </p>
           ) : null}
         </CardFooter>
       </Card>

@@ -95,7 +95,7 @@ function ManagedSyncControls() {
               className="text-primary font-medium underline-offset-4 hover:underline"
               data-test="managed-sync-signin"
             >
-              Sign in
+              Sign in to sync
             </Link>
           </p>
         ) : null}

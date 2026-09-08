@@ -8,6 +8,7 @@ import { Github } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { AuthBrandPanel, AuthLocalKicker } from "./AuthBrandPanel";
 
 type SignupUserPayload = {
   name: string;
@@ -94,7 +95,10 @@ export function SignupComponent() {
 
   return (
     <div className="flex h-full w-full items-center justify-evenly gap-2 p-5">
-      <img src="/logo.svg" alt="logo" className="hidden w-[30%] object-cover md:flex" />
+      <AuthBrandPanel
+        kicker="This computer"
+        caption="Create an account when you want the same library on other devices."
+      />
       <form
         autoComplete="on"
         onSubmit={(e) => {
@@ -106,6 +110,7 @@ export function SignupComponent() {
         className="bg-card/40 border-border/50 flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg border p-[2%] shadow-sm md:w-[70%] lg:w-[40%]"
       >
         <div className="flex h-full w-full flex-col items-center justify-center gap-4">
+          <AuthLocalKicker label="This computer · local until sync" />
           <h1 className="text-foreground text-4xl font-bold">Sign up</h1>
 
           <form.AppField
@@ -178,7 +183,7 @@ export function SignupComponent() {
         </div>
 
         <form.AppForm>
-          <form.SubmitButton label="Sign up" className="w-full" />
+          <form.SubmitButton label="Create an account to sync" className="w-full" />
         </form.AppForm>
 
         <div className="flex w-full items-center gap-3">
@@ -204,7 +209,7 @@ export function SignupComponent() {
             search={{ returnTo: returnTo ?? "/" }}
             className="link link-primary font-semibold"
           >
-            Sign in
+            Sign in to sync
           </Link>
         </div>
       </form>
