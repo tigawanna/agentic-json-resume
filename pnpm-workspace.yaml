@@ -18,6 +18,10 @@ onlyBuiltDependencies:
   - sharp
   - workerd
 
+# Fresh publishes of our own package should not be blocked by release-age gates (CI/local).
+minimumReleaseAgeExclude:
+  - event-sourced-collection
+
 overrides:
   vite: "catalog:"
   vitest: "catalog:"
