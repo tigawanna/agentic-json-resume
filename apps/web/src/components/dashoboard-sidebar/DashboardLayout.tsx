@@ -90,7 +90,9 @@ export function DashboardLayout({
             <Separator orientation="vertical" className="mr-2 h-4" />
             <TSRBreadCrumbs />
           </div>
+          <div className="mr-10">
           <DashboardSyncStatusButton className="shrink-0" />
+          </div>
         </header>
         <div className="@container/main flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-auto p-6">
           <LocalOnlyBanner />

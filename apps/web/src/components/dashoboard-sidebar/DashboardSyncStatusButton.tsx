@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useViewer } from "@/data-access-layer/auth/viewer";
 import { APP_SETTINGS_ID, readAppSettings } from "@/data-access-layer/event-sourced/app-settings";
@@ -31,7 +31,7 @@ function useManagedSyncUiState(): { state: SyncUiState; lastError: string | null
   return { state: "synced", lastError };
 }
 
-const iconButtonClass = "text-muted-foreground size-7";
+const triggerClass = buttonVariants({ variant: "ghost", size: "icon" });
 
 /**
  * Header control for managed sync — lives on the far right of the dashboard chrome.
@@ -43,21 +43,20 @@ export function DashboardSyncStatusButton({ className }: { className?: string })
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(iconButtonClass, className)}
-            asChild
+          <Link
+            to="/settings"
+            hash="managed-sync"
+            className={cn(triggerClass, "size-7", className)}
             data-test="dashboard-sync-status"
             data-sync-state="disabled"
             aria-label="Sync disabled — open settings"
           >
-            <Link to="/settings" hash="managed-sync">
-              <RefreshCwOff className="size-4" />
-            </Link>
-          </Button>
+            <RefreshCwOff className="text-base-content size-4" strokeWidth={2.25} />
+          </Link>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Sync disabled — open settings to enable</TooltipContent>
+        <TooltipContent side="bottom" className="bg-base-content text-base-100">
+          Sync disabled — open settings to enable
+        </TooltipContent>
       </Tooltip>
     );
   }
@@ -66,20 +65,20 @@ export function DashboardSyncStatusButton({ className }: { className?: string })
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="icon"
-            className={cn(iconButtonClass, className)}
-            disabled
+            className={cn(triggerClass, "size-7", className)}
             data-test="dashboard-sync-status"
             data-sync-state="syncing"
             aria-label="Sync in progress"
+            aria-busy="true"
           >
-            <RefreshCw className="size-4 animate-spin" />
-          </Button>
+            <RefreshCw className="text-primary size-4 animate-spin" strokeWidth={2.25} />
+          </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Sync in progress</TooltipContent>
+        <TooltipContent side="bottom" className="bg-base-content text-base-100">
+          Sync in progress
+        </TooltipContent>
       </Tooltip>
     );
   }
@@ -88,21 +87,18 @@ export function DashboardSyncStatusButton({ className }: { className?: string })
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn("text-destructive size-7", className)}
-            asChild
+          <Link
+            to="/events"
+            search={{ tab: "deadletter" }}
+            className={cn(triggerClass, "size-7", className)}
             data-test="dashboard-sync-status"
             data-sync-state="error"
             aria-label="Sync error — view events"
           >
-            <Link to="/events" search={{ tab: "deadletter" }}>
-              <CloudAlert className="size-4" />
-            </Link>
-          </Button>
+            <CloudAlert className="text-error size-4" strokeWidth={2.25} />
+          </Link>
         </TooltipTrigger>
-        <TooltipContent side="bottom">
+        <TooltipContent side="bottom" className="bg-base-content text-base-100">
           {lastError ? `Sync error: ${lastError}` : "Sync issues — open events"}
         </TooltipContent>
       </Tooltip>
@@ -112,22 +108,20 @@ export function DashboardSyncStatusButton({ className }: { className?: string })
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn("size-7 text-emerald-600 dark:text-emerald-400", className)}
-          asChild
+        <Link
+          to="/events"
+          search={{ tab: "outbox" }}
+          className={cn(triggerClass, "size-7", className)}
           data-test="dashboard-sync-status"
           data-sync-state="synced"
           aria-label="Synced"
         >
-          <Link to="/events" search={{ tab: "outbox" }}>
-            <CloudCheck className="size-4" />
-          </Link>
-        </Button>
+          <CloudCheck className="text-primary size-4" strokeWidth={2.25} />
+        </Link>
       </TooltipTrigger>
-      <TooltipContent side="bottom">Synced with managed server</TooltipContent>
+      <TooltipContent side="bottom" className="bg-base-content text-base-100">
+        Synced with managed server
+      </TooltipContent>
     </Tooltip>
   );
 }
