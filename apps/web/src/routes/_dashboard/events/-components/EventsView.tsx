@@ -1,6 +1,8 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEventSourcedDb } from "@/data-access-layer/event-sourced/provider";
+import { useEventSourcedSyncStatus } from "@/data-access-layer/event-sourced/use-sync-status";
 import { createSortableColumns } from "@/lib/tanstack/db/sortable-columns";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { EventSourcedListScaffold } from "../../-components/EventSourcedListScaffold";
 import { EventSourcedSortToolbar } from "../../-components/EventSourcedSortToolbar";
@@ -20,10 +22,28 @@ const EVENT_TAB_HINTS: Record<EventQueueTab, string> = {
 
 export function EventsView() {
   const db = useEventSourcedDb();
+  const { isSyncing, pendingCount } = useEventSourcedSyncStatus();
   const navigate = Route.useNavigate();
   const { tab: tabParam } = Route.useSearch();
   const tab: EventQueueTab = tabParam ?? "outbox";
   const [totalPages, setTotalPages] = useState(0);
+
+  const syncActions = (
+    <div
+      className="text-muted-foreground flex items-center gap-2 text-sm"
+      data-test="events-sync-status"
+      aria-live="polite"
+    >
+      {isSyncing ? (
+        <>
+          <Loader2 className="size-4 animate-spin" />
+          Syncing…
+        </>
+      ) : (
+        <span>{pendingCount} pending</span>
+      )}
+    </div>
+  );
 
   const filters =
     tab === "outbox" ? (
@@ -87,7 +107,12 @@ export function EventsView() {
       totalPages={totalPages}
       dataTest="events-page"
       filters={filters}
-      actions={tab === "deadletter" ? <DeadLetterRetryAllButton /> : undefined}
+      actions={
+        <>
+          {syncActions}
+          {tab === "deadletter" ? <DeadLetterRetryAllButton /> : null}
+        </>
+      }
     >
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList data-test="events-tabs">

@@ -12,20 +12,19 @@ import {
   EventSourcedDbProvider,
   useEventSourcedDb,
 } from "@/data-access-layer/event-sourced/provider";
+import { useEventSourcedSyncStatus } from "@/data-access-layer/event-sourced/use-sync-status";
 import { unwrapUnknownError } from "@/utils/errors";
 import { Link } from "@tanstack/react-router";
-import { RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 function ManagedSyncControls() {
   const db = useEventSourcedDb();
-  const syncStatus = db.getSyncStatus();
-  console.log("syncStatus === ", syncStatus);
+  const { isSyncing } = useEventSourcedSyncStatus();
   const { viewer } = useViewer();
   const isAuthenticated = Boolean(viewer.user?.id);
   const [settings, setSettings] = useState(() => applyManagedSyncGate(db, isAuthenticated));
-  const [syncing, setSyncing] = useState(() => syncStatus.isSyncing);
 
   function handleToggle(enabled: boolean) {
     if (enabled && !isAuthenticated) {
@@ -52,7 +51,6 @@ function ManagedSyncControls() {
       toast.error("Turn on managed sync first");
       return;
     }
-    setSyncing(true);
     try {
       applyManagedSyncGate(db, true);
       if (!db.getSyncEnabled()) {
@@ -80,8 +78,6 @@ function ManagedSyncControls() {
       });
     } catch (err: unknown) {
       toast.error("Sync failed", { description: unwrapUnknownError(err).message });
-    } finally {
-      setSyncing(false);
     }
   }
 
@@ -125,12 +121,16 @@ function ManagedSyncControls() {
           variant="outline"
           size="sm"
           className="w-fit"
-          disabled={!isAuthenticated || !settings.syncEnabled || syncing}
+          disabled={!isAuthenticated || !settings.syncEnabled || isSyncing}
           onClick={() => void handleSyncNow()}
           data-test="managed-sync-now-btn"
         >
-          <RefreshCw className="mr-2 size-4" />
-          {syncing ? "Syncing…" : "Sync now"}
+          {isSyncing ? (
+            <Loader2 className="mr-2 size-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-2 size-4" />
+          )}
+          {isSyncing ? "Syncing…" : "Sync now"}
         </Button>
       </CardContent>
     </Card>

@@ -1,4 +1,4 @@
-import { BasicIndex } from "@tanstack/db";
+import { BasicIndex, type Collection } from "@tanstack/db";
 import { createBrowserEventSourcedDB } from "event-sourced-collection/browser";
 import type { CollectionDef, EventSourcedDB } from "event-sourced-collection";
 import type { BrowserWASQLitePersistenceOptions } from "@tanstack/browser-db-sqlite-persistence";
@@ -123,12 +123,17 @@ const byResumeId = <T extends { resumeId: string }>(name = "by-resume") => ({
  * Sync transport is wired but starts disabled. Call `applyManagedSyncGate`
  * after `ensureDb()` once the user session and local settings are known.
  */
-const { ensureDb, db, close } = createBrowserEventSourcedDB<AppCollectionDefs>({
+const {
+  ensureDb: ensureDbInner,
+  db,
+  close,
+} = createBrowserEventSourcedDB<AppCollectionDefs>({
   databaseName: "agentic-json-resume.sqlite",
   debug: import.meta.env.DEV,
   schemaVersion: 1,
   eventSchemaVersion: 1,
   syncEnabled: true,
+  recordLocalEchoes: false,
   sync: createCookieSyncTransport(),
 
   collections: {
@@ -398,6 +403,59 @@ const { ensureDb, db, close } = createBrowserEventSourcedDB<AppCollectionDefs>({
     };
   },
 });
+
+/**
+ * Built-in outbox/inbox/deadletter collections are not configurable via the
+ * registry `indexes` option. Register the fields used by Events page
+ * `orderBy` + `limit` queries, and re-apply after SQLite hydration.
+ */
+function applyIndexes<T extends object>(
+  collection: Collection<T, string>,
+  registerIndexes: (collection: Collection<T, string>) => void,
+) {
+  const register = () => {
+    if (collection.getIndexMetadata().length > 0) return;
+    registerIndexes(collection);
+  };
+  register();
+  collection.on("status:ready", register);
+}
+
+let metaQueueIndexesApplied = false;
+
+function ensureMetaQueueIndexes(database: AppDb) {
+  if (metaQueueIndexesApplied) return;
+  metaQueueIndexesApplied = true;
+
+  applyIndexes(database.collections.outbox, (collection) => {
+    collection.createIndex((r) => r.localSeq, { name: "by-local-seq", indexType: BasicIndex });
+    collection.createIndex((r) => r.timestamp, { name: "by-timestamp", indexType: BasicIndex });
+    collection.createIndex((r) => r.type, { name: "by-type", indexType: BasicIndex });
+    collection.createIndex((r) => r.collectionId, { name: "by-collection", indexType: BasicIndex });
+    collection.createIndex((r) => r.sync, { name: "by-sync", indexType: BasicIndex });
+  });
+
+  applyIndexes(database.collections.inbox, (collection) => {
+    collection.createIndex((r) => r.globalSeq, { name: "by-global-seq", indexType: BasicIndex });
+    collection.createIndex((r) => r.timestamp, { name: "by-timestamp", indexType: BasicIndex });
+    collection.createIndex((r) => r.type, { name: "by-type", indexType: BasicIndex });
+    collection.createIndex((r) => r.collectionId, { name: "by-collection", indexType: BasicIndex });
+    collection.createIndex((r) => r.sync, { name: "by-sync", indexType: BasicIndex });
+  });
+
+  applyIndexes(database.collections.deadletter, (collection) => {
+    collection.createIndex((r) => r.failedAt, { name: "by-failed-at", indexType: BasicIndex });
+    collection.createIndex((r) => r.collectionId, { name: "by-collection", indexType: BasicIndex });
+    collection.createIndex((r) => r.type, { name: "by-type", indexType: BasicIndex });
+    collection.createIndex((r) => r.reason, { name: "by-reason", indexType: BasicIndex });
+  });
+}
+
+async function ensureDb() {
+  const database = await ensureDbInner();
+  ensureMetaQueueIndexes(database);
+  return database;
+}
 
 export { close, db, ensureDb };
 export * from "./schemas";

@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
+import { useEnsureDb } from "event-sourced-collection/react";
 import { useViewer } from "@/data-access-layer/auth/viewer";
 import { applyManagedSyncGate, kickManagedSync } from "./app-settings";
 import { db as dbProxy, ensureDb, type AppDb } from "./collection";
@@ -25,20 +26,8 @@ type EventSourcedDbProviderProps = {
 };
 
 /**
- * Opens the event-sourced DB once for a subtree, then exposes it via {@link useDb}.
+ * Opens the event-sourced DB once for a subtree, then exposes it via {@link useEventSourcedDb}.
  * Safe under SSR: `ensureDb` only runs in `useEffect` (browser).
- *
- * @example
- * ```tsx
- * <EventSourcedDbProvider>
- *   <ResumeEditor />
- * </EventSourcedDbProvider>
- *
- * function ResumeEditor() {
- *   const db = useEventSourcedDb();
- *   // db.collections.resume.insert(...)
- * }
- * ```
  */
 export function EventSourcedDbProvider({
   children,
@@ -46,35 +35,20 @@ export function EventSourcedDbProvider({
   errorFallback,
 }: EventSourcedDbProviderProps) {
   const { viewer } = useViewer();
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
   const isAuthenticated = Boolean(viewer.user?.id);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    ensureDb()
-      .then(() => {
-        if (cancelled) return;
-        applyManagedSyncGate(dbProxy, isAuthenticated);
-        // Background: do not block the shell on network sync.
-        kickManagedSync(dbProxy);
-        if (import.meta.env.DEV || import.meta.env.VITE_E2E === "true") {
-          window.__e2eEventSourcedDb = dbProxy;
-        }
-        setReady(true);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setReady(false);
-        setError(err instanceof Error ? err : new Error(String(err)));
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isAuthenticated]);
+  const { ready, error } = useEnsureDb({
+    ensureDb,
+    deps: [isAuthenticated],
+    onReady: (db) => {
+      applyManagedSyncGate(db, isAuthenticated);
+      // Background: do not block the shell on network sync.
+      kickManagedSync(db);
+      if (import.meta.env.DEV || import.meta.env.VITE_E2E === "true") {
+        window.__e2eEventSourcedDb = db;
+      }
+    },
+  });
 
   if (error) {
     if (errorFallback) {

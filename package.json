@@ -53,6 +53,9 @@
     ],
     "ignoredBuiltDependencies": [
       "@journeyapps/wa-sqlite"
+    ],
+    "minimumReleaseAgeExclude": [
+      "event-sourced-collection"
     ]
   }
 }
