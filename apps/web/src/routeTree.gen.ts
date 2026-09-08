@@ -19,6 +19,7 @@ import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthGithubRouteImport } from './routes/auth/github'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
+import { Route as RPublicIdIndexRouteImport } from './routes/r/$publicId/index'
 import { Route as DashboardVolunteersIndexRouteImport } from './routes/_dashboard/volunteers/index'
 import { Route as DashboardTalksIndexRouteImport } from './routes/_dashboard/talks/index'
 import { Route as DashboardSummariesIndexRouteImport } from './routes/_dashboard/summaries/index'
@@ -98,6 +99,11 @@ const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => DashboardLayoutRoute,
+} as any)
+const RPublicIdIndexRoute = RPublicIdIndexRouteImport.update({
+  id: '/r/$publicId/',
+  path: '/r/$publicId/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardVolunteersIndexRoute =
   DashboardVolunteersIndexRouteImport.update({
@@ -296,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/summaries/': typeof DashboardSummariesIndexRoute
   '/talks/': typeof DashboardTalksIndexRoute
   '/volunteers/': typeof DashboardVolunteersIndexRoute
+  '/r/$publicId/': typeof RPublicIdIndexRoute
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
@@ -336,6 +343,7 @@ export interface FileRoutesByTo {
   '/summaries': typeof DashboardSummariesIndexRoute
   '/talks': typeof DashboardTalksIndexRoute
   '/volunteers': typeof DashboardVolunteersIndexRoute
+  '/r/$publicId': typeof RPublicIdIndexRoute
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/resumes/$resumeId': typeof DashboardResumesResumeIdIndexRoute
@@ -379,6 +387,7 @@ export interface FileRoutesById {
   '/_dashboard/summaries/': typeof DashboardSummariesIndexRoute
   '/_dashboard/talks/': typeof DashboardTalksIndexRoute
   '/_dashboard/volunteers/': typeof DashboardVolunteersIndexRoute
+  '/r/$publicId/': typeof RPublicIdIndexRoute
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/_dashboard/resumes/$resumeId/': typeof DashboardResumesResumeIdIndexRoute
@@ -422,6 +431,7 @@ export interface FileRouteTypes {
     | '/summaries/'
     | '/talks/'
     | '/volunteers/'
+    | '/r/$publicId/'
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/resumes/$resumeId/'
@@ -462,6 +472,7 @@ export interface FileRouteTypes {
     | '/summaries'
     | '/talks'
     | '/volunteers'
+    | '/r/$publicId'
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/resumes/$resumeId'
@@ -504,6 +515,7 @@ export interface FileRouteTypes {
     | '/_dashboard/summaries/'
     | '/_dashboard/talks/'
     | '/_dashboard/volunteers/'
+    | '/r/$publicId/'
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/_dashboard/resumes/$resumeId/'
@@ -524,6 +536,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronProjectSyncEventsRoute: typeof ApiCronProjectSyncEventsRoute
   ApiSyncEventsRoute: typeof ApiSyncEventsRoute
+  RPublicIdIndexRoute: typeof RPublicIdIndexRoute
   ApiAgenticRpcSplatRoute: typeof ApiAgenticRpcSplatRoute
 }
 
@@ -598,6 +611,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardDashboardRouteImport
       parentRoute: typeof DashboardLayoutRoute
+    }
+    '/r/$publicId/': {
+      id: '/r/$publicId/'
+      path: '/r/$publicId'
+      fullPath: '/r/$publicId/'
+      preLoaderRoute: typeof RPublicIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_dashboard/volunteers/': {
       id: '/_dashboard/volunteers/'
@@ -906,6 +926,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronProjectSyncEventsRoute: ApiCronProjectSyncEventsRoute,
   ApiSyncEventsRoute: ApiSyncEventsRoute,
+  RPublicIdIndexRoute: RPublicIdIndexRoute,
   ApiAgenticRpcSplatRoute: ApiAgenticRpcSplatRoute,
 }
 export const routeTree = rootRouteImport

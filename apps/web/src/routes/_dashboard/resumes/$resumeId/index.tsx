@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { EventSourcedResumeAiTab } from "../../-ai/-components/EventSourcedResumeAiTab";
 import { cloneLocalResume } from "../../-ai/-utils/local-resume-tools";
+import { PublishResumeButton } from "./-components/PublishResumeButton";
 import { ResumePreviewView } from "./-components/ResumePreviewTab";
 import { useEventSourcedResumeDetail } from "./-hooks/use-event-sourced-resume-detail";
 
@@ -185,6 +186,11 @@ function EventSourcedResumeWorkbench({ resumeId }: { resumeId: string }) {
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <PublishResumeButton
+              sourceResumeId={resumeId}
+              title={detail.name}
+              document={doc}
+            />
             <Button
               variant="outline"
               size="sm"
