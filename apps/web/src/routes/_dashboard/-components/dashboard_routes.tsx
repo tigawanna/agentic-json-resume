@@ -30,6 +30,7 @@ export function getDashboardPrimaryRoutes(): SidebarItem[] {
   return [
     { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { title: "Resumes", href: "/resumes", icon: FileText },
+    { title: "Public résumés", href: "/public-resumes", icon: Globe },
     { title: "Jobs", href: "/jobs", icon: Briefcase },
     {
       title: "Resume Data",

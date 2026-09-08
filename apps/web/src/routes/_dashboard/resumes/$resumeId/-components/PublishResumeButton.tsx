@@ -61,9 +61,12 @@ export function PublishResumeButton({
         data: { sourceResumeId, title, document },
       }),
     onSuccess(data) {
-      const wasPublished = Boolean(qc.getQueryData(myPublicResumeQueryOptions(sourceResumeId).queryKey));
+      const wasPublished = Boolean(
+        qc.getQueryData(myPublicResumeQueryOptions(sourceResumeId).queryKey),
+      );
       qc.setQueryData(myPublicResumeQueryOptions(sourceResumeId).queryKey, data);
       void qc.invalidateQueries({ queryKey: publicResumeKeys.byId(data.id) });
+      void qc.invalidateQueries({ queryKey: [...publicResumeKeys.all, "list"] });
       toast.success(wasPublished ? "Public link updated" : "Résumé is public");
       setDialogOpen(true);
     },
@@ -78,6 +81,7 @@ export function PublishResumeButton({
     mutationFn: async () => unpublishPublicResume({ data: { sourceResumeId } }),
     onSuccess() {
       qc.setQueryData(myPublicResumeQueryOptions(sourceResumeId).queryKey, null);
+      void qc.invalidateQueries({ queryKey: [...publicResumeKeys.all, "list"] });
       toast.success("Public link removed");
       setDialogOpen(false);
     },
@@ -183,6 +187,14 @@ export function PublishResumeButton({
               Unpublish
             </Button>
             <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                asChild
+              >
+                <Link to="/public-resumes">Manage all</Link>
+              </Button>
               <Button
                 type="button"
                 variant="outline"
