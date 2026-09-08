@@ -139,17 +139,19 @@ function ManagedSyncControls() {
 
 export function ManagedSyncSection() {
   return (
-    <EventSourcedDbProvider
-      fallback={
-        <Card>
-          <CardHeader>
-            <CardTitle>Managed sync</CardTitle>
-            <CardDescription>Opening the local database…</CardDescription>
-          </CardHeader>
-        </Card>
-      }
-    >
-      <ManagedSyncControls />
-    </EventSourcedDbProvider>
+    <div id="managed-sync">
+      <EventSourcedDbProvider
+        fallback={
+          <Card>
+            <CardHeader>
+              <CardTitle>Managed sync</CardTitle>
+              <CardDescription>Opening the local database…</CardDescription>
+            </CardHeader>
+          </Card>
+        }
+      >
+        <ManagedSyncControls />
+      </EventSourcedDbProvider>
+    </div>
   );
 }

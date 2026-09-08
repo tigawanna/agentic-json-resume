@@ -21,6 +21,7 @@ import { QueryActivityNprogress } from "@/components/navigation/nprogress/QueryA
 import { useViewer } from "@/data-access-layer/auth/viewer";
 import { DashboardSidebarFooter } from "./DashboardSidebarFooter";
 import { DashboardSidebarHeader } from "./DashboardSidebarHeader";
+import { DashboardSyncStatusButton } from "./DashboardSyncStatusButton";
 // import { FloatingPersonaChat } from "../persona-chat/FloatingPersonaChat";
 
 interface DashboardLayoutProps {
@@ -83,12 +84,13 @@ export function DashboardLayout({
         <SidebarRail />
       </Sidebar>
       <SidebarInset className="min-h-0">
-        <header className="bg-base-100 sticky top-0 z-30 flex h-16 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+        <header className="bg-base-100 sticky top-0 z-30 flex h-16 items-center justify-between gap-2 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+          <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <TSRBreadCrumbs />
           </div>
+          <DashboardSyncStatusButton className="shrink-0" />
         </header>
         <div className="@container/main flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-auto p-6">
           <LocalOnlyBanner />
