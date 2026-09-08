@@ -31,6 +31,32 @@ export function applyManagedSyncGate(db: AppDb, isAuthenticated: boolean): AppSe
   return settings;
 }
 
+/** Coalesce concurrent kickers (nested providers) into one in-flight `db.sync()`. */
+let managedSyncInFlight: Promise<void> | null = null;
+
+/**
+ * Fire-and-forget push/pull when managed sync is enabled.
+ * Safe to call from multiple {@link EventSourcedDbProvider} mounts.
+ */
+export function kickManagedSync(db: AppDb): void {
+  if (!db.getSyncEnabled()) return;
+  if (managedSyncInFlight) return;
+
+  managedSyncInFlight = db
+    .sync()
+    .then((result) => {
+      if (result.errors.length > 0) {
+        console.error("[sync] managed sync errors", result.errors);
+      }
+    })
+    .catch((err: unknown) => {
+      console.error("[sync] managed sync failed", err);
+    })
+    .finally(() => {
+      managedSyncInFlight = null;
+    });
+}
+
 export function setManagedSyncEnabled(
   db: AppDb,
   enabled: boolean,
@@ -46,5 +72,8 @@ export function setManagedSyncEnabled(
   }
   const next = readAppSettings(db);
   db.setSyncEnabled(Boolean(isAuthenticated && next.syncEnabled));
+  if (isAuthenticated && next.syncEnabled) {
+    kickManagedSync(db);
+  }
   return next;
 }

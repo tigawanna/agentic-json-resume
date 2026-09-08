@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useViewer } from "@/data-access-layer/auth/viewer";
-import { applyManagedSyncGate } from "./app-settings";
+import { applyManagedSyncGate, kickManagedSync } from "./app-settings";
 import { db as dbProxy, ensureDb, type AppDb } from "./collection";
 
 declare global {
@@ -57,6 +57,8 @@ export function EventSourcedDbProvider({
       .then(() => {
         if (cancelled) return;
         applyManagedSyncGate(dbProxy, isAuthenticated);
+        // Background: do not block the shell on network sync.
+        kickManagedSync(dbProxy);
         if (import.meta.env.DEV || import.meta.env.VITE_E2E === "true") {
           window.__e2eEventSourcedDb = dbProxy;
         }

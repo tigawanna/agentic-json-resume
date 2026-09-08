@@ -20,10 +20,12 @@ import { toast } from "sonner";
 
 function ManagedSyncControls() {
   const db = useEventSourcedDb();
+  const syncStatus = db.getSyncStatus();
+  console.log("syncStatus === ", syncStatus);
   const { viewer } = useViewer();
   const isAuthenticated = Boolean(viewer.user?.id);
   const [settings, setSettings] = useState(() => applyManagedSyncGate(db, isAuthenticated));
-  const [syncing, setSyncing] = useState(false);
+  const [syncing, setSyncing] = useState(() => syncStatus.isSyncing);
 
   function handleToggle(enabled: boolean) {
     if (enabled && !isAuthenticated) {
@@ -53,7 +55,26 @@ function ManagedSyncControls() {
     setSyncing(true);
     try {
       applyManagedSyncGate(db, true);
+      if (!db.getSyncEnabled()) {
+        toast.error("Sync is still disabled", {
+          description: "Turn on managed sync and stay signed in, then try again.",
+        });
+        return;
+      }
       const result = await db.manualSync();
+      // manualSync does not throw on transport/server failures — check the result.
+      if (result.deferred) {
+        toast.error("Sync skipped", {
+          description: "Another tab is already syncing. Close it or try again.",
+        });
+        return;
+      }
+      if (result.errors.length > 0) {
+        toast.error("Sync failed", {
+          description: result.errors.map((e) => e.message).join("; "),
+        });
+        return;
+      }
       toast.success("Sync finished", {
         description: `Pushed ${result.pushed}, pulled ${result.pulled}`,
       });

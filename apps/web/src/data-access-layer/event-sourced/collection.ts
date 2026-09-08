@@ -128,7 +128,7 @@ const { ensureDb, db, close } = createBrowserEventSourcedDB<AppCollectionDefs>({
   debug: import.meta.env.DEV,
   schemaVersion: 1,
   eventSchemaVersion: 1,
-  syncEnabled: false,
+  syncEnabled: true,
   sync: createCookieSyncTransport(),
 
   collections: {

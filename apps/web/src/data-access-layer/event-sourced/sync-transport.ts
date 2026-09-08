@@ -15,6 +15,7 @@ async function readJson(response: Response): Promise<unknown> {
 export function createCookieSyncTransport(): SyncTransport {
   return {
     async push(events) {
+      // console.log("push === ", events);
       const response = await fetch(SYNC_URL, {
         method: "POST",
         credentials: "include",
@@ -28,6 +29,7 @@ export function createCookieSyncTransport(): SyncTransport {
       return (await readJson(response)) as PushResponse;
     },
     async pull(since) {
+      // console.log("pull === ", since);
       const url = `${SYNC_URL}?since=${encodeURIComponent(String(since))}`;
       const response = await fetch(url, {
         method: "GET",

@@ -12,6 +12,7 @@ import {
 } from "./-components/dashboard_routes";
 
 export const Route = createFileRoute("/_dashboard")({
+  ssr: false,
   pendingComponent: () => <RouterPendingComponent />,
   notFoundComponent: () => <RouterNotFoundComponent />,
   errorComponent: ({ error }) => <RouterErrorComponent error={error} />,
